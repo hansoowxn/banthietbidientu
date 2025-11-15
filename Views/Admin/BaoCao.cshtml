@@ -1,0 +1,115 @@
+﻿@{
+    ViewData["Title"] = "Báo cáo - Electronic Store";
+}
+
+<h2>Báo cáo</h2>
+
+<div class="container my-5">
+    <!-- Báo cáo doanh thu -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Báo cáo doanh thu</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Tổng doanh thu tháng này:</strong> 150,000,000 VNĐ</p>
+            <p><strong>Doanh thu tuần này:</strong> 35,000,000 VNĐ</p>
+            <p><strong>Số đơn hàng:</strong> 120 đơn</p>
+            <canvas id="revenueChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <!-- Sản phẩm bán chạy -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Sản phẩm bán chạy</h4>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Tên sản phẩm</th>
+                        <th>Số lượng bán</th>
+                        <th>Doanh thu</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>Smartphone Galaxy Pro</td>
+                        <td>50</td>
+                        <td>25,000,000 VNĐ</td>
+                    </tr>
+                    <tr>
+                        <td>Laptop Elite Series</td>
+                        <td>30</td>
+                        <td>45,000,000 VNĐ</td>
+                    </tr>
+                    <tr>
+                        <td>Wireless Earbuds</td>
+                        <td>20</td>
+                        <td>10,000,000 VNĐ</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Thống kê tài khoản -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h4>Thống kê tài khoản</h4>
+        </div>
+        <div class="card-body">
+            <p><strong>Tổng số tài khoản:</strong> 200</p>
+            <p><strong>Tài khoản admin:</strong> 5</p>
+            <p><strong>Tài khoản người dùng:</strong> 195</p>
+            <canvas id="accountChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <a asp-action="Profile" asp-controller="Login" class="btn btn-secondary">Quay lại</a>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <script>
+        // Giả lập biểu đồ doanh thu
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: ['Tuần 1', 'Tuần 2', 'Tuần 3', 'Tuần 4'],
+                datasets: [{
+                    label: 'Doanh thu (VNĐ)',
+                    data: [20000000, 35000000, 30000000, 45000000],
+                    backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Giả lập biểu đồ tài khoản
+        const accountCtx = document.getElementById('accountChart').getContext('2d');
+        new Chart(accountCtx, {
+            type: 'pie',
+            data: {
+                labels: ['Admin', 'Người dùng'],
+                datasets: [{
+                    label: 'Tài khoản',
+                    data: [5, 195],
+                    backgroundColor: ['rgba(255, 99, 132, 0.5)', 'rgba(54, 162, 235, 0.5)'],
+                    borderColor: ['rgba(255, 99, 132, 1)', 'rgba(54, 162, 235, 1)'],
+                    borderWidth: 1
+                }]
+            }
+        });
+    </script>
+}

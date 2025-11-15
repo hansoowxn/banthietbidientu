@@ -1,0 +1,70 @@
+﻿@model TestDoAn.Models.TaiKhoan
+@{
+    ViewData["Title"] = "Đăng nhập - SmartTech";
+}
+
+@section Styles {
+    <style>
+        .form-floating > .form-control:focus ~ label,
+        .form-floating > .form-control:not(:placeholder-shown) ~ label {
+            transform: scale(0.85) translateY(-0.75rem) translateX(0.15rem);
+            background-color: #fff;
+            padding: 0 0.25rem;
+        }
+    </style>
+}
+
+<section class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-7">
+
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-4 p-md-5">
+
+                    <div class="text-center mb-4">
+                        <i class="bi bi-box-arrow-in-right display-3 text-primary"></i>
+                        <h2 class="h3 fw-bold mt-3 mb-0">Đăng nhập</h2>
+                    </div>
+
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger text-center p-2 small" role="alert">
+                            @ViewBag.Error
+                        </div>
+                    }
+
+                    <form asp-action="DangNhap" asp-controller="Login" method="post">
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Username" class="form-control" id="floatingUsername" placeholder="Tài khoản" required />
+                            <label for="floatingUsername">Tài khoản</label>
+                            <span asp-validation-for="Username" class="text-danger small"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Password" class="form-control" type="password" id="floatingPassword" placeholder="Mật khẩu" required />
+                            <label for="floatingPassword">Mật khẩu</label>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">Đăng nhập</button>
+                        </div>
+                    </form>
+
+                    <div class="text-center">
+                        <small class="text-muted">Chưa có tài khoản?</small>
+                        <a asp-controller="Login" asp-action="DangKy" class="ms-1 fw-bold text-decoration-none">Đăng ký ngay</a>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @{
+        <partial name="_ValidationScriptsPartial" />
+    }
+}

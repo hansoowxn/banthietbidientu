@@ -1,0 +1,68 @@
+﻿html {
+    font-size: 14px;
+}
+
+@media (min-width: 768px) {
+    html {
+        font-size: 16px;
+    }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+    box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+    position: relative;
+    min-height: 100%;
+}
+
+.sidebar {
+    height: 100vh;
+    width: 250px;
+    background-color: #333;
+    position: fixed;
+    top: 0;
+    left: -250px; /* Ẩn sidebar ban đầu */
+    transition: left 0.3s ease;
+    color: white;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+    .sidebar.active {
+        left: 0; /* Hiển thị sidebar khi active */
+    }
+
+    .sidebar ul {
+        list-style: none;
+        padding: 0;
+    }
+
+        .sidebar ul li {
+            margin: 20px 0;
+        }
+
+            .sidebar ul li a {
+                color: white;
+                text-decoration: none;
+                font-size: 18px;
+            }
+
+/* Nút đóng sidebar */
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+    position: absolute;
+    top: 20px;
+    right: 20px;
+}
+
+/* Nội dung chính */
+.main-content {
+    margin-left: 60px;
+    padding: 20px;
+}

@@ -1,0 +1,471 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+    @RenderSection("Styles", required: false)
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Be Vietnam Pro', Arial, sans-serif;
+            background-color: #f8f9fa; /* Nền xám nhạt */
+        }
+
+        /* (Toàn bộ CSS khác của bạn... ) */
+        .sidebar {
+            height: 100vh;
+            width: 250px;
+            background-color: var(--bs-dark);
+            position: fixed;
+            top: 0;
+            left: -250px;
+            transition: left 0.3s ease;
+            color: white;
+            padding: 20px;
+            box-sizing: border-box;
+            z-index: 1000;
+        }
+
+            .sidebar.active {
+                left: 0;
+            }
+
+            .sidebar h2 {
+                margin-top: 40px;
+            }
+
+            .sidebar ul {
+                list-style: none;
+                padding: 0;
+            }
+
+                .sidebar ul li {
+                    margin: 20px 0;
+                }
+
+                    .sidebar ul li a {
+                        color: white;
+                        text-decoration: none;
+                        font-size: 18px;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                    }
+
+                        .sidebar ul li a:hover {
+                            color: #0d6efd;
+                        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 30px;
+            cursor: pointer;
+            position: absolute;
+            top: 15px;
+            right: 20px;
+        }
+
+        .open-btn {
+            background-color: transparent;
+            color: white;
+            border: none;
+            padding: 0 12px;
+            cursor: pointer;
+            font-size: 28px;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            line-height: 1;
+        }
+
+        .smarttech-header {
+            z-index: 950;
+        }
+
+        .header-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1.5rem;
+            padding: 0.75rem 1.5rem;
+        }
+
+        .header-brand {
+            flex-shrink: 0;
+        }
+
+        .header-search-form {
+            display: flex;
+            flex-grow: 1;
+            max-width: 650px;
+        }
+
+            .header-search-form .form-control {
+                border-color: #ced4da;
+            }
+
+            .header-search-form .btn-search {
+                background-color: #0d6efd;
+                border-color: #0d6efd;
+                color: white;
+                z-index: 2;
+            }
+
+            .header-search-form .form-select {
+                border-color: #ced4da;
+                z-index: 2;
+            }
+
+        .header-actions {
+            display: flex;
+            gap: 0.75rem;
+            flex-shrink: 0;
+            align-items: center;
+        }
+
+            .header-actions .btn {
+                display: flex;
+                align-items: center;
+                gap: 0.5rem;
+                font-weight: 500;
+            }
+
+        .header-nav {
+            background-color: #ffffff;
+            border-top: 1px solid #e9ecef;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .header-nav-list {
+            display: flex;
+            justify-content: center;
+            gap: 2.5rem;
+            list-style: none;
+            padding: 0.75rem 0;
+            margin: 0;
+            overflow-x: auto;
+        }
+
+            .header-nav-list li a {
+                text-decoration: none;
+                color: #333;
+                font-weight: 600;
+                white-space: nowrap;
+                transition: color 0.2s;
+            }
+
+                .header-nav-list li a:hover {
+                    color: #0d6efd;
+                }
+
+        .main-content {
+            padding: 20px;
+            padding-top: 135px;
+        }
+
+        @@media (max-width: 991.98px) {
+            .header-top {
+                flex-wrap: wrap;
+            }
+
+            .header-search-form {
+                order: 3;
+                width: 100%;
+                max-width: none;
+                margin-top: 0.5rem;
+            }
+
+            .main-content {
+                padding-top: 180px;
+            }
+
+            .header-nav-list {
+                justify-content: flex-start;
+                gap: 1.5rem;
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
+        }
+
+        .hero-gradient {
+            background: linear-gradient(45deg, #0d6efd, #00c6ff);
+            color: white;
+        }
+
+        .fab-container {
+            position: fixed;
+            bottom: 5px;
+            right: 5px;
+            z-index: 1050;
+            display: flex;
+            flex-direction: column-reverse;
+            align-items: center;
+        }
+
+        .fab-toggler {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+
+        .fab-options {
+            display: flex;
+            flex-direction: column-reverse;
+            gap: 15px;
+            margin-bottom: 20px;
+            visibility: hidden;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+        }
+
+        .fab-container.active .fab-options {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .fab-option {
+            width: 55px;
+            height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            transition: all 0.2s ease;
+        }
+
+            .fab-option:hover {
+                transform: scale(1.1);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar" id="sidebar">
+        <button class="close-btn" onclick="toggleSidebar()">×</button>
+        <h2>Menu</h2>
+        <ul>
+            <li><a asp-controller="Home" asp-action="Index"><i class="bi bi-house-fill"></i> Trang chủ</a></li>
+            @if (User.Identity.IsAuthenticated)
+            {
+                <li><a asp-controller="Login" asp-action="Profile"><i class="bi bi-person-fill"></i> Tài khoản của tôi</a></li>
+                <li><a asp-controller="Login" asp-action="LichSuMuaHang"><i class="bi bi-clock-history"></i> Lịch sử mua hàng</a></li>
+                @if (User.IsInRole("Admin"))
+                {
+                    <li class="pt-3"><hr class="bg-light"></li>
+                    <li><a href="@Url.Action("QuanLySanPham", "Admin")"><i class="bi bi-box-seam-fill"></i> Quản lý kho hàng</a></li>
+                    <li><a href="@Url.Action("QuanLyTaiKhoan", "Admin")"><i class="bi bi-people-fill"></i> Quản lý tài khoản</a></li>
+                    <li><a href="@Url.Action("BaoCao", "Admin")"><i class="bi bi-bar-chart-fill"></i> Báo cáo</a></li>
+                }
+                <li class="pt-3"><hr class="bg-light"></li>
+                <li>
+                    <form asp-controller="Login" asp-action="Logout" method="post" id="logoutForm_sidebar">
+                        <a href="#" onclick="document.getElementById('logoutForm_sidebar').submit(); return false;">
+                            <i class="bi bi-box-arrow-right"></i> Đăng xuất
+                        </a>
+                    </form>
+                </li>
+            }
+            else
+            {
+                <li><a asp-controller="Login" asp-action="DangNhap"><i class="bi bi-box-arrow-in-right"></i> Đăng nhập</a></li>
+            }
+        </ul>
+    </div>
+
+    <header class="smarttech-header bg-primary text-white fixed-top shadow-sm">
+        <div class="header-top container-fluid">
+
+            <button class="open-btn" onclick="toggleSidebar()">☰</button>
+
+            <a class="navbar-brand fw-bold d-flex align-items-center header-brand text-white" href="/">
+                <img src="~/image/logo.png" alt="SmartTech Logo" style="height: 30px; margin-right: 10px;">
+                SmartTech
+            </a>
+
+            <form class="header-search-form input-group" asp-controller="Home" asp-action="Index" method="get">
+                <input class="form-control form-control-lg" name="search" placeholder="Bạn tìm gì hôm nay?" value="@ViewData["SearchQuery"]">
+                @if (ViewData["Categories"] != null)
+                {
+                    <select class="form-select form-select-lg" name="category" onchange="this.form.submit()" style="max-width: 200px; border-color: #ced4da; flex-grow: 0.5;">
+                        @if (ViewData["SelectedCategory"]?.ToString() == "All")
+                        {
+                            <option value="All" selected>Tất cả</option>
+                        }
+                        else
+                        {
+                            <option value="All">Tất cả</option>
+                        }
+
+                        @foreach (var cat in ViewData["Categories"] as List<string>)
+                        {
+                            @if (ViewData["SelectedCategory"]?.ToString() == cat)
+                            {
+                                <option value="@cat" selected>@cat</option>
+                            }
+                            else
+                            {
+                                <option value="@cat">@cat</option>
+                            }
+                        }
+                    </select>
+                }
+                <button type="submit" class="btn btn-search btn-lg">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+
+            <div class="header-actions">
+
+                <button type="button" class="btn btn-outline-light" data-bs-toggle="modal" data-bs-target="#locationModal">
+                    <i class="bi bi-geo-alt-fill"></i>
+                    <span>Xem vị trí</span>
+                </button>
+
+                <a asp-controller="GioHang" asp-action="Index" class="btn btn-outline-light">
+                    <i class="bi bi-cart-fill"></i>
+                    <span>Giỏ Hàng</span>
+                </a>
+                @if (User.Identity.IsAuthenticated)
+                {
+                    <a class="btn btn-outline-light" asp-controller="Login" asp-action="Profile">
+                        <i class="bi bi-person-circle"></i>
+                        <span>Tài khoản</span>
+                    </a>
+                }
+                else
+                {
+                    <a class="btn btn-outline-light" asp-controller="Login" asp-action="DangNhap">
+                        <i class="bi bi-person-circle"></i>
+                        <span>Đăng nhập</span>
+                    </a>
+                }
+            </div>
+        </div>
+        <nav class="header-nav">
+            <ul class="header-nav-list container-fluid">
+                <li><a asp-controller="Home" asp-action="Index" asp-route-category="Điện thoại">Điện thoại</a></li>
+                <li><a asp-controller="Home" asp-action="Index" asp-route-category="Laptop">Laptop</a></li>
+                <li><a asp-controller="Home" asp-action="Index" asp-route-category="Tablet">Tablet</a></li>
+                <li><a asp-controller="Home" asp-action="Index" asp-route-category="Smartwatch">Smartwatch</a></li>
+                <li><a asp-controller="Home" asp-action="Index" asp-route-category="Đồng hồ">Đồng hồ</a></li>
+                <li><a asp-controller="Home" asp-action="Index" asp-route-category="Phụ kiện">Phụ kiện</a></li>
+                <li><a asp-controller="Home" asp-action="Index" asp-route-category="Thu mua">Thu mua máy cũ</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+
+        function toggleFabMenu(event) {
+            event.stopPropagation();
+            document.getElementById('fab-container').classList.toggle('active');
+        }
+
+        document.addEventListener('click', function (event) {
+            const fabContainer = document.getElementById('fab-container');
+            if (fabContainer.classList.contains('active')) {
+                fabContainer.classList.remove('active');
+            }
+        });
+    </script>
+
+    <div class="main-content">
+        @RenderBody()
+    </div>
+
+    <div class="fab-container" id="fab-container">
+        <div class="fab-options">
+            <a href="https://zalo.me/0584891113" class="btn btn-light btn-lg rounded-circle shadow fab-option" title="Zalo" target="_blank">
+                <i class="bi bi-chat-text-fill" style="color: #0068ff;"></i>
+            </a>
+            <a href="https://www.facebook.com/ducksayhiii" class="btn btn-light btn-lg rounded-circle shadow fab-option" title="Facebook" target="_blank">
+                <i class="bi bi-facebook" style="color: #1877f2;"></i>
+            </a>
+            <a href="mailto:vuduc792@gmail.com" class="btn btn-light btn-lg rounded-circle shadow fab-option" title="Gmail" target="_blank">
+                <i class="bi bi-envelope-fill" style="color: #db4437;"></i>
+            </a>
+        </div>
+        <button class="btn btn-primary btn-lg rounded-circle shadow fab-toggler" onclick="toggleFabMenu(event)">
+            <i class="bi bi-chat-dots-fill fs-4"></i>
+        </button>
+    </div>
+
+    <div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="locationModalLabel"><i class="bi bi-shop me-2"></i> Hệ thống cửa hàng SmartTech</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Bạn có thể tìm chúng tôi tại 3 cơ sở chính trên toàn quốc:</p>
+                    <ul class="list-group list-group-flush mb-3">
+                        <li class="list-group-item d-flex align-items-center">
+                            <i class="bi bi-pin-map-fill text-danger me-3 fs-4"></i>
+                            <div>
+                                <strong class="d-block">Hà Nội</strong>
+                                120 Xuân Thủy, P. Dịch Vọng Hậu, Cầu Giấy
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center">
+                            <i class="bi bi-pin-map-fill text-warning me-3 fs-4"></i>
+                            <div>
+                                <strong class="d-block">Đà Nẵng</strong>
+                                78 Bạch Đằng, P. Hải Châu I, Hải Châu
+                            </div>
+                        </li>
+                        <li class="list-group-item d-flex align-items-center">
+                            <i class="bi bi-pin-map-fill text-success me-3 fs-4"></i>
+                            <div>
+                                <strong class="d-block">TP. Hồ Chí Minh</strong>
+                                55 Nguyễn Huệ, P. Bến Nghé, Quận 1
+                            </div>
+                        </li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <footer class="bg-dark text-white py-4">
+        <div class="container d-flex justify-content-between align-items-center">
+            <div>
+                <span class="text-white-50">© @DateTime.Now.Year SmartTech. Đã đăng ký bản quyền.</span>
+            </div>
+            <div>
+                <a class="text-white text-decoration-none mx-2" asp-controller="Home" asp-action="Terms">Điều khoản dịch vụ</a>
+                <span class="text-white mx-1">|</span>
+                <a class="text-white text-decoration-none mx-2" asp-controller="Home" asp-action="Privacy">Chính sách bảo mật</a>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    @RenderSection("Scripts", required: false)
+</body>
+</html>

@@ -1,0 +1,41 @@
+﻿@model List<TestDoAn.Models.TaiKhoan>
+
+<h2>Quản Lý Tài Khoản</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">@TempData["Success"]</div>
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Tên đăng nhập</th>
+            <th>Họ và tên</th>
+            <th>Email</th>
+            <th>Vai trò</th>
+            <th>Hành động</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model)
+        {
+            <tr>
+                <td>@item.Username</td>
+                <td>@item.FullName</td>
+                <td>@item.Email</td>
+                <td>@item.Role</td>
+                <td>
+                    <a asp-action="SuaTaiKhoan" asp-route-id="@item.Id" class="btn btn-warning">Sửa</a>
+                    <form asp-action="XoaTaiKhoan" asp-route-id="@item.Id" method="post" style="display:inline;">
+                        <input type="hidden" name="id" value="@item.Id" />
+                        <button type="submit" class="btn btn-danger" onclick="return confirm('Bạn có chắc muốn xóa tài khoản này?')">Xóa</button>
+                    </form>
+                    <a asp-action="LichSuMuaHang" asp-route-userId="@item.Id" class="btn btn-info">Lịch sử mua hàng</a>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a asp-action="ThemTaiKhoan" class="btn btn-primary">Thêm tài khoản</a>

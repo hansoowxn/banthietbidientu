@@ -1,0 +1,161 @@
+﻿@model List<TestDoAn.Models.GioHang>
+@{
+    ViewData["Title"] = "Giỏ hàng";
+    decimal totalPrice = Model.Sum(item => item.Price * item.Quantity);
+}
+
+@section Styles {
+    <style>
+        .btn-remove {
+            text-decoration: none;
+            color: var(--bs-danger);
+            font-weight: 500;
+        }
+
+            .btn-remove:hover {
+                text-decoration: underline;
+                color: var(--bs-danger-dark);
+            }
+    </style>
+}
+
+<div class="container py-4">
+
+    @if (Model.Count == 0)
+    {
+        <div class="row justify-content-center">
+            <div class="col-lg-6 text-center">
+                <i class="bi bi-cart-x" style="font-size: 7rem; color: #6c757d;"></i>
+                <h1 class="display-5 fw-bold mt-4">Giỏ hàng của bạn đang trống</h1>
+                <p class="lead text-muted mb-4">
+                    Trông có vẻ như bạn chưa thêm sản phẩm nào.
+                    Hãy bắt đầu mua sắm để lấp đầy giỏ hàng nhé!
+                </p>
+                <a asp-controller="Home" asp-action="Index" class="btn btn-primary btn-lg">
+                    <i class="bi bi-shop me-2"></i> Bắt đầu mua sắm
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="display-6 fw-bold mb-0">Giỏ hàng của bạn</h1>
+            <a asp-controller="Home" asp-action="Index" class="btn btn-outline-dark">
+                <i class="bi bi-arrow-left me-1"></i> Tiếp tục mua sắm
+            </a>
+        </div>
+
+        <div class="row g-4">
+
+            <div class="col-lg-8">
+
+                @foreach (var item in Model)
+                {
+                    <div class="card mb-3 shadow-sm border-0">
+                        <div class="row g-0">
+                            <div class="col-md-2 d-flex align-items-center justify-content-center p-3">
+                                <img src="@item.ImageUrl" class="img-fluid rounded" alt="@item.Name" style="max-height: 120px; width: auto;">
+                            </div>
+
+                            <div class="col-md-5">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-1">@item.Name</h5>
+                                    <p class="card-text text-muted small">Mã SP: @item.ProductId</p>
+                                    <strong class="text-danger fs-5">@(item.Price.ToString("#,##0")) VNĐ</strong>
+                                </div>
+                            </div>
+
+                            <div class="col-md-5">
+                                <div class="card-body d-flex flex-md-column align-items-end justify-content-between h-100">
+
+                                    <form asp-action="Update" method="post" class="d-flex align-items-center">
+                                        <input type="hidden" name="id" value="@item.ProductId" />
+                                        <label for="quantity-@item.ProductId" class="form-label me-2 visually-hidden">Số lượng</label>
+                                        <input type="number" id="quantity-@item.ProductId" name="quantity" value="@item.Quantity" min="1" class="form-control form-control-sm" style="width: 70px; text-align: center;">
+                                        <button type="submit" class="btn btn-sm btn-outline-primary ms-2" title="Cập nhật">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        </button>
+                                    </form>
+
+                                    <form asp-action="Remove" method="post" class="mt-md-2">
+                                        <input type="hidden" name="id" value="@item.ProductId" />
+                                        <button type="submit" class="btn btn-link btn-remove p-0">
+                                            <i class="bi bi-trash me-1"></i> Xóa
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card shadow-sm border-0" style="position: sticky; top: 150px;">
+                    <div class="card-header bg-white py-3">
+                        <h4 class="mb-0">Tóm tắt đơn hàng</h4>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Tạm tính (@Model.Count sản phẩm)</span>
+                            <strong>@(totalPrice.ToString("#,##0")) VNĐ</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-3">
+                            <span>Phí vận chuyển</span>
+                            <span class="text-success">Miễn phí</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between fs-5 fw-bold mb-3">
+                            <span>Tổng cộng</span>
+                            <span class="text-danger">@(totalPrice.ToString("#,##0")) VNĐ</span>
+                        </div>
+
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <a asp-action="ThanhToan" asp-controller="GioHang" class="btn btn-primary btn-lg w-100">
+                                <i class="bi bi-credit-card-fill me-2"></i> Tiến hành thanh toán
+                            </a>
+                        }
+                        else
+                        {
+                            <div class="alert alert-warning text-center small p-2">
+                                Bạn cần đăng nhập để thanh toán.
+                            </div>
+                            <a asp-controller="Login" asp-action="DangNhap" class="btn btn-success btn-lg w-100">
+                                <i class="bi bi-box-arrow-in-right me-2"></i> Đăng nhập & Thanh toán
+                            </a>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+
+@if (TempData["Success"] != null)
+{
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="successToast" class="toast align-items-center text-white bg-success border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body">
+                    @TempData["Success"]
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+            </div>
+        </div>
+    </div>
+}
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            var toastEl = document.getElementById('successToast');
+            if (toastEl) {
+                var toast = new bootstrap.Toast(toastEl, { delay: 3000 });
+                toast.show();
+            }
+        });
+    </script>
+}

@@ -1,0 +1,75 @@
+﻿@{
+    ViewData["Title"] = "Quản lý sản phẩm - Electronic Store";
+}
+
+@model List<TestDoAn.Models.SanPham>
+
+<h2>Quản lý sản phẩm</h2>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success">
+        @TempData["Success"]
+    </div>
+}
+
+<a asp-action="ThemSanPham" asp-controller="Admin" class="btn btn-primary mb-3">Thêm sản phẩm</a>
+
+<style>
+    .table th, .table td {
+        vertical-align: middle;
+    }
+
+    .url-column {
+        max-width: 200px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .action-column {
+        width: 150px;
+        white-space: nowrap;
+    }
+</style>
+
+<table class="table table-bordered">
+    <thead>
+        <tr>
+            <th style="width: 10%;">ID</th>
+            <th style="width: 25%;">Tên sản phẩm</th>
+            <th style="width: 25%;">Loại Sản Phẩm</th>
+            <th style="width: 15%;">Giá</th>
+            <th style="width: 15%;">Số lượng</th>
+            <th style="width: 30%;">URL hình ảnh</th>
+            <th style="width: 20%;" class="action-column">Thao tác</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var sanPham in Model)
+        {
+            <tr>
+                <td>@sanPham.Id</td>
+                <td>@sanPham.Name</td>
+                <td>@sanPham.Category</td>
+                <td>@sanPham.Price.ToString("N0") VNĐ</td>
+                <td>@sanPham.SoLuong</td>
+                <td class="url-column" title="@sanPham.ImageUrl">
+                    @(sanPham.ImageUrl.Length > 30 ? sanPham.ImageUrl.Substring(0, 30) + "..." : sanPham.ImageUrl)
+                </td>
+                <td class="action-column">
+                    <a asp-action="SuaSanPham" asp-controller="Admin" asp-route-id="@sanPham.Id" class="btn btn-warning btn-sm">Sửa</a>
+                    <form asp-action="XoaSanPham" asp-controller="Admin" method="post" style="display:inline;" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này?');">
+                        <input type="hidden" name="id" value="@sanPham.Id" />
+                        <button type="submit" class="btn btn-danger btn-sm">Xóa</button>
+                        @Html.AntiForgeryToken()
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+}

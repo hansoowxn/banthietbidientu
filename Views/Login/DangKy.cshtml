@@ -1,0 +1,127 @@
+﻿@model TestDoAn.Models.TaiKhoan
+@{
+    ViewData["Title"] = "Đăng ký - SmartTech";
+}
+
+@section Styles {
+    <style>
+        /* Sửa lỗi tại đây: Thêm position: relative; cho .form-floating */
+        .form-floating {
+            position: relative;
+        }
+
+                .form-floating > .form-control:focus ~ label,
+                .form-floating > .form-control:not(:placeholder-shown) ~ label,
+                .form-floating > .form-select ~ label {
+                        transform: scale(0.85) translateY(-0.75rem) translateX(0.15rem);
+                        background-color: #fff;
+                        padding: 0 0.25rem;
+
+        }
+
+
+    </style>
+}
+
+<section class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+
+            <div class="card shadow-sm border-0 rounded-3">
+                <div class="card-body p-4 p-md-5">
+
+                    <div class="text-center mb-4">
+                        <i class="bi bi-person-plus-fill display-3 text-primary"></i>
+                        <h2 class="h3 fw-bold mt-3 mb-0">Tạo tài khoản</h2>
+                    </div>
+
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger p-2 small" role="alert">
+                            <ul class="mb-0 ps-3">
+                                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                {
+                                    <li>@error.ErrorMessage</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    <form asp-action="DangKy" asp-controller="Login" method="post">
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Username" class="form-control" id="floatingUser" placeholder="Tài khoản" required />
+                            <label for="floatingUser">Tài khoản</label>
+                            <span asp-validation-for="Username" class="text-danger small"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Password" class="form-control" type="password" id="floatingPass" placeholder="Mật khẩu" required />
+                            <label for="floatingPass">Mật khẩu</label>
+                            <span asp-validation-for="Password" class="text-danger small"></span>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="FullName" class="form-control" id="floatingFullName" placeholder="Họ và Tên" required />
+                            <label for="floatingFullName">Họ và Tên</label>
+                            <span asp-validation-for="FullName" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-md">
+                                <div class="form-floating">
+                                    <input asp-for="DateOfBirth" class="form-control" type="date" id="floatingDate" placeholder="Ngày sinh" required />
+                                    <label for="floatingDate">Ngày sinh</label>
+                                    <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                                </div>
+                            </div>
+                            <div class="col-md">
+                                <div class="form-floating">
+                                    <select asp-for="Gender" class="form-select" id="floatingGender" required>
+                                        <option value="" disabled selected>Chọn giới tính</option>
+                                        <option value="Male">Nam</option>
+                                        <option value="Female">Nữ</option>
+                                        <option value="Other">Khác</option>
+                                    </select>
+                                    <label for="floatingGender">Giới tính</label>
+                                    <span asp-validation-for="Gender" class="text-danger small"></span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Address" class="form-control" id="floatingAddress" placeholder="Địa chỉ" />
+                            <label for="floatingAddress">Địa chỉ</label>
+                            <span asp-validation-for="Address" class="text-danger small"></span>
+                        </div>
+
+                        <div class="form-floating mb-3">
+                            <input asp-for="Email" class="form-control" type="email" id="floatingEmail" placeholder="Email" required />
+                            <label for="floatingEmail">Email</label>
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+
+                        <input type="hidden" asp-for="Role" value="User" />
+
+                        <div class="d-grid mb-3">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">Đăng ký</button>
+                        </div>
+                    </form>
+
+                    <div class="text-center">
+                        <small class="text-muted">Đã có tài khoản?</small>
+                        <a asp-controller="Login" asp-action="DangNhap" class="ms-1 fw-bold text-decoration-none">Đăng nhập ngay</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    @{
+        <partial name="_ValidationScriptsPartial" />
+    }
+}
