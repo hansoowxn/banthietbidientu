@@ -111,7 +111,7 @@ namespace banthietbidientu.Controllers
                 int statusInt = 0;
                 if (status == "Đã xác nhận") statusInt = 1;
                 else if (status == "Đang giao") statusInt = 2;
-                else if (status == "Hoàn thành") statusInt = 3; // QUAN TRỌNG: Số 3 này giúp tăng hạng
+                else if (status == "Hoàn thành") statusInt = 3;
                 else if (status == "Đã hủy") statusInt = -1;
 
                 donHang.TrangThai = statusInt;
@@ -190,7 +190,7 @@ namespace banthietbidientu.Controllers
                         id = x.Id,
                         tieuDe = x.TieuDe,
                         noiDung = x.NoiDung,
-                        ngayTao = x.NgayTao, // Giữ DateTime gốc
+                        ngayTao = x.NgayTao,
                         daDoc = x.DaDoc,
                         loaiThongBao = x.LoaiThongBao
                     })
@@ -218,10 +218,12 @@ namespace banthietbidientu.Controllers
             catch { return Json(new { success = false }); }
         }
 
-        // --- 5. SẢN PHẨM & TÀI KHOẢN ---
+        // --- 5. QUẢN LÝ SẢN PHẨM (CÓ LOGIC KHO) ---
         public IActionResult QuanLySanPham() => View(_context.SanPhams.AsNoTracking().ToList());
 
-        [HttpGet] public IActionResult ThemSanPham() => View();
+        [HttpGet]
+        public IActionResult ThemSanPham() => View();
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult ThemSanPham(SanPham model, int slHaNoi, int slDaNang, int slHCM)
@@ -229,8 +231,10 @@ namespace banthietbidientu.Controllers
             if (ModelState.IsValid)
             {
                 model.SoLuong = slHaNoi + slDaNang + slHCM;
+                // Lưu format đặc biệt: ||LOC:10-20-30|| vào Mô tả
                 model.MoTa = $"Sản phẩm {model.Name} chính hãng.||LOC:{slHaNoi}-{slDaNang}-{slHCM}||";
-                _context.SanPhams.Add(model); _context.SaveChanges();
+                _context.SanPhams.Add(model);
+                _context.SaveChanges();
                 return RedirectToAction("QuanLySanPham");
             }
             return View(model);
@@ -241,8 +245,47 @@ namespace banthietbidientu.Controllers
         {
             var sp = _context.SanPhams.Find(id);
             if (sp == null) return NotFound();
+
+            // --- [FIX] GIẢI MÃ DỮ LIỆU KHO TỪ CỘT MOTA ---
+            int hn = 0, dn = 0, hcm = 0;
+
+            if (!string.IsNullOrEmpty(sp.MoTa) && sp.MoTa.Contains("||LOC:"))
+            {
+                try
+                {
+                    // Tách chuỗi để lấy phần số: 10-20-30
+                    var parts = sp.MoTa.Split(new[] { "||LOC:", "||" }, StringSplitOptions.RemoveEmptyEntries);
+                    // Tìm phần chứa số (thường là phần tử cuối hoặc phần tử có dấu gạch ngang)
+                    foreach (var part in parts)
+                    {
+                        if (part.Contains("-"))
+                        {
+                            var nums = part.Split('-');
+                            if (nums.Length == 3)
+                            {
+                                int.TryParse(nums[0], out hn);
+                                int.TryParse(nums[1], out dn);
+                                int.TryParse(nums[2], out hcm);
+                            }
+                            break;
+                        }
+                    }
+                }
+                catch
+                {
+                    // Nếu lỗi format thì mặc định 0, không crash app
+                }
+            }
+
+            // Truyền ngược lại View để hiển thị
+            ViewBag.SlHaNoi = hn;
+            ViewBag.SlDaNang = dn;
+            ViewBag.SlHCM = hcm;
+            // ---------------------------------------------
+
             return View(sp);
         }
+
         [HttpPost]
         [ValidateAntiForgeryToken]
         public IActionResult SuaSanPham(SanPham model, int slHaNoi, int slDaNang, int slHCM)
@@ -250,13 +293,20 @@ namespace banthietbidientu.Controllers
             var sp = _context.SanPhams.Find(model.Id);
             if (sp != null)
             {
-                sp.Name = model.Name; sp.Price = model.Price; sp.Category = model.Category; sp.ImageUrl = model.ImageUrl;
+                sp.Name = model.Name;
+                sp.Price = model.Price;
+                sp.Category = model.Category;
+                sp.ImageUrl = model.ImageUrl;
+
+                // Cập nhật lại tổng và chuỗi mã hóa
                 sp.SoLuong = slHaNoi + slDaNang + slHCM;
                 sp.MoTa = $"Sản phẩm {model.Name} chính hãng.||LOC:{slHaNoi}-{slDaNang}-{slHCM}||";
+
                 _context.SaveChanges();
             }
             return RedirectToAction("QuanLySanPham");
         }
+
         [HttpPost]
         public IActionResult XoaSanPham(int id)
         {
@@ -297,9 +347,7 @@ namespace banthietbidientu.Controllers
             return RedirectToAction("QuanLyTaiKhoan");
         }
 
-        // --- 6. XUẤT EXCEL & IN HÓA ĐƠN (MỚI) ---
-
-        // Xuất báo cáo CSV chuẩn UTF-8
+        // --- 6. XUẤT EXCEL & IN HÓA ĐƠN ---
         [HttpGet]
         public IActionResult XuatExcelDonHang()
         {
@@ -323,7 +371,6 @@ namespace banthietbidientu.Controllers
                     _ => "Khác"
                 };
 
-                // Escape dấu ngoặc kép trong địa chỉ để không lỗi cột
                 string diaChiSafe = item.DiaChi?.Replace("\"", "\"\"") ?? "";
                 string ngayDatStr = item.NgayDat.HasValue ? item.NgayDat.Value.ToString("dd/MM/yyyy HH:mm") : "";
 
@@ -348,58 +395,34 @@ namespace banthietbidientu.Controllers
 
             if (order == null) return NotFound();
 
-            // --- CẤU HÌNH KHO HÀNG ---
             string shopAddress = "120 Xuân Thủy, Cầu Giấy, Hà Nội";
             string zoneCode = "HN-CG-01";
 
-            // Lấy địa chỉ và chuẩn hóa về chữ thường để dễ so sánh
             string addr = (order.DiaChi ?? "").ToLower();
+            string[] mienTrung = {
+                "đà nẵng", "thừa thiên huế", "huế", "quảng nam", "quảng ngãi", "bình định",
+                "phú yên", "khánh hòa", "quảng bình", "quảng trị", "nghệ an", "hà tĩnh", "thanh hóa",
+                "ninh thuận", "bình thuận", "kon tum", "gia lai", "đắk lắk", "đắc lắc", "đắk nông", "lâm đồng", "đà lạt",
+                "da nang", "hue", "quang nam", "quang ngai", "binh dinh", "phu yen", "khanh hoa",
+                "quang binh", "quang tri", "nghe an", "ha tinh", "thanh hoa",
+                "ninh thuan", "binh thuan", "kon tum", "gia lai", "dak lak", "dak nong", "lam dong", "da lat"
+            };
 
-            // --- BỘ TỪ KHÓA ĐỊA LÝ (Full 63 Tỉnh Thành + Không Dấu) ---
+            string[] mienNam = {
+                "hồ chí minh", "tp.hcm", "hcm", "sài gòn", "bình dương", "đồng nai", "bà rịa", "vũng tàu",
+                "long an", "tiền giang", "bến tre", "trà vinh", "vĩnh long", "đồng tháp", "an giang",
+                "kiên giang", "cần thơ", "hậu giang", "sóc trăng", "bạc liêu", "cà mau", "tây ninh", "bình phước",
+                "ho chi minh", "sai gon", "binh duong", "dong nai", "ba ria", "vung tau",
+                "long an", "tien giang", "ben tre", "tra vinh", "vinh long", "dong thap", "an giang",
+                "kien giang", "can tho", "hau giang", "soc trang", "bac lieu", "ca mau", "tay ninh", "binh phuoc"
+            };
 
-            // 1. KHO ĐÀ NẴNG (Miền Trung + Tây Nguyên)
-            string[] mienTrung = { 
-        // Có dấu
-        "đà nẵng", "thừa thiên huế", "huế", "quảng nam", "quảng ngãi", "bình định",
-        "phú yên", "khánh hòa", "quảng bình", "quảng trị", "nghệ an", "hà tĩnh", "thanh hóa",
-        "ninh thuận", "bình thuận", "kon tum", "gia lai", "đắk lắk", "đắc lắc", "đắk nông", "lâm đồng", "đà lạt",
-        // Không dấu
-        "da nang", "hue", "quang nam", "quang ngai", "binh dinh", "phu yen", "khanh hoa",
-        "quang binh", "quang tri", "nghe an", "ha tinh", "thanh hoa",
-        "ninh thuan", "binh thuan", "kon tum", "gia lai", "dak lak", "dak nong", "lam dong", "da lat"
-    };
-
-            // 2. KHO TP.HCM (Đông Nam Bộ + Miền Tây)
-            string[] mienNam = { 
-        // Có dấu
-        "hồ chí minh", "tp.hcm", "hcm", "sài gòn", "bình dương", "đồng nai", "bà rịa", "vũng tàu",
-        "long an", "tiền giang", "bến tre", "trà vinh", "vĩnh long", "đồng tháp", "an giang",
-        "kiên giang", "cần thơ", "hậu giang", "sóc trăng", "bạc liêu", "cà mau", "tây ninh", "bình phước",
-        // Không dấu
-        "ho chi minh", "sai gon", "binh duong", "dong nai", "ba ria", "vung tau",
-        "long an", "tien giang", "ben tre", "tra vinh", "vinh long", "dong thap", "an giang",
-        "kien giang", "can tho", "hau giang", "soc trang", "bac lieu", "ca mau", "tay ninh", "binh phuoc"
-    };
-
-            // --- LOGIC KIỂM TRA ---
-            // Ưu tiên check Miền Nam trước
-            if (mienNam.Any(k => addr.Contains(k)))
-            {
-                shopAddress = "55 Nguyễn Huệ, Quận 1, TP.HCM";
-                zoneCode = "SG-Q1-03";
-            }
-            // Sau đó check Miền Trung
-            else if (mienTrung.Any(k => addr.Contains(k)))
-            {
-                shopAddress = "78 Bạch Đằng, Hải Châu, Đà Nẵng";
-                zoneCode = "DN-HC-02";
-            }
-            // Mặc định còn lại là Miền Bắc (Kho Hà Nội)
+            if (mienNam.Any(k => addr.Contains(k))) { shopAddress = "55 Nguyễn Huệ, Quận 1, TP.HCM"; zoneCode = "SG-Q1-03"; }
+            else if (mienTrung.Any(k => addr.Contains(k))) { shopAddress = "78 Bạch Đằng, Hải Châu, Đà Nẵng"; zoneCode = "DN-HC-02"; }
 
             ViewBag.ShopAddress = shopAddress;
             ViewBag.ZoneCode = zoneCode;
 
-            // ... (Phần map ViewModel giữ nguyên như cũ)
             var model = new DonHangViewModel
             {
                 MaDon = order.MaDon,
@@ -423,13 +446,11 @@ namespace banthietbidientu.Controllers
         // --- 7. BÁO CÁO THỐNG KÊ ---
         public IActionResult BaoCao()
         {
-            // 1. Tính tổng quan
             var tongDoanhThu = _context.DonHangs.Where(d => d.TrangThai == 3).Sum(d => d.TongTien);
             var tongDonHang = _context.DonHangs.Count();
             var sanPhamSapHet = _context.SanPhams.Count(s => s.SoLuong < 5);
             var tongSanPhamDaBan = _context.ChiTietDonHangs.Where(ct => ct.DonHang.TrangThai == 3).Sum(ct => ct.SoLuong);
 
-            // 2. Dữ liệu biểu đồ doanh thu (7 ngày gần nhất)
             var labelsNgay = new List<string>();
             var valuesDoanhThu = new List<decimal>();
 
@@ -443,7 +464,6 @@ namespace banthietbidientu.Controllers
                 valuesDoanhThu.Add(revenue);
             }
 
-            // 3. Top 5 Sản phẩm bán chạy nhất
             var topProducts = _context.ChiTietDonHangs
                 .Where(ct => ct.DonHang.TrangThai == 3)
                 .GroupBy(ct => ct.SanPham.Name)
@@ -452,7 +472,6 @@ namespace banthietbidientu.Controllers
                 .Take(5)
                 .ToList();
 
-            // 4. Top 5 Khách hàng VIP (ĐÃ SỬA: Lấy thêm Role)
             var topUsers = _context.DonHangs
                 .Where(d => d.TrangThai == 3 && d.TaiKhoanId != null)
                 .GroupBy(d => d.TaiKhoan)
@@ -460,7 +479,7 @@ namespace banthietbidientu.Controllers
                 {
                     HoTen = g.Key.FullName ?? "Ẩn danh",
                     Email = g.Key.Email ?? "---",
-                    Role = g.Key.Role, // <--- Lấy Role để check Admin
+                    Role = g.Key.Role,
                     SoLanMua = g.Count(),
                     TongChiTieu = g.Sum(x => x.TongTien)
                 })
@@ -468,7 +487,6 @@ namespace banthietbidientu.Controllers
                 .Take(5)
                 .ToList();
 
-            // 5. Đóng gói
             var model = new BaoCaoViewModel
             {
                 TongDoanhThu = tongDoanhThu,
@@ -483,40 +501,6 @@ namespace banthietbidientu.Controllers
             };
 
             return View(model);
-        }
-
-        [HttpGet]
-        public IActionResult LichSuMuaHang(int userId)
-        {
-            var user = _context.TaiKhoans.Find(userId);
-            if (user == null) return NotFound("Không tìm thấy người dùng này.");
-
-            var listDonHang = _context.DonHangs
-                .Include(d => d.ChiTietDonHangs)
-                    .ThenInclude(ct => ct.SanPham)
-                .Where(d => d.TaiKhoanId == userId)
-                .OrderByDescending(d => d.NgayDat)
-                .Select(d => new HistoryViewModel
-                {
-                    MaDon = d.MaDon,
-                    NgayDat = d.NgayDat ?? DateTime.Now,
-
-                    TrangThai = d.TrangThai == 1 ? "Đã xác nhận" :
-                                d.TrangThai == 2 ? "Đang giao" :
-                                d.TrangThai == 3 ? "Hoàn thành" :
-                                d.TrangThai == -1 ? "Đã hủy" : "Chờ xử lý",
-
-                    TongTien = d.TongTien,
-                    PaymentMethod = "COD",
-                    SanPhams = d.ChiTietDonHangs.ToList()
-                })
-                .ToList();
-
-            ViewBag.TaiKhoan = user;
-            ViewBag.TongChiTieu = listDonHang.Where(d => d.TrangThai == "Hoàn thành").Sum(d => d.TongTien);
-            ViewBag.TongDon = listDonHang.Count;
-
-            return View(listDonHang);
         }
     }
 }
