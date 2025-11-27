@@ -1,76 +1,216 @@
-﻿@{
-    ViewData["Title"] = "Thêm tài khoản - Electronic Store";
+﻿@model banthietbidientu.Models.TaiKhoan
+
+@{
+    ViewData["Title"] = "Thêm tài khoản mới";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-@model banthietbidientu.Models.TaiKhoan
+<div class="container-fluid py-4">
 
-<h2>Thêm tài khoản</h2>
+    <!-- Breadcrumb điều hướng -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="QuanLyTaiKhoan" class="text-decoration-none">Quản lý tài khoản</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Thêm mới</li>
+        </ol>
+    </nav>
 
-@if (!ViewData.ModelState.IsValid)
-{
-    <div class="alert alert-danger">
-        <ul>
-            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-            {
-                <li>@error.ErrorMessage</li>
-            }
-        </ul>
-    </div>
-}
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-primary text-white py-3 rounded-top-4">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-person-plus-fill me-2"></i>Thêm Tài Khoản Mới</h5>
+                </div>
+                <div class="card-body p-4">
 
-<form asp-action="ThemTaiKhoan" method="post">
-    <div class="form-group">
-        <label asp-for="Username">Tên đăng nhập</label>
-        <input asp-for="Username" class="form-control" />
-        <span asp-validation-for="Username" class="text-danger"></span>
+                    @if (!ViewData.ModelState.IsValid)
+                    {
+                        <div class="alert alert-danger shadow-sm mb-4">
+                            <ul class="mb-0 ps-3 small">
+                                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
+                                {
+                                    <li>@error.ErrorMessage</li>
+                                }
+                            </ul>
+                        </div>
+                    }
+
+                    <form asp-action="ThemTaiKhoan" method="post" id="createAccountForm">
+
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3"><i class="bi bi-shield-lock me-1"></i> Thông tin đăng nhập</h6>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="Username" class="form-label fw-semibold">Tên đăng nhập <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-person"></i></span>
+                                    <input asp-for="Username" class="form-control border-start-0" placeholder="VD: nguyenvan_a" required />
+                                </div>
+                                <span asp-validation-for="Username" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Password" class="form-label fw-semibold">Mật khẩu <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-key"></i></span>
+                                    <input asp-for="Password" type="password" class="form-control border-start-0" placeholder="••••••••" required />
+                                </div>
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Role" class="form-label fw-semibold">Vai trò</label>
+                                <select asp-for="Role" class="form-select bg-light">
+                                    <option value="User">Khách hàng (User)</option>
+                                    <option value="Admin">Quản trị viên (Admin)</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label fw-semibold">Email <span class="text-danger">*</span></label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope"></i></span>
+                                    <input asp-for="Email" type="email" class="form-control border-start-0" placeholder="name@example.com" required />
+                                </div>
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <hr class="text-muted opacity-25">
+
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3 mt-4"><i class="bi bi-person-lines-fill me-1"></i> Thông tin cá nhân</h6>
+
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label asp-for="FullName" class="form-label fw-semibold">Họ và tên <span class="text-danger">*</span></label>
+                                <input asp-for="FullName" class="form-control" placeholder="Nhập họ tên đầy đủ" required />
+                                <span asp-validation-for="FullName" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="DateOfBirth" class="form-label fw-semibold">Ngày sinh</label>
+                                <input asp-for="DateOfBirth" type="date" class="form-control" required />
+                                <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Gender" class="form-label fw-semibold">Giới tính</label>
+                                <select asp-for="Gender" class="form-select">
+                                    <option value="Male">Nam</option>
+                                    <option value="Female">Nữ</option>
+                                    <option value="Other">Khác</option>
+                                </select>
+                            </div>
+
+                            <!-- PHẦN ĐỊA CHỈ ĐỒNG BỘ -->
+                            <div class="col-12">
+                                <label class="form-label fw-semibold">Địa chỉ liên hệ</label>
+                                <div class="card bg-light border-0 p-3 rounded-3">
+                                    <div class="row g-2 mb-2">
+                                        <div class="col-md-4">
+                                            <select class="form-select" id="province" required>
+                                                <option value="">Chọn Tỉnh/TP</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-select" id="district" disabled required>
+                                                <option value="">Chọn Quận/Huyện</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-select" id="ward" disabled required>
+                                                <option value="">Chọn Phường/Xã</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <input type="text" class="form-control" id="specificAddress" placeholder="Số nhà, tên đường cụ thể..." required>
+
+                                    <!-- Input ẩn lưu chuỗi địa chỉ cuối cùng -->
+                                    <input type="hidden" asp-for="Address" id="fullAddressInput" />
+                                </div>
+                                <span asp-validation-for="Address" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-5">
+                            <a asp-action="QuanLyTaiKhoan" class="btn btn-light border px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">
+                                <i class="bi bi-check-lg me-2"></i> Tạo tài khoản
+                            </button>
+                        </div>
+
+                        @Html.AntiForgeryToken()
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="form-group">
-        <label asp-for="Password">Mật khẩu</label>
-        <input asp-for="Password" type="password" class="form-control" />
-        <span asp-validation-for="Password" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="FullName">Họ và tên</label>
-        <input asp-for="FullName" class="form-control" />
-        <span asp-validation-for="FullName" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="DateOfBirth">Ngày sinh</label>
-        <input asp-for="DateOfBirth" type="date" class="form-control" />
-        <span asp-validation-for="DateOfBirth" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Address">Địa chỉ</label>
-        <input asp-for="Address" class="form-control" />
-        <span asp-validation-for="Address" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Gender">Giới tính</label>
-        <select asp-for="Gender" class="form-control">
-            <option value="Male">Nam</option>
-            <option value="Female">Nữ</option>
-            <option value="Other">Khác</option>
-        </select>
-        <span asp-validation-for="Gender" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Email">Email</label>
-        <input asp-for="Email" type="email" class="form-control" />
-        <span asp-validation-for="Email" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Role">Vai trò</label>
-        <select asp-for="Role" class="form-control">
-            <option value="User">Người dùng</option>
-            <option value="Admin">Admin</option>
-        </select>
-        <span asp-validation-for="Role" class="text-danger"></span>
-    </div>
-    <button type="submit" class="btn btn-success">Thêm</button>
-    <a asp-action="QuanLyTaiKhoan" asp-controller="Admin" class="btn btn-secondary">Hủy</a>
-    @Html.AntiForgeryToken()
-</form>
+</div>
 
 @section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // --- LOGIC API ĐỊA CHỈ ---
+        const host = "https://provinces.open-api.vn/api/";
+
+        var callAPI = (api) => {
+            return $.ajax({ url: api, method: 'GET' });
+        }
+
+        // 1. Load Tỉnh/TP
+        callAPI(host + "?depth=1").done((data) => {
+            renderData(data, "province");
+        });
+
+        // 2. Chọn Tỉnh -> Load Huyện
+        $("#province").change(() => {
+            let code = $("#province").val();
+            $("#district").html('<option value="">Chọn Quận/Huyện</option>').prop("disabled", true);
+            $("#ward").html('<option value="">Chọn Phường/Xã</option>').prop("disabled", true);
+
+            if(code) {
+                callAPI(host + "p/" + code + "?depth=2").done((data) => {
+                    renderData(data.districts, "district");
+                    $("#district").prop("disabled", false);
+                });
+            }
+        });
+
+        // 3. Chọn Huyện -> Load Xã
+        $("#district").change(() => {
+            let code = $("#district").val();
+            $("#ward").html('<option value="">Chọn Phường/Xã</option>').prop("disabled", true);
+
+            if(code) {
+                callAPI(host + "d/" + code + "?depth=2").done((data) => {
+                    renderData(data.wards, "ward");
+                    $("#ward").prop("disabled", false);
+                });
+            }
+        });
+
+        var renderData = (array, select) => {
+            let row = ' <option value="">Chọn ' + (select == "province" ? "Tỉnh/TP" : (select == "district" ? "Quận/Huyện" : "Phường/Xã")) + '</option>';
+            array.forEach(element => {
+                row += `<option value="${element.code}" data-name="${element.name}">${element.name}</option>`;
+            });
+            document.querySelector("#" + select).innerHTML = row;
+        }
+
+        // 4. GỘP ĐỊA CHỈ TRƯỚC KHI SUBMIT
+        $("#createAccountForm").submit(function() {
+            let province = $("#province option:selected").data("name");
+            let district = $("#district option:selected").data("name");
+            let ward = $("#ward option:selected").data("name");
+            let specific = $("#specificAddress").val();
+
+            if (province && district && ward && specific) {
+                // Tạo chuỗi địa chỉ đầy đủ: "Số 1, Phường A, Quận B, TP C"
+                let fullAddress = `${specific}, ${ward}, ${district}, ${province}`;
+                $("#fullAddressInput").val(fullAddress);
+            }
+        });
+    </script>
+
     <partial name="_ValidationScriptsPartial" />
 }
