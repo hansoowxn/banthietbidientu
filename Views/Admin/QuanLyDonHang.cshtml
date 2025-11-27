@@ -10,13 +10,11 @@
 }
 
 <style>
-    /* Hiệu ứng hover cho dòng bảng */
     .table-hover tbody tr:hover {
         background-color: #f8f9fa;
         transition: background-color 0.2s;
     }
 
-    /* Custom Select - Dropdown trạng thái đẹp mắt */
     .status-select {
         border-radius: 50px;
         font-weight: 600;
@@ -33,14 +31,44 @@
         min-width: 160px;
     }
 
-    /* Định nghĩa màu sắc cho từng trạng thái */
-    .stt-cho-xu-ly { background-color: #fff3cd; color: #856404; border-color: #ffeeba; }
-    .stt-da-xac-nhan { background-color: #cff4fc; color: #055160; border-color: #b6effb; }
-    .stt-dang-giao { background-color: #cfe2ff; color: #084298; border-color: #b6d4fe; }
-    .stt-hoan-thanh { background-color: #d1e7dd; color: #0f5132; border-color: #badbcc; }
-    .stt-da-huy { background-color: #f8d7da; color: #842029; border-color: #f5c2c7; }
+        /* Style cho trạng thái bị khóa */
+        .status-select:disabled {
+            opacity: 0.8;
+            cursor: not-allowed;
+            background-image: none; /* Ẩn mũi tên */
+            border: 1px solid #dee2e6;
+        }
 
-    /* Hiệu ứng khi đang lưu (Loading) */
+    .stt-cho-xu-ly {
+        background-color: #fff3cd;
+        color: #856404;
+        border-color: #ffeeba;
+    }
+
+    .stt-da-xac-nhan {
+        background-color: #cff4fc;
+        color: #055160;
+        border-color: #b6effb;
+    }
+
+    .stt-dang-giao {
+        background-color: #cfe2ff;
+        color: #084298;
+        border-color: #b6d4fe;
+    }
+
+    .stt-hoan-thanh {
+        background-color: #d1e7dd;
+        color: #0f5132;
+        border-color: #badbcc;
+    }
+
+    .stt-da-huy {
+        background-color: #f8d7da;
+        color: #842029;
+        border-color: #f5c2c7;
+    }
+
     .updating {
         opacity: 0.6;
         pointer-events: none;
@@ -57,7 +85,7 @@
                 <i class="bi bi-receipt-cutoff text-primary me-2"></i>Quản Lý Đơn Hàng
             </h4>
             <p class="text-muted small mb-0">
-                Hệ thống tự động lưu trạng thái khi thay đổi.
+                Các đơn hàng "Hoàn thành" hoặc "Đã hủy" sẽ bị khóa trạng thái.
             </p>
         </div>
 
@@ -84,17 +112,18 @@
                     {
                         foreach (var item in Model)
                         {
-                            // Serialize dữ liệu để xem chi tiết trong Modal
                             string jsonProducts = JsonConvert.SerializeObject(item.SanPhams);
-
-                            // Xác định class màu sắc ban đầu
                             string currentStatus = item.TrangThai ?? "Chờ xử lý";
-                            string sttClass = "stt-cho-xu-ly"; // Mặc định
 
+                            // Xác định màu sắc
+                            string sttClass = "stt-cho-xu-ly";
                             if (currentStatus == "Đã xác nhận") sttClass = "stt-da-xac-nhan";
                             else if (currentStatus == "Đang giao") sttClass = "stt-dang-giao";
                             else if (currentStatus == "Hoàn thành") sttClass = "stt-hoan-thanh";
                             else if (currentStatus == "Đã hủy") sttClass = "stt-da-huy";
+
+                            // --- LOGIC MỚI: Khóa nếu là trạng thái cuối ---
+                            bool isLocked = (currentStatus == "Hoàn thành" || currentStatus == "Đã hủy");
 
                             <tr>
                                 <td class="ps-4 fw-bold text-primary">#@item.MaDon</td>
@@ -115,7 +144,10 @@
 
                                 <td class="text-center">
                                     <select class="form-select form-select-sm status-select @sttClass shadow-none"
-                                            onchange="updateStatus(this, '@item.MaDon')">
+                                            onchange="updateStatus(this, '@item.MaDon')"
+                                    @(isLocked ? "disabled" : "")>
+                                        <!-- Thêm thuộc tính disabled -->
+
                                         <option value="Chờ xử lý" selected="@(currentStatus == "Chờ xử lý")">⏳ Chờ xử lý</option>
                                         <option value="Đã xác nhận" selected="@(currentStatus == "Đã xác nhận")">☑️ Đã xác nhận</option>
                                         <option value="Đang giao" selected="@(currentStatus == "Đang giao")">🚚 Đang giao</option>
@@ -132,14 +164,14 @@
                                             <i class="bi bi-eye-fill"></i>
                                         </button>
 
+                                        <!-- Nút In hóa đơn -->
                                         <a href="@Url.Action("InHoaDon", "Admin", new { orderId = item.MaDon })"
                                            target="_blank"
                                            class="btn btn-sm btn-outline-dark rounded-circle border-0 bg-light"
                                            title="In hóa đơn">
                                             <i class="bi bi-printer-fill"></i>
                                         </a>
-                                        
-                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         }
@@ -167,14 +199,12 @@
                                 <i class="bi bi-chevron-left"></i>
                             </a>
                         </li>
-
                         @for (int i = 1; i <= totalPages; i++)
                         {
                             <li class="page-item @(currentPage == i ? "active" : "")">
                                 <a class="page-link border-0 rounded-circle mx-1" href="@Url.Action("QuanLyDonHang", new { page = i })">@i</a>
                             </li>
                         }
-
                         <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
                             <a class="page-link border-0 rounded-circle mx-1" href="@Url.Action("QuanLyDonHang", new { page = currentPage + 1 })">
                                 <i class="bi bi-chevron-right"></i>
@@ -198,6 +228,7 @@
     </div>
 </div>
 
+<!-- Modal Chi Tiết -->
 <div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered modal-lg">
         <div class="modal-content border-0 shadow rounded-4">
@@ -229,42 +260,38 @@
 </div>
 
 <script>
-    // --- 1. HÀM XỬ LÝ AUTO-SAVE TRẠNG THÁI ---
     async function updateStatus(selectElement, orderId) {
         const newStatus = selectElement.value;
-        
-        // Cảnh báo nếu chọn Hủy đơn
+
         if(newStatus === 'Đã hủy') {
-            if(!confirm("Cảnh báo: Bạn có chắc chắn muốn HỦY đơn hàng này không? Hành động này không thể hoàn tác.")) {
-                // Nếu chọn Cancel thì load lại trang để reset dropdown về cũ
-                location.reload();
-                return;
+            if(!confirm("Cảnh báo: Hủy đơn hàng sẽ dừng mọi quy trình xử lý. Bạn có chắc chắn không?")) {
+                location.reload(); return;
             }
         }
 
-        // Thêm hiệu ứng loading
         selectElement.classList.add("updating");
 
         try {
             const formData = new FormData();
-            formData.append('orderId', orderId); // Controller nhận string orderId (MaDon)
+            formData.append('orderId', orderId);
             formData.append('status', newStatus);
 
-            // Gọi API
             const response = await fetch('/Admin/CapNhatTrangThai', {
                 method: 'POST',
                 body: formData
             });
 
             if (!response.ok) throw new Error("Lỗi kết nối máy chủ");
-
             const data = await response.json();
 
             if (data.success) {
-                // 1. Đổi màu Dropdown
                 updateDropdownColor(selectElement, newStatus);
-                // 2. Hiện thông báo
-                showToast(data.message || "Cập nhật trạng thái thành công!");
+                showToast("Cập nhật trạng thái thành công!");
+
+                // --- LOGIC MỚI: Khóa ngay lập tức nếu chọn Hủy hoặc Hoàn thành ---
+                if (newStatus === 'Đã hủy' || newStatus === 'Hoàn thành') {
+                    selectElement.disabled = true;
+                }
             } else {
                 alert("Lỗi: " + data.message);
                 location.reload();
@@ -279,10 +306,8 @@
         }
     }
 
-    // Hàm phụ: Đổi màu class CSS
     function updateDropdownColor(el, status) {
         el.classList.remove('stt-cho-xu-ly', 'stt-da-xac-nhan', 'stt-dang-giao', 'stt-hoan-thanh', 'stt-da-huy');
-
         if (status === 'Chờ xử lý') el.classList.add('stt-cho-xu-ly');
         else if (status === 'Đã xác nhận') el.classList.add('stt-da-xac-nhan');
         else if (status === 'Đang giao') el.classList.add('stt-dang-giao');
@@ -290,7 +315,6 @@
         else if (status === 'Đã hủy') el.classList.add('stt-da-huy');
     }
 
-    // --- 2. HÀM HIỆN THÔNG BÁO (TOAST) ---
     function showToast(message) {
         const toastEl = document.getElementById('liveToast');
         if (toastEl) {
@@ -300,7 +324,6 @@
         }
     }
 
-    // --- 3. HÀM HIỆN CHI TIẾT ĐƠN HÀNG (MODAL) ---
     function showOrderDetails(products, title) {
         document.getElementById('modalTitle').innerText = "Chi tiết đơn hàng " + title;
         let html = '';
@@ -310,11 +333,7 @@
             products.forEach(p => {
                 let sum = (p.Gia || 0) * (p.SoLuong || 0);
                 total += sum;
-
-                // Xử lý ảnh (nếu null hoặc sai đường dẫn)
                 let imgUrl = p.HinhAnh || '/image/logo.png';
-                
-                // Logic hiển thị giá
                 let giaStr = (p.Gia || 0).toLocaleString('vi-VN');
                 let sumStr = sum.toLocaleString('vi-VN');
 
@@ -336,8 +355,6 @@
                     </tr>
                 `;
             });
-
-            // Dòng Tổng cộng
             html += `
                 <tr class="bg-light fw-bold text-dark">
                     <td colspan="3" class="text-end text-uppercase small pe-3">Tổng cộng:</td>
