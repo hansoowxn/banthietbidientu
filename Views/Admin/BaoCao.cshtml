@@ -210,12 +210,20 @@
                     }]
                 },
                 options: {
-                    indexAxis: 'y',
+                    indexAxis: 'y', // Biểu đồ ngang
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: {
-                        x: { grid: { display: false } },
-                        y: { grid: { display: false } }
+                        x: { // Trục ngang là giá trị số lượng
+                            grid: { display: false },
+                            ticks: {
+                                stepSize: 1, // Bắt buộc bước nhảy là 1 (không hiện 0.5)
+                                precision: 0 // Không hiển thị số thập phân
+                            }
+                        },
+                        y: {
+                            grid: { display: false }
+                        }
                     }
                 }
             });
