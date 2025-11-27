@@ -20,7 +20,7 @@ namespace banthietbidientu.Models
 
         [Required(ErrorMessage = "Email là bắt buộc")]
         [EmailAddress(ErrorMessage = "Định dạng email không hợp lệ")]
-        [StringLength(100, ErrorMessage = "Email không được vượt quá 100 ký tự")]
+        [StringLength(100, ErrorMessage = "Email không được vượt quá 1000 ký tự")]
         public string Email { get; set; }
     }
 }
