@@ -1,0 +1,326 @@
+﻿<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Quản trị hệ thống</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/admin-dark.css" asp-append-version="true" />
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f6f9;
+            overflow-x: hidden;
+        }
+
+        .wrapper {
+            display: flex;
+            width: 100%;
+            align-items: stretch;
+        }
+
+        #sidebar {
+            min-width: 260px;
+            max-width: 260px;
+            background: #ffffff;
+            color: #333;
+            border-right: 1px solid #eef2f6;
+            min-height: 100vh;
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+            #sidebar .sidebar-header {
+                padding: 20px 25px;
+                background: #ffffff;
+                border-bottom: 1px solid #eef2f6;
+                display: flex;
+                align-items: center;
+            }
+
+            #sidebar ul.components {
+                padding: 15px 10px;
+            }
+
+            #sidebar ul li {
+                margin-bottom: 5px;
+            }
+
+                #sidebar ul li a {
+                    padding: 12px 15px;
+                    font-size: 0.95rem;
+                    display: flex;
+                    align-items: center;
+                    color: #6c757d;
+                    text-decoration: none;
+                    border-radius: 8px;
+                    transition: all 0.2s;
+                    font-weight: 500;
+                }
+
+                    #sidebar ul li a:hover {
+                        color: #0d6efd;
+                        background: #f0f7ff;
+                    }
+
+                    #sidebar ul li a.active {
+                        color: #ffffff;
+                        background: #0d6efd;
+                        box-shadow: 0 4px 12px rgba(13, 110, 253, 0.2);
+                    }
+
+                    #sidebar ul li a i {
+                        margin-right: 12px;
+                        font-size: 1.1rem;
+                    }
+
+        #content {
+            width: 100%;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .admin-navbar {
+            padding: 12px 30px;
+            background: #ffffff;
+            border-bottom: 1px solid #eef2f6;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+
+        .main-body {
+            padding: 30px;
+            flex-grow: 1;
+        }
+
+        .card {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.02);
+            transition: transform 0.2s;
+        }
+
+        .dropdown-menu {
+            border: none;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-radius: 10px;
+        }
+
+        @@media (max-width: 768px) {
+            #sidebar
+
+        {
+            margin-left: -260px;
+            position: fixed;
+            height: 100%;
+        }
+
+        #sidebar.active {
+            margin-left: 0;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 998;
+            opacity: 0;
+            transition: all 0.5s ease-in-out;
+        }
+
+            .overlay.active {
+                display: block;
+                opacity: 1;
+            }
+
+        }
+    </style>
+</head>
+<body>
+
+    <div class="wrapper">
+        <nav id="sidebar">
+            <div class="sidebar-header">
+                <img src="~/image/logo.png" alt="Logo" style="height: 35px; margin-right: 10px;">
+                <h5 class="fw-bold mb-0 text-primary" style="letter-spacing: 1px;">ADMIN</h5>
+            </div>
+
+            <ul class="list-unstyled components">
+                @{
+                    string currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
+                    string currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
+                }
+
+                <li><a href="@Url.Action("NhapHang", "Admin")" class="@(currentAction == "NhapHang" ? "active" : "")"><i class="bi bi-box-arrow-in-down text-success"></i> Nhập hàng</a></li>
+                <li><a href="@Url.Action("QuanLyNhapHang", "Admin")" class="@(currentAction == "QuanLyNhapHang" ? "active" : "")"><i class="bi bi-journal-text"></i> Lịch sử nhập</a></li>
+                <li><a href="@Url.Action("Index", "Admin")" class="@(currentAction == "Index" ? "active" : "")"><i class="bi bi-grid-fill"></i> Tổng quan</a></li>
+                <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Quản lý</li>
+                <li><a href="@Url.Action("QuanLySanPham", "Admin")" class="@(currentAction == "QuanLySanPham" || currentAction == "ThemSanPham" || currentAction == "SuaSanPham" ? "active" : "")"><i class="bi bi-box-seam-fill"></i> Kho hàng</a></li>
+                <li><a href="@Url.Action("QuanLyDonHang", "Admin")" class="@(currentAction == "QuanLyDonHang" ? "active" : "")"><i class="bi bi-receipt"></i> Đơn hàng</a></li>
+                <li><a href="@Url.Action("QuanLyTaiKhoan", "Admin")" class="@(currentAction == "QuanLyTaiKhoan" || currentAction == "ThemTaiKhoan" ? "active" : "")"><i class="bi bi-people-fill"></i> Tài khoản</a></li>
+                <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Thống kê</li>
+                <li><a href="@Url.Action("BaoCao", "Admin")" class="@(currentAction == "BaoCao" ? "active" : "")"><i class="bi bi-bar-chart-line-fill"></i> Báo cáo doanh thu</a></li>
+            </ul>
+        </nav>
+
+        <div id="content">
+            <nav class="admin-navbar">
+                <button type="button" id="sidebarCollapse" class="btn btn-light border-0 d-md-none">
+                    <i class="bi bi-list fs-4"></i>
+                </button>
+
+                <div class="d-flex align-items-center ms-auto gap-3">
+
+                    <div class="dropdown">
+                        <a href="#" class="text-secondary position-relative" id="bellDropdown" data-bs-toggle="dropdown" aria-expanded="false" onclick="danhDauDaDoc()">
+                            <i class="bi bi-bell fs-5"></i>
+                            <span id="notif-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger d-none" style="font-size: 0.6rem;">
+                                0
+                            </span>
+                        </a>
+
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="bellDropdown" style="width: 320px; max-height: 400px; overflow-y: auto;">
+                            <li class="dropdown-header fw-bold border-bottom bg-light text-dark">Thông báo mới</li>
+                            <div id="notif-list">
+                            <li class="text-center p-3 text-muted small">Đang tải...</li>
+                    </div>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-center small text-primary fw-bold" href="@Url.Action("QuanLyDonHang", "Admin")">Xem tất cả đơn hàng</a></li>
+                    </ul>
+                </div>
+
+                <div class="border-start h-50 mx-2"></div>
+
+                <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-dark" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">A</div>
+                        <div><span class="fw-bold d-block small">Admin</span><span class="text-muted d-block" style="font-size: 11px;">Quản trị viên</span></div>
+                    </a>
+
+                    <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownUser1">
+                        <li><a class="dropdown-item" href="/"><i class="bi bi-shop me-2 text-secondary"></i> Xem trang chủ</a></li>
+
+                        <li><a class="dropdown-item" asp-controller="Login" asp-action="Profile"><i class="bi bi-person me-2 text-secondary"></i> Thông tin cá nhân</a></li>
+
+                        <li><a class="dropdown-item" asp-controller="Login" asp-action="LichSuMuaHang"><i class="bi bi-clock-history me-2 text-secondary"></i> Lịch sử đơn hàng</a></li>
+
+                        <li><hr class="dropdown-divider"></li>
+
+                        <li>
+                            <form asp-controller="Login" asp-action="Logout" method="post" class="m-0">
+                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i> Đăng xuất</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+        </div>
+        </nav>
+
+        <div class="main-body">
+                @RenderBody()
+        </div>
+    </div>
+    </div>
+
+    <div class="overlay"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarCollapse = document.getElementById('sidebarCollapse');
+            const overlay = document.querySelector('.overlay');
+
+            function toggleSidebar() {
+                sidebar.classList.toggle('active');
+                overlay.classList.toggle('active');
+            }
+
+            if (sidebarCollapse) sidebarCollapse.addEventListener('click', toggleSidebar);
+            if (overlay) overlay.addEventListener('click', toggleSidebar);
+
+            loadThongBao();
+            setInterval(loadThongBao, 10000);
+        });
+
+                function loadThongBao() {
+            fetch('/Admin/GetThongBao')
+                .then(response => response.json())
+                .then(res => {
+                    if (res.success) {
+                        const badge = document.getElementById('notif-badge');
+                        if (res.unread > 0) {
+                            badge.innerText = res.unread;
+                            badge.classList.remove('d-none');
+                        } else {
+                            badge.classList.add('d-none');
+                        }
+
+                        const listContainer = document.getElementById('notif-list');
+                        listContainer.innerHTML = '';
+
+                        if (res.data.length === 0) {
+                            listContainer.innerHTML = '<li class="dropdown-item text-center text-muted py-3 small">Không có thông báo mới</li>';
+                        } else {
+                            res.data.forEach(item => {
+                                // --- SỬA LỖI INVALID DATE TẠI ĐÂY ---
+                                // Chuyển đổi chuỗi ISO thành đối tượng Date
+                                const d = new Date(item.ngayTao);
+
+                                // Format thủ công thành: HH:mm dd/MM/yyyy
+                                const timeStr = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
+                                const dateStr = d.getDate().toString().padStart(2, '0') + "/" + (d.getMonth() + 1).toString().padStart(2, '0') + "/" + d.getFullYear();
+                                const finalDate = `${timeStr} ${dateStr}`;
+                                // ------------------------------------
+
+                                let icon = item.loaiThongBao == 0
+                                    ? '<div class="bg-light-success text-success rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-cart-check-fill"></i></div>'
+                                    : (item.loaiThongBao == 2
+                                        ? '<div class="bg-light-warning text-warning rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-recycle"></i></div>'
+                                        : '<div class="bg-light-info text-info rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-info-circle-fill"></i></div>');
+
+                                let bgClass = item.daDoc ? '' : 'bg-light';
+
+                                let html = `
+                                    <li>
+                                        <a class="dropdown-item d-flex align-items-start p-2 border-bottom ${bgClass}" href="/Admin/QuanLyDonHang">
+                                            ${icon}
+                                            <div>
+                                                <div class="small fw-bold text-wrap mb-1" style="line-height: 1.3;">
+                                                    ${item.tieuDe ? item.tieuDe : 'Thông báo'}: ${item.noiDung}
+                                                </div>
+                                                <div class="text-muted fst-italic" style="font-size: 10px;">${finalDate}</div>
+                                            </div>
+                                        </a>
+                                    </li>
+                                `;
+                                listContainer.insertAdjacentHTML('beforeend', html);
+                            });
+                        }
+                    }
+                })
+                .catch(err => console.log("Lỗi API thông báo:", err));
+        }
+
+        function danhDauDaDoc() {
+            fetch('/Admin/MarkAsRead', { method: 'POST' });
+            document.getElementById('notif-badge').classList.add('d-none');
+        }
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

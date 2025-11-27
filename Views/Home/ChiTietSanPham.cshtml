@@ -1,0 +1,268 @@
+﻿@model banthietbidientu.Models.SanPham
+
+@{
+    ViewData["Title"] = Model.Name;
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // --- 1. XỬ LÝ ẢNH ---
+    // Ưu tiên ảnh trong DB, nếu lỗi hoặc null thì dùng logo
+    string finalImg = Model.ImageUrl;
+    if (string.IsNullOrWhiteSpace(finalImg))
+    {
+        finalImg = "/image/logo.png";
+    }
+
+    // --- 2. DỮ LIỆU GIẢ LẬP (Rating, Sold) ---
+    var random = new Random(Model.Id);
+    double rating = 3.5 + (random.NextDouble() * 1.5);
+    int sold = random.Next(50, 5000);
+
+    // --- 3. THÔNG SỐ KỸ THUẬT GIẢ LẬP THEO DANH MỤC ---
+    string cpu = "Snapdragon 8 Gen 2";
+    string ram = "8GB";
+    string screen = "6.1 inch OLED";
+    string pin = "4500 mAh";
+    string origin = "Việt Nam";
+
+    if (Model.Category != null)
+    {
+        if (Model.Category.Contains("Laptop")) { cpu = "Intel Core i7 13th Gen"; ram = "16GB DDR5"; screen = "15.6 inch FHD IPS"; pin = "3 Cell 50Wh"; }
+        else if (Model.Category.Contains("Tablet")) { cpu = "Apple M2 / Snapdragon"; ram = "8GB"; screen = "11 inch Liquid Retina"; pin = "7000 mAh"; }
+        else if (Model.Category.Contains("Watch") || Model.Category.Contains("Đồng hồ")) { cpu = "S9 SiP"; ram = "1GB"; screen = "1.9 inch OLED"; pin = "18 giờ"; }
+    }
+}
+
+<style>
+    .product-title {
+        text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    }
+
+    .price-tag {
+        color: #d70018;
+    }
+
+    .spec-table th {
+        background-color: #f8f9fa;
+        color: #495057;
+        font-weight: 600;
+        width: 35%;
+    }
+
+    .btn-back:hover {
+        transform: translateX(-5px);
+        transition: transform 0.3s;
+    }
+
+    .hero-img-container {
+        background: radial-gradient(circle, #ffffff 0%, #f1f3f5 100%);
+    }
+</style>
+
+<div class="container py-5">
+
+    <div class="mb-4">
+        <a href="/" class="btn btn-link text-decoration-none text-muted fw-bold btn-back p-0">
+            <i class="bi bi-arrow-left me-2"></i>Quay lại trang chủ
+        </a>
+    </div>
+
+    <div class="card border-0 shadow rounded-4 overflow-hidden">
+        <div class="card-body p-0">
+            <div class="row g-0">
+
+                <div class="col-lg-5 hero-img-container d-flex align-items-center justify-content-center p-5 position-relative">
+                    <img src="@finalImg"
+                         class="img-fluid shadow rounded-3"
+                         style="max-height: 450px; object-fit: contain; mix-blend-mode: multiply;"
+                         alt="@Model.Name"
+                         onerror="this.src='/image/logo.png'">
+
+                    @if (Model.SoLuong < 1)
+                    {
+                        <div class="position-absolute top-50 start-50 translate-middle">
+                            <span class="badge bg-danger fs-5 px-4 py-3 rounded-pill shadow border border-white border-2">
+                                <i class="bi bi-x-circle me-2"></i>HẾT HÀNG
+                            </span>
+                        </div>
+                    }
+                </div>
+
+                <div class="col-lg-7 p-4 p-lg-5 bg-white">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb small text-uppercase fw-bold text-muted mb-2">
+                            <li class="breadcrumb-item">@Model.Category</li>
+                            <li class="breadcrumb-item active text-primary">Mã SP: #@Model.Id</li>
+                        </ol>
+                    </nav>
+
+                    <h1 class="display-5 fw-bolder text-dark mb-3 product-title">@Model.Name</h1>
+
+                    <div class="d-flex align-items-center mb-4">
+                        <div class="text-warning me-2">
+                            @for (int i = 1; i <= 5; i++)
+                            {
+                                if (i <= Math.Floor(rating))
+                                {
+                                    <i class="bi bi-star-fill"></i>
+                                }
+                                else if (i == Math.Ceiling(rating))
+                                {
+                                    <i class="bi bi-star-half"></i>
+                                }
+                                else
+                                {
+                                    <i class="bi bi-star"></i>
+                                }
+                            }
+                        </div>
+                        <span class="fw-bold text-dark me-3">@rating.ToString("0.0")</span>
+                        <span class="text-muted border-start ps-3">Đã bán: <strong>@sold.ToString("#,##0")</strong></span>
+
+                        @if (Model.SoLuong > 0)
+                        {
+                            <span class="badge bg-success bg-opacity-10 text-success ms-3 rounded-pill px-3">
+                                <i class="bi bi-check-circle me-1"></i> Còn hàng (@Model.SoLuong)
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary bg-opacity-10 text-secondary ms-3 rounded-pill px-3">
+                                <i class="bi bi-emoji-frown me-1"></i> Hết hàng
+                            </span>
+                        }
+                    </div>
+
+                    <div class="mb-4 p-3 bg-light rounded-3 d-inline-block">
+                        <span class="text-muted small d-block mb-1">Giá bán ưu đãi:</span>
+                        <span id="displayPrice" class="display-6 fw-bold price-tag" data-base-price="@Model.Price">
+                            @Model.Price.ToString("#,##0") đ
+                        </span>
+                    </div>
+
+                    <p class="text-muted mb-4">
+                        @Model.Name là sản phẩm nổi bật với thiết kế hiện đại, cấu hình mạnh mẽ (@cpu, Ram @ram) và thời lượng pin ấn tượng (@pin).
+                        Sản phẩm được phân phối chính hãng tại hệ thống SmartTech trên toàn quốc (Hà Nội, Đà Nẵng, TP.HCM).
+                    </p>
+
+                    <div class="row g-2 mb-4">
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center p-2 border rounded bg-white shadow-sm h-100">
+                                <i class="bi bi-truck fs-3 text-primary me-3 ms-2"></i>
+                                <div class="small lh-sm">
+                                    <strong>Giao hàng toàn quốc</strong><br>
+                                    <span class="text-muted">Từ kho gần bạn nhất</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="d-flex align-items-center p-2 border rounded bg-white shadow-sm h-100">
+                                <i class="bi bi-shield-check fs-3 text-success me-3 ms-2"></i>
+                                <div class="small lh-sm">
+                                    <strong>Bảo hành 12 tháng</strong><br>
+                                    <span class="text-muted">Chính hãng SmartTech</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="text-muted opacity-25 mb-4">
+
+                    @if (Model.SoLuong > 0)
+                    {
+                        <form asp-controller="GioHang" asp-action="Add" method="post">
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <input type="hidden" name="returnUrl" value="@Context.Request.Path" />
+
+                            <div class="row align-items-end g-3">
+                                <div class="col-sm-4">
+                                    <label class="fw-bold mb-2">Số lượng:</label>
+                                    <div class="input-group">
+                                        <button class="btn btn-outline-secondary" type="button" onclick="updateQty(-1)"><i class="bi bi-dash"></i></button>
+                                        <input type="number" class="form-control text-center fw-bold" name="quantity" id="qtyInput" value="1" min="1" max="@Model.SoLuong" readonly>
+                                        <button class="btn btn-outline-secondary" type="button" onclick="updateQty(1)"><i class="bi bi-plus"></i></button>
+                                    </div>
+                                </div>
+                                <div class="col-sm-8">
+                                    <button type="submit" class="btn btn-primary btn-lg w-100 py-2 shadow fw-bold rounded-3 text-uppercase">
+                                        <i class="bi bi-cart-plus me-2"></i> Thêm vào giỏ ngay
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    }
+                    else
+                    {
+                        <button class="btn btn-secondary btn-lg w-100 disabled rounded-3">
+                            <i class="bi bi-bell-slash me-2"></i> Tạm thời hết hàng
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-5">
+        <div class="col-lg-8 mx-auto">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-white border-bottom pt-4 px-4">
+                    <ul class="nav nav-pills card-header-pills" id="myTab" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active fw-bold rounded-pill px-4" id="desc-tab" data-bs-toggle="tab" data-bs-target="#desc">Mô tả sản phẩm</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link fw-bold rounded-pill px-4" id="spec-tab" data-bs-toggle="tab" data-bs-target="#spec">Thông số kỹ thuật</button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <div class="tab-content">
+                        <div class="tab-pane fade show active" id="desc">
+                            <h4 class="fw-bold mb-3">Thông tin chi tiết</h4>
+                            <p>Sản phẩm <strong>@Model.Name</strong> thuộc dòng @Model.Category hiện đang là "Best Seller" tại SmartTech. Với chính sách vận chuyển linh hoạt từ 3 kho hàng lớn (Hà Nội, Đà Nẵng, TP.HCM), chúng tôi cam kết giao hàng nhanh nhất đến tay bạn.</p>
+                            <div class="alert alert-light border border-primary border-start-4 rounded-3 mt-4">
+                                <h6 class="text-primary fw-bold"><i class="bi bi-star me-2"></i>Điểm nổi bật:</h6>
+                                <ul class="mb-0 ps-3">
+                                    <li>Hiệu năng mạnh mẽ với chip @cpu.</li>
+                                    <li>Màn hình @screen sắc nét.</li>
+                                    <li>Dung lượng pin @pin bền bỉ.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="tab-pane fade" id="spec">
+                            <table class="table table-hover table-bordered spec-table">
+                                <tbody>
+                                    <tr><th scope="row">Danh mục</th><td>@Model.Category</td></tr>
+                                    <tr><th scope="row">Vi xử lý (CPU)</th><td>@cpu</td></tr>
+                                    <tr><th scope="row">Bộ nhớ RAM</th><td>@ram</td></tr>
+                                    <tr><th scope="row">Màn hình</th><td>@screen</td></tr>
+                                    <tr><th scope="row">Pin</th><td>@pin</td></tr>
+                                    <tr><th scope="row">Xuất xứ</th><td>@origin</td></tr>
+                                    <tr><th scope="row">Bảo hành</th><td>12 Tháng chính hãng</td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateQty(change) {
+        const input = document.getElementById('qtyInput');
+        const priceDisplay = document.getElementById('displayPrice');
+        const basePrice = parseFloat(priceDisplay.getAttribute('data-base-price'));
+
+        let currentQty = parseInt(input.value);
+        let newVal = currentQty + change;
+        const min = parseInt(input.min);
+        const max = parseInt(input.max);
+
+        if (newVal >= min && newVal <= max) {
+            input.value = newVal;
+            let newTotal = basePrice * newVal;
+            priceDisplay.innerText = newTotal.toLocaleString('vi-VN') + ' đ';
+        }
+    }
+</script>

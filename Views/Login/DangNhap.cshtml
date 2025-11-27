@@ -1,64 +1,72 @@
-﻿@model TestDoAn.Models.TaiKhoan
+﻿@model banthietbidientu.Models.TaiKhoan
 @{
     ViewData["Title"] = "Đăng nhập - SmartTech";
+    // Đảm bảo không có thẻ <style> dư thừa nếu không cần CSS tùy chỉnh.
 }
 
-@section Styles {
-    <style>
-        .form-floating > .form-control:focus ~ label,
-        .form-floating > .form-control:not(:placeholder-shown) ~ label {
-            transform: scale(0.85) translateY(-0.75rem) translateX(0.15rem);
-            background-color: #fff;
-            padding: 0 0.25rem;
-        }
-    </style>
-}
-
-<section class="container my-5">
+<section class="container" style="min-height: 80vh;">
     <div class="row justify-content-center">
-        <div class="col-lg-5 col-md-7">
+        <!-- Đã chỉnh sửa: Thay đổi mt-5 pt-5 thành mt-3 pt-3 để nâng form lên -->
+        <div class="col-lg-4 col-md-6 mt-3 pt-3">
 
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-body p-4 p-md-5">
-
-                    <div class="text-center mb-4">
-                        <i class="bi bi-box-arrow-in-right display-3 text-primary"></i>
-                        <h2 class="h3 fw-bold mt-3 mb-0">Đăng nhập</h2>
-                    </div>
-
-                    @if (ViewBag.Error != null)
-                    {
-                        <div class="alert alert-danger text-center p-2 small" role="alert">
-                            @ViewBag.Error
-                        </div>
-                    }
-
-                    <form asp-action="DangNhap" asp-controller="Login" method="post">
-
-                        <div class="form-floating mb-3">
-                            <input asp-for="Username" class="form-control" id="floatingUsername" placeholder="Tài khoản" required />
-                            <label for="floatingUsername">Tài khoản</label>
-                            <span asp-validation-for="Username" class="text-danger small"></span>
-                        </div>
-
-                        <div class="form-floating mb-3">
-                            <input asp-for="Password" class="form-control" type="password" id="floatingPassword" placeholder="Mật khẩu" required />
-                            <label for="floatingPassword">Mật khẩu</label>
-                            <span asp-validation-for="Password" class="text-danger small"></span>
-                        </div>
-
-                        <div class="d-grid mb-3">
-                            <button type="submit" class="btn btn-primary btn-lg fw-bold">Đăng nhập</button>
-                        </div>
-                    </form>
-
-                    <div class="text-center">
-                        <small class="text-muted">Chưa có tài khoản?</small>
-                        <a asp-controller="Login" asp-action="DangKy" class="ms-1 fw-bold text-decoration-none">Đăng ký ngay</a>
-                    </div>
-
-                </div>
+            <div class="text-center mb-5">
+                <!-- Đã xóa: Icon <i class="bi bi-box-arrow-in-right display-2 text-primary"></i> -->
+                <!-- Đã xóa: Tiêu đề H2 <h2 class="h3 fw-bold mt-3 mb-0 text-dark">Đăng nhập</h2> -->
+                <!-- Đã sửa: Thông điệp chào mừng -->
+                <h2 class="h3 fw-bold mb-3 text-dark">Chào mừng tới với SmartTech</h2>
+                <p class="text-muted small">Chúng tôi luôn sẵn sàng phục vụ nhu cầu của bạn.</p>
             </div>
+
+            @if (ViewBag.Error != null)
+            {
+                <div class="alert alert-danger text-center p-2 small" role="alert">
+                    @ViewBag.Error
+                </div>
+            }
+
+            <form asp-action="DangNhap" asp-controller="Login" method="post">
+
+                <!-- Trường Tài khoản - Dùng form-group/label tiêu chuẩn -->
+                <div class="mb-3">
+                    <label for="inputUsername" class="form-label fw-semibold">Tài khoản</label>
+                    <input asp-for="Username" class="form-control" id="inputUsername" placeholder="Nhập tên tài khoản" required style="border-radius: 8px;" />
+                    <span asp-validation-for="Username" class="text-danger small"></span>
+                </div>
+
+                <!-- Trường Mật khẩu - Dùng form-group/label tiêu chuẩn -->
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Mật khẩu</label>
+                    <div class="input-group">
+                        <input asp-for="Password" type="password" class="form-control" id="id_password" placeholder="Nhập mật khẩu..." required>
+
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('id_password', 'icon_pass')">
+                            <i class="bi bi-eye" id="icon_pass"></i>
+                        </button>
+                    </div>
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
+
+                <!-- Quên mật khẩu (Căn phải) -->
+                <div class="text-end mb-4">
+                    <a asp-controller="Login" asp-action="Recovery" class="small fw-semibold text-primary text-decoration-none">
+                        Quên mật khẩu?
+                    </a>
+                </div>
+
+                <!-- Nút Đăng nhập -->
+                <div class="d-grid mb-5">
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold" style="border-radius: 8px;">Đăng nhập</button>
+                </div>
+            </form>
+
+            <!-- Đăng ký (Nằm trên nền background) -->
+            <div class="text-center pt-3">
+                <small class="text-muted">Bạn chưa có tài khoản?</small>
+                <a asp-controller="Login" asp-action="DangKy" class="ms-1 fw-bold text-primary text-decoration-none">
+                    Đăng ký ngay
+                </a>
+            </div>
+
         </div>
     </div>
 </section>

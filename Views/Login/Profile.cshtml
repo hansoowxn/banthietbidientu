@@ -1,87 +1,424 @@
-﻿@model TestDoAn.Models.TaiKhoan
+﻿@model banthietbidientu.Models.TaiKhoan
+@inject banthietbidientu.Services.MemberService MemberService
+
 @{
-    ViewData["Title"] = "Tài khoản - SmartTech";
+    ViewData["Title"] = "Hồ sơ cá nhân - SmartTech";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    // --- LOGIC TÍNH HẠNG & MÀU SẮC (Đồng bộ với ThanhToan.cshtml) ---
+    var tier = MemberService.GetUserTier(User.Identity.Name);
+
+    string bgClass = "bg-standard";
+    string borderClass = "border-standard";
+    string badgeClass = "badge-standard";
+
+    // Logic Admin hoặc "Tối thượng" (dựa trên số tiền khổng lồ trong ThanhToan.cshtml)
+    if (tier.CssClass == "tier-admin" || tier.TotalSpent >= 20000000000000000)
+    {
+        bgClass = "bg-admin";
+        borderClass = "border-admin";
+        badgeClass = "badge-admin";
+    }
+    else if (tier.TotalSpent >= 100000000) { bgClass = "bg-diamond"; borderClass = "border-diamond"; badgeClass = "badge-diamond"; }
+    else if (tier.TotalSpent >= 50000000) { bgClass = "bg-platinum"; borderClass = "border-platinum"; badgeClass = "badge-platinum"; }
+    else if (tier.TotalSpent >= 20000000) { bgClass = "bg-gold"; borderClass = "border-gold"; badgeClass = "badge-gold"; }
+    else if (tier.TotalSpent >= 10000000) { bgClass = "bg-silver"; borderClass = "border-silver"; badgeClass = "badge-silver"; }
 }
 
-<section class="container my-5">
-    <div class="row justify-content-center">
-        <div class="col-lg-7 col-md-9">
+<style>
+    /* --- MÀU NỀN TRANG --- */
+    .profile-page-wrapper {
+        min-height: 85vh;
+        padding: 50px 0;
+        transition: background 0.5s ease;
+    }
 
-            @if (Model != null)
-            {
-                <div class="card shadow-sm border-0 rounded-3">
-                    <div class="card-body p-4 p-md-5">
+    .bg-standard {
+        background-color: #f8f9fa;
+    }
+
+    .bg-silver {
+        background: linear-gradient(135deg, #e0e0e0 0%, #f5f5f5 100%);
+    }
+
+    .bg-gold {
+        background: linear-gradient(135deg, #fff8e1 0%, #fffde7 100%);
+    }
+
+    .bg-platinum {
+        background: linear-gradient(135deg, #e0f7fa 0%, #e1f5fe 100%);
+    }
+
+    .bg-diamond {
+        background: radial-gradient(circle at top, #2a2a72 0%, #009ffd 100%);
+        color: white;
+    }
+
+    .bg-admin {
+        background: radial-gradient(circle at center, #2b0505 0%, #000000 100%);
+        color: white;
+    }
+
+    /* --- HIỆU ỨNG VIỀN & BÓNG --- */
+    .profile-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 16px;
+        transition: box-shadow 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .border-standard {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        border-color: #dee2e6;
+    }
+
+    .border-silver {
+        border-color: #bdc3c7;
+        box-shadow: 0 0 20px rgba(189, 195, 199, 0.5);
+    }
+
+    .border-gold {
+        border-color: #ffc107;
+        box-shadow: 0 0 25px rgba(255, 193, 7, 0.4);
+    }
+
+    .border-platinum {
+        border-color: #00bcd4;
+        box-shadow: 0 0 25px rgba(0, 188, 212, 0.4);
+    }
+
+    .border-diamond {
+        border-color: #d63031;
+        box-shadow: 0 0 30px rgba(255, 255, 255, 0.3);
+    }
+
+    .border-admin {
+        border-color: #ff3333;
+        box-shadow: 0 0 30px rgba(255, 51, 51, 0.3);
+    }
+
+    /* --- BADGE HẠNG --- */
+    .rank-badge {
+        display: inline-block;
+        padding: 6px 16px;
+        border-radius: 50px;
+        font-weight: 800;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 1px;
+        margin-top: 10px;
+    }
+
+    .badge-standard {
+        background: #eee;
+        color: #555;
+    }
+
+    .badge-silver {
+        background: linear-gradient(to right, #bdc3c7, #2c3e50);
+        color: white;
+    }
+
+    .badge-gold {
+        background: linear-gradient(to right, #f1c40f, #b7950b);
+        color: white;
+    }
+
+    .badge-platinum {
+        background: linear-gradient(to right, #00bcd4, #006064);
+        color: white;
+    }
+
+    .badge-diamond {
+        background: linear-gradient(to right, #e84393, #6c5ce7);
+        color: white;
+        box-shadow: 0 0 10px rgba(255,255,255,0.5);
+    }
+
+    .badge-admin {
+        background: linear-gradient(to right, #cc0000, #000000);
+        color: white;
+        border: 1px solid #ff6666;
+        box-shadow: 0 0 10px rgba(204, 0, 0, 0.6);
+    }
+
+    /* --- MEMBER CARD ẢO --- */
+    .digital-card {
+        height: 180px;
+        border-radius: 16px;
+        padding: 20px;
+        position: relative;
+        overflow: hidden;
+        color: white;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        margin-bottom: 30px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+    }
+
+    .card-bg-silver {
+        background: linear-gradient(135deg, #bdc3c7, #2c3e50);
+    }
+
+    .card-bg-gold {
+        background: linear-gradient(135deg, #f1c40f, #b7950b);
+    }
+
+    .card-bg-platinum {
+        background: linear-gradient(135deg, #00bcd4, #006064);
+    }
+
+    .card-bg-diamond {
+        background: linear-gradient(135deg, #1a1a2e, #16213e);
+        border: 1px solid rgba(255,255,255,0.2);
+    }
+
+    .card-bg-admin {
+        background: linear-gradient(135deg, #8B0000, #000000);
+        border: 1px solid #ff3333;
+    }
+
+    .card-bg-standard {
+        background: linear-gradient(135deg, #6c757d, #343a40);
+    }
+
+    .card-chip {
+        width: 45px;
+        height: 30px;
+        background: linear-gradient(135deg, #ffd700, #d4af37);
+        border-radius: 5px;
+        margin-bottom: 10px;
+    }
+
+    .card-number {
+        font-family: 'Courier New', monospace;
+        font-size: 1.2rem;
+        letter-spacing: 2px;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+</style>
+
+<div class="profile-page-wrapper @bgClass">
+    <section class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-md-9">
+
+                @if (Model != null)
+                {
+                    <div class="p-4 profile-card @borderClass">
 
                         <div class="text-center mb-4">
-                            <i class="bi bi-person-circle display-3 text-primary"></i>
-                            <h2 class="h3 fw-bold mt-3 mb-1">Xin chào, @Model.FullName!</h2>
-                            <p class="text-muted">Đây là trang thông tin cá nhân của bạn.</p>
+                            <div class="position-relative d-inline-block">
+                                <i class="bi bi-person-circle display-3 text-primary"></i>
+                                @if (tier.TotalSpent >= 10000000 || tier.CssClass == "tier-admin")
+                                {
+                                    <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning border border-white">
+                                        <i class="bi bi-star-fill"></i>
+                                    </span>
+                                }
+                            </div>
+
+                            <h2 class="h3 fw-bold mt-3 mb-1 text-dark">Xin chào, @Model.FullName!</h2>
+                            <div class="rank-badge @badgeClass shadow-sm">@tier.Name</div>
+                            <div class="mt-2 small text-muted">Chi tiêu: @tier.TotalSpent.ToString("#,##0") ₫</div>
                         </div>
 
-                        <ul class="list-group list-group-flush mb-4">
-                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <span class_="text-muted">Tên đăng nhập</span>
-                                <strong class="text-dark">@Model.Username</strong>
-                            </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <span class="text-muted">Họ và Tên</span>
+                        <div class="digital-card @(tier.CssClass == "tier-admin" ? "card-bg-admin" :
+                                                tier.TotalSpent >= 100000000 ? "card-bg-diamond" :
+                                                tier.TotalSpent >= 50000000 ? "card-bg-platinum" :
+                                                tier.TotalSpent >= 20000000 ? "card-bg-gold" :
+                                                tier.TotalSpent >= 10000000 ? "card-bg-silver" : "card-bg-standard")">
+                            <div class="d-flex justify-content-between">
+                                <div class="card-chip shadow-sm"></div>
+                                <div class="small fw-bold opacity-75">SMARTTECH MEMBER</div>
+                            </div>
+                            <div class="card-number">**** **** **** @(Math.Abs(User.Identity.Name.GetHashCode() % 10000).ToString("0000"))</div>
+                            <div class="d-flex justify-content-between small text-uppercase">
+                                <div>@Model.FullName</div>
+                                <div>@(tier.CssClass == "tier-admin" ? "LIFETIME" : "EXP: 12/30")</div>
+                            </div>
+                        </div>
+
+                        <h5 class="h6 text-uppercase text-primary fw-bold mb-3">Quyền lợi hiện tại</h5>
+                        <div class="row g-3 mb-4">
+                            @* --- ADMIN / TỐI THƯỢNG --- *@
+                            @if (tier.CssClass == "tier-admin" || tier.TotalSpent >= 20000000000000000)
+                            {
+                                <div class="col-4">
+                                    <div class="p-3 border border-danger bg-danger bg-opacity-10 rounded-3 text-center h-100">
+                                        <i class="bi bi-percent text-danger fs-3 mb-2 d-block"></i>
+                                        <div class="fw-bold text-danger">Giảm 50%</div>
+                                        <small class="text-muted">Mọi đơn hàng</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 border border-danger bg-danger bg-opacity-10 rounded-3 text-center h-100">
+                                        <i class="bi bi-truck text-danger fs-3 mb-2 d-block"></i>
+                                        <div class="fw-bold text-danger">Free Ship</div>
+                                        <small class="text-muted">Không giới hạn</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 border border-danger bg-danger bg-opacity-10 rounded-3 text-center h-100">
+                                        <i class="bi bi-shield-check text-danger fs-3 mb-2 d-block"></i>
+                                        <div class="fw-bold text-danger">Bảo Hành</div>
+                                        <small class="text-muted">Trọn đời máy</small>
+                                    </div>
+                                </div>
+                            }
+                            @* --- 💎 KIM CƯƠNG (> 100tr) --- *@
+                            else if (tier.TotalSpent >= 100000000)
+                            {
+                                <div class="col-4">
+                                    <div class="p-3 border border-primary bg-primary bg-opacity-10 rounded-3 text-center h-100">
+                                        <i class="bi bi-percent text-primary fs-3 mb-2 d-block"></i>
+                                        <div class="fw-bold text-primary">Giảm 10%</div>
+                                        <small class="text-muted">Trên tổng đơn</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 border border-primary bg-primary bg-opacity-10 rounded-3 text-center h-100">
+                                        <i class="bi bi-truck text-primary fs-3 mb-2 d-block"></i>
+                                        <div class="fw-bold text-primary">Free Ship</div>
+                                        <small class="text-muted">Toàn quốc</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 border border-primary bg-primary bg-opacity-10 rounded-3 text-center h-100">
+                                        <i class="bi bi-gift text-primary fs-3 mb-2 d-block"></i>
+                                        <div class="fw-bold text-primary">Quà VIP</div>
+                                        <small class="text-muted">Dịp sinh nhật</small>
+                                    </div>
+                                </div>
+                            }
+                            @* --- 🌟 BẠCH KIM (> 50tr) --- *@
+                            else if (tier.TotalSpent >= 50000000)
+                            {
+                                <div class="col-4">
+                                    <div class="p-3 border border-info bg-info bg-opacity-10 rounded-3 text-center h-100">
+                                        <i class="bi bi-percent text-info fs-3 mb-2 d-block"></i>
+                                        <div class="fw-bold text-info">Giảm 5%</div>
+                                        <small class="text-muted">Trên tổng đơn</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 border border-info bg-info bg-opacity-10 rounded-3 text-center h-100">
+                                        <i class="bi bi-truck text-info fs-3 mb-2 d-block"></i>
+                                        <div class="fw-bold text-info">Free Ship</div>
+                                        <small class="text-muted">Toàn quốc</small>
+                                    </div>
+                                </div>
+                                <div class="col-4">
+                                    <div class="p-3 border border-info bg-info bg-opacity-10 rounded-3 text-center h-100">
+                                        <i class="bi bi-headset text-info fs-3 mb-2 d-block"></i>
+                                        <div class="fw-bold text-info">Ưu Tiên</div>
+                                        <small class="text-muted">Hỗ trợ 24/7</small>
+                                    </div>
+                                </div>
+                            }
+                            @* --- 🟡 VÀNG (> 20tr) --- *@
+                            else if (tier.TotalSpent >= 20000000)
+                            {
+                                <div class="col-12">
+                                    <div class="p-3 border border-warning bg-warning bg-opacity-10 rounded-3 text-center h-100">
+                                        <i class="bi bi-truck text-warning fs-3 mb-2 d-block"></i>
+                                        <div class="fw-bold text-warning">Free Ship</div>
+                                        <small class="text-muted">Dưới 300km</small>
+                                    </div>
+                                </div>
+                            }
+                            @* --- ⚪ BẠC (> 10tr) --- *@
+                            else if (tier.TotalSpent >= 10000000)
+                            {
+                                <div class="col-12">
+                                    <div class="p-3 border border-secondary bg-secondary bg-opacity-10 rounded-3 text-center h-100">
+                                        <i class="bi bi-truck text-secondary fs-3 mb-2 d-block"></i>
+                                        <div class="fw-bold text-secondary">Free Ship</div>
+                                        <small class="text-muted">Dưới 15km</small>
+                                    </div>
+                                </div>
+                            }
+                            @* --- THÀNH VIÊN MỚI --- *@
+                            else
+                            {
+                                <div class="col-12">
+                                    <div class="p-3 border bg-light rounded-3 text-center">
+                                        <i class="bi bi-cart4 text-muted fs-3 mb-2"></i>
+                                        <div class="text-muted mb-1">Mua sắm thêm <strong>@((10000000 - tier.TotalSpent).ToString("#,##0"))₫</strong> để lên hạng Bạc!</div>
+                                        <div class="progress mt-2" style="height: 6px;">
+                                            @{
+                                                var percent = (int)((tier.TotalSpent / 10000000) * 100);
+                                                if (percent > 100) percent = 100;
+                                            }
+                                            <div class="progress-bar bg-primary" role="progressbar" style="width: @percent%"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <h5 class="h6 text-uppercase text-primary fw-bold mb-3">Thông tin cá nhân</h5>
+                        <ul class="list-group list-group-flush border rounded-3 mb-5">
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <span class="text-muted d-flex align-items-center"><i class="bi bi-person-vcard me-2"></i> Họ và Tên</span>
                                 <strong class="text-dark">@Model.FullName</strong>
                             </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <span class="text-muted">Ngày sinh</span>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <span class="text-muted d-flex align-items-center"><i class="bi bi-calendar-date me-2"></i> Ngày sinh</span>
                                 <strong class="text-dark">@Model.DateOfBirth.ToString("dd/MM/yyyy")</strong>
                             </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <span class="text-muted">Giới tính</span>
-                                <strong class="text-dark">@Model.Gender</strong>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <span class="text-muted d-flex align-items-center"><i class="bi bi-gender-ambiguous me-2"></i> Giới tính</span>
+                                <strong class="text-dark">@(Model.Gender ?? "Chưa cập nhật")</strong>
                             </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <span class="text-muted">Địa chỉ</span>
-                                <strong class="text-dark">@(Model.Address ?? "Chưa cung cấp")</strong>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <span class="text-muted d-flex align-items-center"><i class="bi bi-geo-alt me-2"></i> Địa chỉ</span>
+                                <strong class="text-dark text-end ms-3 text-break">@(Model.Address ?? "Chưa cung cấp")</strong>
                             </li>
-                            <li class="list-group-item d-flex justify-content-between align-items-center px-0">
-                                <span class="text-muted">Email</span>
-                                <strong class="text-dark">@Model.Email</strong>
+                            <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                                <span class="text-muted d-flex align-items-center"><i class="bi bi-envelope me-2"></i> Email</span>
+                                <strong class="text-dark text-break">@Model.Email</strong>
                             </li>
                         </ul>
 
-                        <h5 class="h6 text-muted mb-3">Hành động</h5>
-                        <div class="list-group">
-                            <a asp-action="EditProfile" asp-controller="Login" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-pencil-fill me-2"></i>Chỉnh sửa thông tin</span>
-                                <i class="bi bi-chevron-right"></i>
+                        <h5 class="h6 text-uppercase text-primary fw-bold mb-3">Tùy chọn tài khoản</h5>
+                        <div class="list-group rounded-3 overflow-hidden border">
+                            <a asp-action="EditProfile" asp-controller="Login" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                                <span class="fw-medium"><i class="bi bi-pencil-square me-3 text-info"></i>Chỉnh sửa thông tin</span>
+                                <i class="bi bi-chevron-right text-muted"></i>
                             </a>
-                            <a asp-action="ChangePassword" asp-controller="Login" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-key-fill me-2"></i>Đổi mật khẩu</span>
-                                <i class="bi bi-chevron-right"></i>
+                            <a asp-action="ChangePassword" asp-controller="Login" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                                <span class="fw-medium"><i class="bi bi-key-fill me-3 text-warning"></i>Đổi mật khẩu</span>
+                                <i class="bi bi-chevron-right text-muted"></i>
                             </a>
-                            <a asp-action="LichSuMuaHang" asp-controller="Login" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                                <span><i class="bi bi-clock-history me-2"></i>Lịch sử mua hàng</span>
-                                <i class="bi bi-chevron-right"></i>
+                            <a asp-action="LichSuMuaHang" asp-controller="Login" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                                <span class="fw-medium"><i class="bi bi-clock-history me-3 text-success"></i>Lịch sử mua hàng</span>
+                                <i class="bi bi-chevron-right text-muted"></i>
                             </a>
                         </div>
 
-                        <hr class="my-4">
+                        <hr class="my-5">
 
                         <form asp-action="Logout" asp-controller="Login" method="post" class="d-grid">
-                            <button type="submit" class="btn btn-outline-danger btn-lg">
+                            <button type="submit" class="btn btn-outline-danger btn-lg fw-medium" style="border-radius: 8px;">
                                 <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
                             </button>
                         </form>
                     </div>
-                </div>
-            }
-            else
-            {
-                <div class="card shadow-sm border-0 rounded-3">
-                    <div class="card-body p-4 p-md-5 text-center">
-                        <i class="bi bi-exclamation-triangle-fill display-3 text-warning"></i>
+                }
+                else
+                {
+                    <div class="p-5 bg-white rounded-3 border shadow-sm text-center">
+                        <i class="bi bi-exclamation-triangle-fill display-3 text-warning mb-3"></i>
                         <h2 class="h3 fw-bold mt-3 mb-3">Bạn chưa đăng nhập</h2>
-                        <p class="text-muted mb-4">Vui lòng đăng nhập để xem thông tin tài khoản.</p>
-                        <a asp-action="DangNhap" asp-controller="Login" class="btn btn-primary btn-lg">Đăng nhập ngay</a>
+                        <p class="text-muted mb-4">Vui lòng đăng nhập để xem thông tin tài khoản và quản lý đơn hàng của bạn.</p>
+                        <a asp-action="DangNhap" asp-controller="Login" class="btn btn-primary btn-lg fw-medium" style="border-radius: 8px;">
+                            <i class="bi bi-box-arrow-in-right me-2"></i> Đăng nhập ngay
+                        </a>
                     </div>
-                </div>
-            }
+                }
+            </div>
         </div>
-    </div>
-</section>
+    </section>
+</div>

@@ -1,107 +1,113 @@
-﻿@model List<TestDoAn.Models.LichSuMuaHang>
+﻿@model List<banthietbidientu.Models.HistoryViewModel>
 
-<!-- Main Section with Padding Top -->
-<section class="container py-6" style="padding-top: 80px;">
-    <div class="row justify-content-center">
-        <div class="col-12 text-center">
-            <h1 class="display-5 fw-bold text-dark mb-4" style="letter-spacing: 1px;">Lịch sử mua hàng</h1>
-            <hr class="border-primary border-2 w-25 mx-auto mb-5">
-        </div>
+@{
+
+    ViewData["Title"] = "Lịch sử mua hàng của khách";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var user = ViewBag.TaiKhoan as banthietbidientu.Models.TaiKhoan;
+}
+
+<div class="container-fluid py-4">
+
+    <div class="mb-3">
+        <a asp-action="QuanLyTaiKhoan" class="text-decoration-none text-muted">
+            <i class="bi bi-arrow-left me-1"></i> Quay lại danh sách tài khoản
+        </a>
     </div>
 
-    <!-- Info Alert -->
-    @if (TempData["Info"] != null)
-    {
-        <div class="alert alert-info alert-dismissible fade show text-center mb-5" role="alert" style="max-width: 600px; margin: 0 auto; border-radius: 10px;">
-            @TempData["Info"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
+    <div class="card border-0 shadow-sm mb-4 bg-white">
+        <div class="card-body p-4">
+            <div class="d-flex align-items-center">
+                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-4 shadow-sm"
+                     style="width: 60px; height: 60px; font-size: 24px; font-weight: bold;">
+                    @(user?.FullName?.Substring(0, 1) ?? "U")
+                </div>
 
-    <!-- Purchase History Table -->
-    @if (Model.Any())
-    {
-        <div class="card border-0 shadow-sm mb-5" style="border-radius: 15px; overflow: hidden;">
-            <div class="card-header bg-light text-dark py-3" style="background: linear-gradient(90deg, #f8f9fa, #e9ecef);">
-                <h4 class="mb-0 fw-semibold">Danh sách giao dịch</h4>
-            </div>
-            <div class="card-body p-4">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr class="bg-light">
-                                <th scope="col" class="text-center py-3 text-muted">Hình ảnh</th>
-                                <th scope="col" class="text-center py-3 text-muted">Tên sản phẩm</th>
-                                <th scope="col" class="text-center py-3 text-muted">Giá</th>
-                                <th scope="col" class="text-center py-3 text-muted">Số lượng</th>
-                                <th scope="col" class="text-center py-3 text-muted">Ngày mua</th>
-                                <th scope="col" class="text-center py-3 text-muted">Phương thức</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model)
-                            {
-                                <tr class="border-bottom">
-                                    <td class="text-center py-3"><img src="@(item.ImageUrl ?? "/images/default.jpg")" alt="@item.Name" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;" /></td>
-                                    <td class="text-center py-3">@item.Name</td>
-                                    <td class="text-center py-3">@item.Price.ToString("#,##0").Replace(",", ".") VNĐ</td>
-                                    <td class="text-center py-3">@item.Quantity</td>
-                                    <td class="text-center py-3">@item.PurchaseDate.ToString("dd/MM/yyyy HH:mm")</td>
-                                    <td class="text-center py-3">@item.PaymentMethod</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
+                <div class="flex-grow-1">
+                    <h4 class="mb-1 fw-bold text-dark">@user?.FullName</h4>
+                    <div class="text-muted small mb-2">
+                        <span class="me-3"><i class="bi bi-envelope me-1"></i> @user?.Email</span>
+                        <span><i class="bi bi-person-badge me-1"></i> @user?.Username</span>
+                    </div>
+                </div>
+
+                <div class="text-end border-start ps-4 d-none d-md-block">
+                    <div class="mb-1">
+                        <span class="text-muted small">Tổng chi tiêu</span>
+                        <h5 class="fw-bold text-success mb-0">@(((decimal)ViewBag.TongChiTieu).ToString("#,##0")) đ</h5>
+                    </div>
+                    <div>
+                        <span class="text-muted small">Tổng đơn hàng</span>
+                        <span class="fw-bold text-primary">@ViewBag.TongDon đơn</span>
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
+
+    <h5 class="fw-bold text-secondary mb-3">Danh sách giao dịch</h5>
+
+    @if (Model != null && Model.Any())
+    {
+        foreach (var donHang in Model)
+        {
+            // Logic màu sắc trạng thái
+            string badgeClass = "bg-secondary";
+            if (donHang.TrangThai == "Chờ xử lý") badgeClass = "bg-warning text-dark";
+            else if (donHang.TrangThai == "Đang giao") badgeClass = "bg-primary";
+            else if (donHang.TrangThai == "Hoàn thành") badgeClass = "bg-success";
+            else if (donHang.TrangThai == "Đã hủy") badgeClass = "bg-danger";
+
+            <div class="card border-0 shadow-sm mb-3 rounded-3 overflow-hidden">
+                <div class="card-header bg-light py-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <span class="fw-bold me-2">Đơn ngày: @donHang.NgayDat.ToString("dd/MM/yyyy HH:mm")</span>
+                        <span class="badge @badgeClass bg-opacity-75 px-2 py-1 rounded">@donHang.TrangThai</span>
+                    </div>
+                    <div class="fw-bold text-dark">
+                        Tổng tiền: <span class="text-danger fs-5">@donHang.TongTien.ToString("#,##0") đ</span>
+                    </div>
+                </div>
+
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-borderless align-middle mb-0">
+                            <tbody>
+                                @foreach (var item in donHang.SanPhams)
+                                {
+                                    <tr class="border-bottom">
+                                        <td class="ps-4" style="width: 70px;">
+                                            <img src="@(item.SanPham.ImageUrl ?? "/images/default.jpg")" class="rounded border" style="width: 50px; height: 50px; object-fit: cover;">
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-dark">@item.SanPham.Name</div>
+                                            <div class="small text-muted">Mã SP: #@item.SanPhamId</div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-dark border">x @item.SoLuong</span>
+                                        </td>
+                                        <td class="text-end pe-4">
+                                            <div class="fw-bold text-primary">@((item.Gia ?? 0).ToString("#,##0")) đ</div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="card-footer bg-white py-2 small text-muted text-end">
+                    Thanh toán qua: <span class="fw-bold text-dark">@donHang.PaymentMethod</span>
+                </div>
+            </div>
+        }
     }
     else
     {
-        <div class="text-center py-6" style="min-height: 300px; display: flex; align-items: center; justify-content: center;">
-            <div>
-                <i class="bi bi-cart-x fs-1 text-secondary mb-3"></i>
-                <h4 class="text-muted mb-0">Bạn chưa có lịch sử mua hàng.</h4>
-            </div>
+        <div class="text-center py-5 text-muted bg-white rounded shadow-sm">
+            <i class="bi bi-inbox fs-1 d-block mb-3 opacity-50"></i>
+            <p>Khách hàng này chưa có đơn hàng nào.</p>
         </div>
     }
-
-    <!-- Back Button to Home -->
-    <div class="text-center">
-        <a asp-controller="Home" asp-action="Index" class="btn btn-outline-primary btn-lg fw-medium py-2 px-4" style="border-radius: 25px; transition: all 0.3s ease;">
-            Quay lại Trang Chủ
-        </a>
-    </div>
-</section>
-
-<!-- Custom Styles -->
-<style>
-    .card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-        }
-
-    .table-hover tbody tr:hover {
-        background-color: rgba(0, 123, 255, 0.05);
-        transition: background-color 0.2s ease;
-    }
-
-    .btn-outline-primary {
-        border-width: 2px;
-    }
-
-        .btn-outline-primary:hover {
-            background-color: #007bff;
-            color: #fff;
-            border-color: #007bff;
-        }
-</style>
-
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"></script>
-}
+</div>

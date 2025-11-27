@@ -1,4 +1,4 @@
-﻿namespace TestDoAn.Models
+﻿namespace banthietbidientu.Models
 {
     public class GioHang
     {

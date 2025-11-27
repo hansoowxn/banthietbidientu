@@ -1,4 +1,4 @@
-﻿namespace TestDoAn.Models
+﻿namespace banthietbidientu.Models
 {
     public class SanPham
     {
@@ -8,10 +8,8 @@
         public string Name { get; set; }
         public decimal Price { get; set; }
         public string ImageUrl { get; set; }
-        public string? Category { get; set; } // Nullable để tránh lỗi
-
-
-        // Thuộc tính điều hướng: Một sản phẩm có thể liên kết với nhiều mục trong giỏ hàng
+        public string? Category { get; set; }
+        public string? MoTa { get; set; }
         public virtual ICollection<GioHang> GioHangs { get; set; } = new List<GioHang>();
     }
 }

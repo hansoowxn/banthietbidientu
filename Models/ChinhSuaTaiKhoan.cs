@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace TestDoAn.Models
+namespace banthietbidientu.Models
 {
     public class ChinhSuaTaiKhoan
     {

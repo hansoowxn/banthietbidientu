@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using TestDoAn.Data;
+using banthietbidientu.Data;
 
 #nullable disable
 
@@ -22,7 +22,127 @@ namespace TestDoAn.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("TestDoAn.Models.GioHang", b =>
+            modelBuilder.Entity("banthietbidientu.Models.ChiTietDonHang", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal?>("Gia")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("MaDon")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("SanPhamId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoLuong")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MaDon");
+
+                    b.HasIndex("SanPhamId");
+
+                    b.ToTable("ChiTietDonHang");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.ChiTietPhieuNhap", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("GiaNhap")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("PhieuNhapId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SanPhamId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoLuongNhap")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PhieuNhapId");
+
+                    b.HasIndex("SanPhamId");
+
+                    b.ToTable("ChiTietPhieuNhaps");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.DoanhThu", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("LoiNhuan")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TongChiPhi")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("TongDoanhThu")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("DoanhThus");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.DonHang", b =>
+                {
+                    b.Property<string>("MaDon")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("DiaChi")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("NgayDat")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NguoiNhan")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal?>("PhiShip")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("SDT")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("TaiKhoanId")
+                        .HasColumnType("int");
+
+                    b.Property<decimal>("TongTien")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<int>("TrangThai")
+                        .HasColumnType("int");
+
+                    b.HasKey("MaDon");
+
+                    b.HasIndex("TaiKhoanId");
+
+                    b.ToTable("DonHangs");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.GioHang", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -47,6 +167,9 @@ namespace TestDoAn.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
+                    b.Property<int>("TaiKhoanId")
+                        .HasColumnType("int");
+
                     b.Property<int?>("UserId")
                         .HasColumnType("int");
 
@@ -54,12 +177,12 @@ namespace TestDoAn.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("TaiKhoanId");
 
                     b.ToTable("GioHangs");
                 });
 
-            modelBuilder.Entity("TestDoAn.Models.LichSuMuaHang", b =>
+            modelBuilder.Entity("banthietbidientu.Models.LichSuMuaHang", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -91,6 +214,12 @@ namespace TestDoAn.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("int");
 
+                    b.Property<string>("TrangThai")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TrangThaiDonHang")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
@@ -103,7 +232,63 @@ namespace TestDoAn.Migrations
                     b.ToTable("LichSuMuaHangs");
                 });
 
-            modelBuilder.Entity("TestDoAn.Models.SanPham", b =>
+            modelBuilder.Entity("banthietbidientu.Models.LichSuNhapHang", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("GhiChu")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<decimal>("GiaNhap")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("NgayNhap")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("SanPhamId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("SoLuongNhap")
+                        .HasColumnType("int");
+
+                    b.Property<string>("TenSanPham")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SanPhamId");
+
+                    b.ToTable("LichSuNhapHangs");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.PhieuNhap", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("GhiChu")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("NgayNhap")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("TongTien")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PhieuNhaps");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.SanPham", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -116,6 +301,9 @@ namespace TestDoAn.Migrations
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("MoTa")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
@@ -231,7 +419,7 @@ namespace TestDoAn.Migrations
                         });
                 });
 
-            modelBuilder.Entity("TestDoAn.Models.TaiKhoan", b =>
+            modelBuilder.Entity("banthietbidientu.Models.TaiKhoan", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -265,6 +453,9 @@ namespace TestDoAn.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Role")
                         .IsRequired()
@@ -306,32 +497,111 @@ namespace TestDoAn.Migrations
                         });
                 });
 
-            modelBuilder.Entity("TestDoAn.Models.GioHang", b =>
+            modelBuilder.Entity("banthietbidientu.Models.ThongBao", b =>
                 {
-                    b.HasOne("TestDoAn.Models.SanPham", "SanPham")
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<bool>("DaDoc")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("LoaiThongBao")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("NgayTao")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("NoiDung")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("TieuDe")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ThongBao");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.ChiTietDonHang", b =>
+                {
+                    b.HasOne("banthietbidientu.Models.DonHang", "DonHang")
+                        .WithMany("ChiTietDonHangs")
+                        .HasForeignKey("MaDon")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("banthietbidientu.Models.SanPham", "SanPham")
+                        .WithMany()
+                        .HasForeignKey("SanPhamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DonHang");
+
+                    b.Navigation("SanPham");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.ChiTietPhieuNhap", b =>
+                {
+                    b.HasOne("banthietbidientu.Models.PhieuNhap", "PhieuNhap")
+                        .WithMany("ChiTiets")
+                        .HasForeignKey("PhieuNhapId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("banthietbidientu.Models.SanPham", "SanPham")
+                        .WithMany()
+                        .HasForeignKey("SanPhamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PhieuNhap");
+
+                    b.Navigation("SanPham");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.DonHang", b =>
+                {
+                    b.HasOne("banthietbidientu.Models.TaiKhoan", "TaiKhoan")
+                        .WithMany("DonHangs")
+                        .HasForeignKey("TaiKhoanId");
+
+                    b.Navigation("TaiKhoan");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.GioHang", b =>
+                {
+                    b.HasOne("banthietbidientu.Models.SanPham", "SanPham")
                         .WithMany("GioHangs")
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("TestDoAn.Models.TaiKhoan", "TaiKhoan")
-                        .WithMany("GioHangs")
-                        .HasForeignKey("UserId");
+                    b.HasOne("banthietbidientu.Models.TaiKhoan", "TaiKhoan")
+                        .WithMany()
+                        .HasForeignKey("TaiKhoanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("SanPham");
 
                     b.Navigation("TaiKhoan");
                 });
 
-            modelBuilder.Entity("TestDoAn.Models.LichSuMuaHang", b =>
+            modelBuilder.Entity("banthietbidientu.Models.LichSuMuaHang", b =>
                 {
-                    b.HasOne("TestDoAn.Models.SanPham", "SanPham")
+                    b.HasOne("banthietbidientu.Models.SanPham", "SanPham")
                         .WithMany()
                         .HasForeignKey("ProductId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("TestDoAn.Models.TaiKhoan", "TaiKhoan")
+                    b.HasOne("banthietbidientu.Models.TaiKhoan", "TaiKhoan")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -342,14 +612,35 @@ namespace TestDoAn.Migrations
                     b.Navigation("TaiKhoan");
                 });
 
-            modelBuilder.Entity("TestDoAn.Models.SanPham", b =>
+            modelBuilder.Entity("banthietbidientu.Models.LichSuNhapHang", b =>
+                {
+                    b.HasOne("banthietbidientu.Models.SanPham", "SanPham")
+                        .WithMany()
+                        .HasForeignKey("SanPhamId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("SanPham");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.DonHang", b =>
+                {
+                    b.Navigation("ChiTietDonHangs");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.PhieuNhap", b =>
+                {
+                    b.Navigation("ChiTiets");
+                });
+
+            modelBuilder.Entity("banthietbidientu.Models.SanPham", b =>
                 {
                     b.Navigation("GioHangs");
                 });
 
-            modelBuilder.Entity("TestDoAn.Models.TaiKhoan", b =>
+            modelBuilder.Entity("banthietbidientu.Models.TaiKhoan", b =>
                 {
-                    b.Navigation("GioHangs");
+                    b.Navigation("DonHangs");
                 });
 #pragma warning restore 612, 618
         }

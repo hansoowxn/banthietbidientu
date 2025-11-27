@@ -1,107 +1,164 @@
-﻿@model List<TestDoAn.Models.LichSuMuaHang>
+﻿@model List<banthietbidientu.Models.HistoryViewModel>
 
-<!-- Main Section with Padding Top -->
-<section class="container py-6" style="padding-top: 80px;">
-    <div class="row justify-content-center">
-        <div class="col-12 text-center">
-            <h1 class="display-5 fw-bold text-dark mb-4" style="letter-spacing: 1px;">Lịch sử mua hàng</h1>
-            <hr class="border-primary border-2 w-25 mx-auto mb-5">
-        </div>
-    </div>
+@{
+    ViewData["Title"] = "Lịch sử mua hàng";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
 
-    <!-- Info Alert -->
-    @if (TempData["Info"] != null)
-    {
-        <div class="alert alert-info alert-dismissible fade show text-center mb-5" role="alert" style="max-width: 600px; margin: 0 auto; border-radius: 10px;">
-            @TempData["Info"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    <!-- Purchase History Table -->
-    @if (Model.Any())
-    {
-        <div class="card border-0 shadow-sm mb-5" style="border-radius: 15px; overflow: hidden;">
-            <div class="card-header bg-light text-dark py-3" style="background: linear-gradient(90deg, #f8f9fa, #e9ecef);">
-                <h4 class="mb-0 fw-semibold">Danh sách giao dịch</h4>
-            </div>
-            <div class="card-body p-4">
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead>
-                            <tr class="bg-light">
-                                <th scope="col" class="text-center py-3 text-muted">Hình ảnh</th>
-                                <th scope="col" class="text-center py-3 text-muted">Tên sản phẩm</th>
-                                <th scope="col" class="text-center py-3 text-muted">Giá</th>
-                                <th scope="col" class="text-center py-3 text-muted">Số lượng</th>
-                                <th scope="col" class="text-center py-3 text-muted">Ngày mua</th>
-                                <th scope="col" class="text-center py-3 text-muted">Phương thức</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model)
-                            {
-                                <tr class="border-bottom">
-                                    <td class="text-center py-3"><img src="@(item.ImageUrl ?? "/images/default.jpg")" alt="@item.Name" class="rounded-circle" style="width: 50px; height: 50px; object-fit: cover;" /></td>
-                                    <td class="text-center py-3">@item.Name</td>
-                                    <td class="text-center py-3">@item.Price.ToString("#,##0").Replace(",", ".") VNĐ</td>
-                                    <td class="text-center py-3">@item.Quantity</td>
-                                    <td class="text-center py-3">@item.PurchaseDate.ToString("dd/MM/yyyy HH:mm")</td>
-                                    <td class="text-center py-3">@item.PaymentMethod</td>
-                                </tr>
-                            }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    }
-    else
-    {
-        <div class="text-center py-6" style="min-height: 300px; display: flex; align-items: center; justify-content: center;">
-            <div>
-                <i class="bi bi-cart-x fs-1 text-secondary mb-3"></i>
-                <h4 class="text-muted mb-0">Bạn chưa có lịch sử mua hàng.</h4>
-            </div>
-        </div>
-    }
-
-    <!-- Back Button -->
-    <div class="text-center">
-        <a asp-action="Profile" class="btn btn-outline-primary btn-lg fw-medium py-2 px-4" style="border-radius: 25px; transition: all 0.3s ease;">
-            Quay lại hồ sơ
-        </a>
-    </div>
-</section>
-
-<!-- Custom Styles -->
 <style>
-    .card {
-        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    /* CSS Card đơn hàng */
+    .order-card {
+        border: 1px solid #eee;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        background: #fff;
+        overflow: hidden;
+    }
+    .order-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        border-color: #0d6efd;
     }
 
-        .card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-        }
-
-    .table-hover tbody tr:hover {
-        background-color: rgba(0, 123, 255, 0.05);
-        transition: background-color 0.2s ease;
+    /* CSS Badge Trạng thái - SÁNG & ĐẬM ĐÀ */
+    .status-badge {
+        font-size: 0.85rem;
+        padding: 6px 12px;
+        border-radius: 30px;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
     }
 
-    .btn-outline-primary {
-        border-width: 2px;
-    }
+    /* Màu sắc trạng thái */
+    .badge-success { background-color: #28a745; color: white; } /* Hoàn thành: Xanh lá đậm */
+    .badge-primary { background-color: #0d6efd; color: white; } /* Đang giao: Xanh dương */
+    .badge-info { background-color: #0dcaf0; color: #000; }     /* Đã xác nhận: Xanh ngọc */
+    .badge-warning { background-color: #ffc107; color: #000; }  /* Chờ xử lý: Vàng tươi */
+    .badge-danger { background-color: #dc3545; color: white; }  /* Đã hủy: Đỏ */
 
-        .btn-outline-primary:hover {
-            background-color: #007bff;
-            color: #fff;
-            border-color: #007bff;
-        }
+    .product-img {
+        width: 70px;
+        height: 70px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 1px solid #f0f0f0;
+    }
 </style>
 
-@section Scripts {
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css"></script>
-}
+<div class="container py-5" style="min-height: 80vh;">
+
+    <div class="d-flex align-items-center mb-4">
+        <h2 class="fw-bold text-dark mb-0">
+            <i class="bi bi-bag-check-fill text-primary me-2"></i>Đơn hàng của tôi
+        </h2>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success shadow-sm mb-4 border-0 border-start border-5 border-success">
+            <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+        </div>
+    }
+
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            @if (Model != null && Model.Any())
+            {
+                foreach (var donHang in Model)
+                {
+                    // --- LOGIC MÀU SẮC MỚI (Rõ ràng hơn) ---
+                    string badgeClass = "badge-secondary";
+                    string iconClass = "bi-question-circle";
+
+                    if (donHang.TrangThai == "Chờ xử lý")
+                    {
+                        badgeClass = "badge-warning";
+                        iconClass = "bi-hourglass-split";
+                    }
+                    else if (donHang.TrangThai == "Đã xác nhận")
+                    {
+                        badgeClass = "badge-info";
+                        iconClass = "bi-clipboard-check";
+                    }
+                    else if (donHang.TrangThai == "Đang giao")
+                    {
+                        badgeClass = "badge-primary";
+                        iconClass = "bi-truck";
+                    }
+                    else if (donHang.TrangThai == "Hoàn thành")
+                    {
+                        badgeClass = "badge-success";
+                        iconClass = "bi-check-circle-fill";
+                    }
+                    else if (donHang.TrangThai == "Đã hủy")
+                    {
+                        badgeClass = "badge-danger";
+                        iconClass = "bi-x-circle-fill";
+                    }
+                    // ------------------------------------------
+
+                    <div class="order-card mb-4">
+                        <!-- Header Card -->
+                        <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light bg-opacity-25">
+                            <div>
+                                <span class="fw-bold text-dark me-2">#@donHang.MaDon</span>
+                                <span class="text-muted small">| @donHang.NgayDat.ToString("dd/MM/yyyy HH:mm")</span>
+                            </div>
+                            <span class="status-badge @badgeClass shadow-sm">
+                                <i class="bi @iconClass"></i> @donHang.TrangThai
+                            </span>
+                        </div>
+
+                        <!-- Body Card: Danh sách sản phẩm -->
+                        <div class="p-3">
+                            @if (donHang.SanPhams != null)
+                            {
+                                foreach (var item in donHang.SanPhams)
+                                {
+                                    <div class="d-flex align-items-center mb-3">
+                                        <img src="@(item.SanPham?.ImageUrl ?? "/images/default.png")" class="product-img me-3" onerror="this.src='/images/default.png'">
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 fw-bold text-dark">@(item.SanPham?.Name ?? "Sản phẩm")</h6>
+                                            <div class="small text-muted">
+                                                Số lượng: <span class="fw-bold text-dark">x@(item.SoLuong)</span>
+                                            </div>
+                                        </div>
+                                        <div class="text-end fw-bold text-primary">
+                                            @((item.Gia ?? 0).ToString("#,##0")) đ
+                                        </div>
+                                    </div>
+                                }
+                            }
+                        </div>
+
+                        <!-- Footer Card: Tổng tiền & Nút -->
+                        <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center">
+                            <div>
+                                <span class="text-muted small">Tổng tiền:</span>
+                                <span class="fs-5 fw-bold text-danger ms-2">@donHang.TongTien.ToString("#,##0") đ</span>
+                            </div>
+
+                            <a asp-action="ChiTietDonHang" asp-controller="Login" asp-route-id="@donHang.MaDon"
+                               class="btn btn-primary fw-bold shadow-sm rounded-pill px-4">
+                                Xem chi tiết
+                            </a>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="text-center py-5">
+                    <img src="https://cdn-icons-png.flaticon.com/512/2038/2038854.png" style="width: 150px; opacity: 0.5;" class="mb-3">
+                    <h4 class="text-muted fw-bold">Chưa có đơn hàng nào</h4>
+                    <p class="text-muted mb-4">Hãy dạo một vòng và chọn món đồ yêu thích nhé!</p>
+                    <a href="/" class="btn btn-primary btn-lg rounded-pill px-5 shadow-sm fw-bold">
+                        Mua sắm ngay
+                    </a>
+                </div>
+            }
+        </div>
+    </div>
+</div>

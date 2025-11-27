@@ -2,7 +2,7 @@
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace TestDoAn.Models
+namespace banthietbidientu.Models
 {
     public class LichSuMuaHang
     {
@@ -16,6 +16,10 @@ namespace TestDoAn.Models
 
         [Required]
         public string Name { get; set; } // Tên sản phẩm
+
+        public string? TrangThaiDonHang { get; set; }
+
+        public string? TrangThai { get; set; } = "Chờ xử lý"; // Mặc định là Chờ xử lý
 
         public string ImageUrl { get; set; } // URL hình ảnh sản phẩm
 

@@ -1,0 +1,301 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+    ViewData["PageTitle"] = "Tổng quan hệ thống";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    // Lấy dữ liệu thống kê chung
+    decimal tongDoanhThu = ViewBag.TongDoanhThu ?? 0;
+    int donHangMoi = ViewBag.DonHangMoi ?? 0;
+    int tongKhachHang = ViewBag.TongKhachHang ?? 0;
+    int sapHetHang = ViewBag.SapHetHang ?? 0;
+
+    // Lấy dữ liệu cho biểu đồ tròn từ Controller
+    var statusData = ViewBag.ChartData as List<int> ?? new List<int> { 0, 0, 0, 0 };
+}
+
+<div class="row g-3 mb-4">
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="bg-primary bg-opacity-10 text-primary rounded p-3 me-3">
+                    <i class="bi bi-currency-dollar fs-3"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 small text-uppercase fw-bold">Tổng Doanh Thu</h6>
+                    <h4 class="fw-bold mb-0">@tongDoanhThu.ToString("#,##0") đ</h4>
+                    <small class="text-success fw-bold"><i class="bi bi-arrow-up"></i> Tăng trưởng</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="bg-success bg-opacity-10 text-success rounded p-3 me-3">
+                    <i class="bi bi-bag-check fs-3"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 small text-uppercase fw-bold">Đơn Hàng Mới</h6>
+                    <h4 class="fw-bold mb-0">@donHangMoi</h4>
+                    <small class="text-muted small">Trong ngày hôm nay</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="bg-warning bg-opacity-10 text-warning rounded p-3 me-3">
+                    <i class="bi bi-people fs-3"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 small text-uppercase fw-bold">Khách Hàng</h6>
+                    <h4 class="fw-bold mb-0">@tongKhachHang</h4>
+                    <small class="text-success fw-bold">Tài khoản User</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-sm-6 col-xl-3">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-body d-flex align-items-center">
+                <div class="bg-danger bg-opacity-10 text-danger rounded p-3 me-3">
+                    <i class="bi bi-box-seam fs-3"></i>
+                </div>
+                <div>
+                    <h6 class="text-muted mb-1 small text-uppercase fw-bold">Sắp Hết Hàng</h6>
+                    <h4 class="fw-bold mb-0 text-danger">@sapHetHang</h4>
+                    <small class="text-muted small">SL tồn kho < 5</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0 text-primary">
+                    <i class="bi bi-graph-up-arrow me-2"></i>Biểu đồ doanh thu
+                </h6>
+                <select id="revenueFilter" class="form-select form-select-sm border-0 bg-light fw-bold text-secondary shadow-none" style="width: auto; cursor: pointer;">
+                    <option value="week">7 ngày gần nhất</option>
+                    <option value="month">Theo tháng (Năm nay)</option>
+                    <option value="year">Theo năm (5 năm qua)</option>
+                </select>
+            </div>
+            <div class="card-body">
+                <div style="height: 350px;">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header bg-white border-0 py-3">
+                <h6 class="fw-bold mb-0 text-primary">
+                    <i class="bi bi-pie-chart-fill me-2"></i>Trạng thái đơn hàng
+                </h6>
+            </div>
+            <div class="card-body d-flex justify-content-center align-items-center position-relative">
+                <div style="height: 280px; width: 100%;">
+                    <canvas id="orderStatusChart"></canvas>
+                </div>
+
+                @if (statusData.Sum() == 0)
+                {
+                    <div class="position-absolute text-center text-muted" style="pointer-events: none;">
+                        <i class="bi bi-inbox fs-1 opacity-50"></i>
+                        <p class="small m-0">Chưa có dữ liệu</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            // --- 1. HÀM TẠO NHÃN NGÀY TỰ ĐỘNG (Cho 7 ngày gần nhất) ---
+            function getLast7DaysLabels() {
+                let labels = [];
+                for (let i = 6; i >= 0; i--) {
+                    let d = new Date();
+                    d.setDate(d.getDate() - i);
+                    labels.push(d.getDate() + '/' + (d.getMonth() + 1));
+                }
+                return labels;
+            }
+
+            // --- 2. DỮ LIỆU GIẢ LẬP (MOCK DATA) ---
+            // Sau này bạn sẽ thay phần data: [...] bằng ViewBag từ C# truyền sang
+            
+            // Dữ liệu 7 ngày qua
+            const dataWeek = {
+                labels: getLast7DaysLabels(),
+                data: [15000000, 22000000, 18500000, 30000000, 25000000, 42000000, 38000000] // VNĐ
+            };
+
+            // Dữ liệu 12 tháng trong năm
+            const dataMonth = {
+                labels: ['Thg 1', 'Thg 2', 'Thg 3', 'Thg 4', 'Thg 5', 'Thg 6', 'Thg 7', 'Thg 8', 'Thg 9', 'Thg 10', 'Thg 11', 'Thg 12'],
+                data: [120, 150, 180, 210, 250, 300, 280, 320, 400, 450, 500, 600].map(x => x * 1000000) // Đơn vị triệu
+            };
+
+            // Dữ liệu 5 năm gần nhất
+            const currentYear = new Date().getFullYear();
+            const dataYear = {
+                labels: [currentYear - 4, currentYear - 3, currentYear - 2, currentYear - 1, currentYear],
+                data: [2500, 3200, 4100, 5600, 7200].map(x => x * 1000000) // Đơn vị triệu
+            };
+
+            // --- 3. CẤU HÌNH BIỂU ĐỒ DOANH THU (CHUYÊN NGHIỆP) ---
+            const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
+            
+            // Tạo màu gradient (bóng đổ đẹp)
+            let gradient = ctxRevenue.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(13, 110, 253, 0.4)'); // Màu xanh đậm ở trên
+            gradient.addColorStop(1, 'rgba(13, 110, 253, 0.0)'); // Nhạt dần xuống dưới
+
+            let revenueChart = new Chart(ctxRevenue, {
+                type: 'line',
+                data: {
+                    labels: dataWeek.labels,
+                    datasets: [{
+                        label: 'Doanh thu',
+                        data: dataWeek.data,
+                        backgroundColor: gradient,
+                        borderColor: '#0d6efd',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#0d6efd',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        fill: true,
+                        tension: 0.4 // Độ cong mềm mại của đường (0 = thẳng đuột)
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 14 },
+                            bodyFont: { size: 14, weight: 'bold' },
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.raw;
+                                    // Format tiền Việt: 10.000.000 ₫
+                                    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            grid: { borderDash: [5, 5], color: '#e9ecef' },
+                            ticks: {
+                                callback: function(value) {
+                                    // Rút gọn số hiển thị trục Y (1tr, 2tr...)
+                                    if(value >= 1000000000) return (value/1000000000) + ' Tỷ';
+                                    if(value >= 1000000) return (value/1000000) + ' Tr';
+                                    return value;
+                                },
+                                font: { size: 11 }
+                            }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { size: 11 } }
+                        }
+                    },
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                }
+            });
+
+            // --- 4. SỰ KIỆN LỌC BIỂU ĐỒ ---
+            document.getElementById('revenueFilter').addEventListener('change', function() {
+                const selectedValue = this.value;
+                let newData;
+
+                if (selectedValue === 'month') newData = dataMonth;
+                else if (selectedValue === 'year') newData = dataYear;
+                else newData = dataWeek;
+
+                // Cập nhật dữ liệu và vẽ lại
+                revenueChart.data.labels = newData.labels;
+                revenueChart.data.datasets[0].data = newData.data;
+                
+                // Reset animation để tạo hiệu ứng vẽ lại
+                revenueChart.update('active');
+            });
+
+            // --- 5. BIỂU ĐỒ TRÒN TRẠNG THÁI (DỮ LIỆU THẬT) ---
+            const ctxStatus = document.getElementById('orderStatusChart').getContext('2d');
+            const realData = @Html.Raw(Json.Serialize(statusData));
+
+            new Chart(ctxStatus, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Hoàn thành', 'Đang giao', 'Chờ xử lý', 'Đã hủy'],
+                    datasets: [{
+                        data: realData,
+                        backgroundColor: [
+                            '#198754', // Xanh lá
+                            '#0d6efd', // Xanh dương
+                            '#ffc107', // Vàng
+                            '#dc3545'  // Đỏ
+                        ],
+                        hoverOffset: 10,
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20,
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    let value = context.raw || 0;
+                                    let total = context.chart._metasets[context.datasetIndex].total;
+                                    let percentage = Math.round((value / total) * 100) + '%';
+                                    return context.label + ': ' + value + ' đơn (' + percentage + ')';
+                                }
+                            }
+                        }
+                    },
+                    cutout: '75%', // Độ mỏng của vòng tròn
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true
+                    }
+                }
+            });
+        });
+    </script>
+}

@@ -1,0 +1,87 @@
+﻿@model banthietbidientu.Models.YeuCauThuMuaViewModel
+@{
+    ViewData["Title"] = "Thu cũ đổi mới - Giá cao";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+
+            <div class="text-center mb-5">
+                <h1 class="fw-bold text-primary display-5"><i class="bi bi-recycle"></i> Thu Cũ Đổi Mới</h1>
+                <p class="lead text-muted">Thu cũ đổi mới giá cao - Hỗ trợ thu mua tận nơi. Không ép giá, thủ tục đơn giản, giải ngân siêu tốc trong 15 phút.</p>
+            </div>
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="alert alert-success d-flex align-items-center shadow-sm mb-4" role="alert">
+                    <i class="bi bi-check-circle-fill fs-4 me-2"></i>
+                    <div>@TempData["Success"]</div>
+                </div>
+            }
+
+            <div class="card border-0 shadow-lg rounded-4 overflow-hidden">
+                <div class="row g-0">
+                    <div class="col-md-5 d-none d-md-block bg-light position-relative">
+                        <img src="https://images.unsplash.com/photo-1616348436168-de43ad0db179?q=80&w=1000&auto=format&fit=crop"
+                             class="img-fluid h-100 w-100 object-fit-cover"
+                             style="position: absolute; top: 0; left: 0;"
+                             alt="Thu mua điện thoại">
+                        <div class="position-absolute bottom-0 start-0 w-100 p-3 bg-dark bg-opacity-75 text-white">
+                            <h5 class="mb-1">Quy trình 3 bước</h5>
+                            <small>1. Điền thông tin <br> 2. Nhận báo giá <br> 3. Nhận tiền hoặc Máy mới</small>
+                        </div>
+                    </div>
+
+                    <div class="col-md-7">
+                        <div class="card-body p-4 p-lg-5">
+                            <h4 class="fw-bold mb-4">Thông tin máy của bạn</h4>
+
+                            <form asp-action="GuiYeuCauThuMua" method="post" enctype="multipart/form-data">
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Tên máy / Model</label>
+                                    <input asp-for="TenMay" class="form-control form-control-lg" placeholder="VD: iPhone 13 Pro Max 128GB..." required />
+                                    <span asp-validation-for="TenMay" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Tình trạng máy</label>
+                                    <select asp-for="TinhTrang" class="form-select form-select-lg">
+                                        <option value="Like New 99%">Máy đẹp 99% (Như mới)</option>
+                                        <option value="Trầy xước nhẹ">Có trầy xước nhẹ</option>
+                                        <option value="Cấn móp/Vỡ kính">Cấn móp / Vỡ kính</option>
+                                        <option value="Hư hỏng/Xác máy">Máy hỏng / Không lên nguồn</option>
+                                    </select>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Số điện thoại (Zalo)</label>
+                                    <input asp-for="SoDienThoai" class="form-control form-control-lg" placeholder="Nhập SĐT để nhân viên gọi lại..." required />
+                                    <span asp-validation-for="SoDienThoai" class="text-danger small"></span>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Ghi chú thêm (Muốn đổi sang máy nào?)</label>
+                                    <textarea asp-for="GhiChu" class="form-control" rows="2" placeholder="VD: Tôi muốn bù tiền đổi lên iPhone 15..."></textarea>
+                                </div>
+
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Ảnh thực tế máy (Không bắt buộc)</label>
+                                    <input asp-for="HinhAnhMay" type="file" class="form-control" accept="image/*" />
+                                    <div class="form-text small">Gửi ảnh giúp chúng tôi định giá chính xác hơn.</div>
+                                </div>
+
+                                <div class="d-grid">
+                                    <button type="submit" class="btn btn-primary btn-lg fw-bold py-3 shadow-sm">
+                                        <i class="bi bi-send-fill me-2"></i> Gửi Yêu Cầu Định Giá
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>

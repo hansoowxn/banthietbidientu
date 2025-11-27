@@ -1,0 +1,73 @@
+﻿@{
+    ViewData["Title"] = "Nhập hàng vào kho";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var products = ViewBag.SanPhams as List<banthietbidientu.Models.SanPham>;
+}
+
+<div class="container-fluid py-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card border-0 shadow-sm rounded-4">
+                <div class="card-header bg-primary text-white py-3 rounded-top-4">
+                    <h5 class="mb-0 fw-bold"><i class="bi bi-box-arrow-in-down me-2"></i>Tạo Phiếu Nhập Hàng</h5>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="XuLyNhapHang" method="post">
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Chọn sản phẩm cần nhập</label>
+                            <select name="sanPhamId" class="form-select form-select-lg bg-light border-0" required onchange="updateCurrentStock(this)">
+                                <option value="">-- Chọn sản phẩm --</option>
+                                @foreach (var p in products)
+                                {
+                                    <option value="@p.Id" data-stock="@p.SoLuong">@p.Name (Hiện có: @p.SoLuong)</option>
+                                }
+                            </select>
+                            <div id="currentStockHelp" class="form-text text-primary mt-2 fw-bold"></div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small text-uppercase">Số lượng nhập thêm</label>
+                                <input type="number" name="soLuong" class="form-control form-control-lg bg-light border-0" placeholder="VD: 50" required min="1">
+                            </div>
+
+                            <div class="col-md-6">
+                                <label class="form-label fw-bold text-muted small text-uppercase">Giá nhập (Vốn)</label>
+                                <div class="input-group">
+                                    <input type="number" name="giaNhap" class="form-control form-control-lg bg-light border-0" placeholder="VD: 15000000" required min="0">
+                                    <span class="input-group-text bg-light border-0">đ</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-muted small text-uppercase">Ghi chú / Nhà cung cấp</label>
+                            <textarea name="ghiChu" class="form-control bg-light border-0" rows="3" placeholder="Ví dụ: Nhập lô hàng iPhone 15 từ Apple VN..."></textarea>
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm">
+                                <i class="bi bi-check-circle-fill me-2"></i>Xác Nhận Nhập Kho
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function updateCurrentStock(select) {
+        var option = select.options[select.selectedIndex];
+        var stock = option.getAttribute('data-stock');
+        var helpText = document.getElementById('currentStockHelp');
+
+        if(stock) {
+            helpText.innerHTML = '<i class="bi bi-info-circle me-1"></i> Tồn kho hiện tại: ' + stock;
+        } else {
+            helpText.innerHTML = '';
+        }
+    }
+</script>

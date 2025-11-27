@@ -1,126 +1,17 @@
 ﻿@{
     ViewData["Title"] = "Thanh toán - Electronic Store";
+    // Tính tổng tiền hàng (Subtotal)
+    decimal subtotal = Model.GioHangs.Sum(item => item.Price * item.Quantity);
+
+    // Lấy thông tin Hạng thành viên
+    var tier = ViewBag.Tier as banthietbidientu.Services.MemberTier;
+    decimal totalSpent = tier?.TotalSpent ?? 0;
+    string rankName = tier?.Name ?? "Thành Viên";
 }
 
-@model TestDoAn.Models.ThanhToanViewModel
+@model banthietbidientu.Models.ThanhToanViewModel
 
-<section class="container my-5">
-    <h2 class="mb-4 text-center fw-bold">Thanh toán đơn hàng</h2>
-
-    @if (TempData["Success"] != null)
-    {
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            @TempData["Success"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            @TempData["Error"]
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        </div>
-    }
-
-    <div class="row g-4">
-        <!-- Cột trái: Thông tin giỏ hàng và người mua -->
-        <div class="col-lg-7">
-            <!-- Thông tin giỏ hàng -->
-            <div class="card shadow-sm mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Sản phẩm trong giỏ hàng</h4>
-                </div>
-                <div class="card-body">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Sản phẩm</th>
-                                <th>Hình ảnh</th>
-                                <th>Giá</th>
-                                <th>Số lượng</th>
-                                <th>Thành tiền</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach (var item in Model.GioHangs)
-                            {
-                                <tr>
-                                    <td>@item.Name</td>
-                                    <td><img src="@item.ImageUrl" alt="@item.Name" class="img-fluid" style="max-width: 80px;" /></td>
-                                    <td>@(item.Price.ToString("#,##0").Replace(",", ".")) VNĐ</td>
-                                    <td>@item.Quantity</td>
-                                    <td>@((item.Price * item.Quantity).ToString("#,##0").Replace(",", ".")) VNĐ</td>
-                                </tr>
-                            }
-                        </tbody>
-                        <tfoot>
-                            <tr>
-                                <td colspan="4" class="text-end fw-bold">Tổng cộng:</td>
-                                <td class="fw-bold">@(Model.GioHangs.Sum(item => item.Price * item.Quantity).ToString("#,##0").Replace(",", ".")) VNĐ</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-            </div>
-
-            <!-- Thông tin người mua và địa chỉ giao hàng -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Thông tin người mua</h4>
-                </div>
-                <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-4 fw-bold">Họ và tên</dt>
-                        <dd class="col-sm-8">@Model.TaiKhoan.FullName</dd>
-                        <dt class="col-sm-4 fw-bold">Email</dt>
-                        <dd class="col-sm-8">@Model.TaiKhoan.Email</dd>
-                        <dt class="col-sm-4 fw-bold">Địa chỉ tài khoản</dt>
-                        <dd class="col-sm-8">@(Model.TaiKhoan.Address ?? "Chưa cung cấp")</dd>
-                    </dl>
-                    <div class="mt-3">
-                        <label for="deliveryAddress" class="form-label fw-bold">Địa chỉ giao hàng</label>
-                        <textarea class="form-control" id="deliveryAddress" name="deliveryAddress" rows="3" placeholder="Nhập địa chỉ giao hàng (tùy chọn, nếu khác với địa chỉ tài khoản)"></textarea>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Cột phải: Phương thức thanh toán và voucher -->
-        <div class="col-lg-5">
-            <div class="card shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h4 class="mb-0">Phương thức thanh toán</h4>
-                </div>
-                <div class="card-body">
-                    <form asp-action="XacNhanThanhToan" asp-controller="GioHang" method="post">
-                        <div class="mb-4">
-                            <label class="form-label fw-bold">Chọn phương thức thanh toán</label>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="paymentMethod" id="bank" value="Bank" checked>
-                                <label class="form-check-label" for="bank">Ngân hàng</label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="COD">
-                                <label class="form-check-label" for="cod">COD (Thanh toán khi nhận hàng)</label>
-                            </div>
-                            <div class="form-check mb-2">
-                                <input class="form-check-input" type="radio" name="paymentMethod" id="wallet" value="Wallet">
-                                <label class="form-check-label" for="wallet">Ví điện tử</label>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex gap-2">
-                            <button type="submit" class="btn btn-success w-100">Xác nhận thanh toán</button>
-                            <a asp-action="Index" asp-controller="GioHang" class="btn btn-outline-secondary w-100">Quay lại giỏ hàng</a>
-                        </div>
-                        @Html.AntiForgeryToken()
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
+<link rel="stylesheet" href="~/css/leaflet.css" />
 
 <style>
     .card {
@@ -128,39 +19,380 @@
         transition: box-shadow 0.3s;
     }
 
-    .card:hover {
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    }
+        .card:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
 
-    .table-hover tbody tr:hover {
-        background-color: #f8f9fa;
-    }
-
-    .form-check-input:checked {
+    .btn-check:checked + .btn-outline-primary {
         background-color: #0d6efd;
-        border-color: #0d6efd;
+        color: white;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
 
-    .btn-success {
-        background-color: #28a745;
-        border-color: #28a745;
-        transition: background-color 0.3s;
+    #map {
+        height: 300px;
+        width: 100%;
+        border-radius: 8px;
+        border: 1px solid #dee2e6;
+        margin-bottom: 15px;
+        z-index: 1;
     }
-
-    .btn-success:hover {
-        background-color: #218838;
-        border-color: #1e7e34;
-    }
-
-    .btn-outline-secondary {
-        transition: background-color 0.3s;
-    }
-
-    .btn-outline-secondary:hover {
-        background-color: #f8f9fa;
+    /* Hiệu ứng chuyển đổi mượt mà */
+    .delivery-option {
+        transition: all 0.3s ease-in-out;
     }
 </style>
 
+<section class="container my-5">
+    <h2 class="mb-4 text-center fw-bold">Thanh toán đơn hàng</h2>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">@TempData["Error"]</div>
+    }
+
+    <form asp-action="XacNhanThanhToan" asp-controller="GioHang" method="post">
+        @Html.AntiForgeryToken()
+        <input type="hidden" id="latInput" name="Latitude" />
+        <input type="hidden" id="lngInput" name="Longitude" />
+
+        <input type="hidden" id="deliveryTypeInput" name="DeliveryType" value="Ship" />
+
+        <div class="row g-4">
+            <div class="col-lg-7">
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body p-2">
+                        <div class="btn-group w-100" role="group">
+                            <input type="radio" class="btn-check" name="deliveryOptionBtn" id="btnShip" autocomplete="off" checked onclick="toggleDelivery('ship')">
+                            <label class="btn btn-outline-primary fw-bold py-2" for="btnShip">
+                                <i class="bi bi-truck me-2"></i>Giao hàng tận nơi
+                            </label>
+
+                            <input type="radio" class="btn-check" name="deliveryOptionBtn" id="btnStore" autocomplete="off" onclick="toggleDelivery('store')">
+                            <label class="btn btn-outline-primary fw-bold py-2" for="btnStore">
+                                <i class="bi bi-shop me-2"></i>Nhận tại cửa hàng
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="shippingSection" class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Thông tin người nhận</h5>
+                    </div>
+                    <div class="card-body">
+                        <dl class="row mb-3">
+                            <dt class="col-sm-4 fw-bold">Họ và tên</dt>
+                            <dd class="col-sm-8">
+                                @Model.TaiKhoan.FullName
+                                <span class="badge bg-warning text-dark ms-2">@rankName</span>
+                            </dd>
+                            <dt class="col-sm-4 fw-bold">Email</dt>
+                            <dd class="col-sm-8">@Model.TaiKhoan.Email</dd>
+                        </dl>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-primary">
+                                <i class="bi bi-geo-alt-fill me-1"></i>Chọn vị trí trên bản đồ
+                            </label>
+                            <div id="map"></div>
+                            <div class="small text-muted mb-2">
+                                <i class="bi bi-info-circle"></i> Phí ship được tính tự động dựa trên khoảng cách.
+                            </div>
+
+                            <label for="deliveryAddress" class="form-label fw-bold">Địa chỉ cụ thể</label>
+                            <textarea class="form-control" id="deliveryAddress" name="DiaChi" rows="2"
+                                      placeholder="Số nhà, tên đường...">@(Model.TaiKhoan.Address)</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="storeSection" class="card shadow-sm mb-4 d-none">
+                    <div class="card-header bg-info text-white">
+                        <h5 class="mb-0">Chọn cửa hàng gần bạn</h5>
+                    </div>
+                    <div class="card-body">
+                        <label class="form-label fw-bold">Danh sách chi nhánh:</label>
+                        <select name="StoreId" class="form-select form-select-lg mb-3">
+                            <option value="1">📍 Hà Nội: 120 Xuân Thủy, Cầu Giấy</option>
+                            <option value="2">📍 Đà Nẵng: 78 Bạch Đằng, Hải Châu</option>
+                            <option value="3">📍 TP.HCM: 55 Nguyễn Huệ, Quận 1</option>
+                        </select>
+
+                        <div class="alert alert-primary d-flex align-items-center" role="alert">
+                            <i class="bi bi-check-circle-fill fs-4 me-3"></i>
+                            <div>
+                                <strong>Miễn phí vận chuyển!</strong><br>
+                                Bạn sẽ đến cửa hàng để nhận máy. Vui lòng mang theo mã đơn hàng.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-secondary text-white">
+                        <h6 class="mb-0">Sản phẩm trong giỏ (@Model.GioHangs.Count)</h6>
+                    </div>
+                    <div class="card-body p-0">
+                        <table class="table table-hover mb-0">
+                            <tbody>
+                                @foreach (var item in Model.GioHangs)
+                                {
+                                    <tr>
+                                        <td class="ps-3"><img src="@(item.Image ?? "/image/logo.png")" class="rounded border" style="width: 50px;"></td>
+                                        <td>
+                                            <div class="fw-bold small">@item.Name</div>
+                                            <div class="text-muted small">x @item.Quantity</div>
+                                        </td>
+                                        <td class="text-end pe-3 small fw-bold">@((item.Price * item.Quantity).ToString("#,##0")) ₫</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="card shadow-sm sticky-top" style="top: 20px;">
+                    <div class="card-header bg-success text-white">
+                        <h4 class="mb-0">Thanh toán</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="fw-bold mb-3 border-bottom pb-2">Chi tiết thanh toán</h5>
+
+                        <div class="d-flex justify-content-between mb-2">
+                            <span class="text-muted">Tiền hàng:</span>
+                            <span class="fw-bold">@subtotal.ToString("#,##0").Replace(",", ".") ₫</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2 text-danger" id="discountRow" style="display:none;">
+                            <span><i class="bi bi-ticket-perforated-fill me-1"></i>Ưu đãi @rankName:</span>
+                            <span class="fw-bold" id="discountDisplay">- 0 ₫</span>
+                        </div>
+
+                        <div class="d-flex justify-content-between mb-2 text-success">
+                            <span><i class="bi bi-truck"></i> Phí vận chuyển:</span>
+                            <span id="shippingFeeDisplay">0 ₫</span>
+                        </div>
+
+                        <div class="mb-3 small text-muted text-end fst-italic" id="warehouseDisplay">
+                            (Đang xác định vị trí...)
+                        </div>
+
+                        <div class="d-flex justify-content-between border-top pt-3 mb-4">
+                            <span class="h5 fw-bold">Tổng cộng:</span>
+                            <span class="h4 fw-bold text-danger" id="totalDisplay">
+                                @subtotal.ToString("#,##0").Replace(",", ".") ₫
+                            </span>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Hình thức thanh toán</label>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="COD" checked>
+                                <label class="form-check-label" for="cod">Thanh toán khi nhận hàng (COD)</label>
+                            </div>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="radio" name="paymentMethod" id="vnpay" value="VNPAY" disabled>
+                                <label class="form-check-label text-muted" for="vnpay">VNPAY (Sắp ra mắt)</label>
+                            </div>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg fw-bold shadow-sm">
+                                <i class="bi bi-check-circle me-2"></i> Đặt Hàng Ngay
+                            </button>
+                            <a asp-action="Index" asp-controller="GioHang" class="btn btn-outline-secondary btn-sm">
+                                Quay lại giỏ hàng
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</section>
+
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/leaflet.js"></script>
+
+    <script>
+        // --- KHAI BÁO DỮ LIỆU ---
+            const shops = [
+            {
+                id: 1,
+                name: '120 Xuân Thủy, P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội',
+                lat: 21.0357,
+                lng: 105.7981
+            },
+            {
+                id: 2,
+                name: '78 Bạch Đằng, P. Hải Châu I, Hải Châu, Đà Nẵng',
+                lat: 16.0691,
+                lng: 108.2238
+            },
+            {
+                id: 3,
+                name: '55 Nguyễn Huệ, P. Bến Nghé, Quận 1, TP.HCM',
+                lat: 10.7725,
+                lng: 106.7045
+            }
+        ];
+
+        const subtotal = @(subtotal.ToString("0", System.Globalization.CultureInfo.InvariantCulture));
+        const totalSpent = @(totalSpent.ToString("0", System.Globalization.CultureInfo.InvariantCulture));
+        const shippingRate = 5000; // 5k/km
+
+        // Logic Hạng thành viên
+        let discountPercent = 0;
+        let freeShipDistance = 0;
+
+        if (totalSpent >= 20000000000000000) {
+            console.log("=> Hạng: TỐI THƯỢNG (ADMIN)");
+            discountPercent = 0.50;
+            freeShipDistance = 99999;
+        }
+
+        else if (totalSpent >= 100000000) { discountPercent = 0.10; freeShipDistance = 99999; } // Kim Cương
+        else if (totalSpent >= 50000000) { discountPercent = 0.05; freeShipDistance = 99999; } // Bạch Kim
+        else if (totalSpent >= 20000000) { freeShipDistance = 300; } // Vàng
+        else if (totalSpent >= 10000000) { freeShipDistance = 15; } // Bạc
+
+        // Biến toàn cục lưu phí ship hiện tại
+        let currentShippingFee = 0;
+        let currentLat = 16.047165, currentLng = 108.219955; // Mặc định ĐN
+
+        // --- HÀM CHUYỂN ĐỔI GIAO HÀNG / NHẬN TẠI QUÁN ---
+        function toggleDelivery(type) {
+            const shipSection = document.getElementById('shippingSection');
+            const storeSection = document.getElementById('storeSection');
+            const typeInput = document.getElementById('deliveryTypeInput');
+
+            if (type === 'store') {
+                // 1. Hiện tab Store, Ẩn tab Ship
+                shipSection.classList.add('d-none');
+                storeSection.classList.remove('d-none');
+                typeInput.value = 'Store';
+
+                // 2. Reset phí ship về 0
+                updateTotalDisplay(0);
+
+                document.getElementById('warehouseDisplay').innerText = "(Nhận tại cửa hàng)";
+                document.getElementById('shippingFeeDisplay').innerHTML = '<span class="badge bg-primary">Miễn phí</span>';
+
+            } else {
+                // 1. Hiện tab Ship, Ẩn tab Store
+                shipSection.classList.remove('d-none');
+                storeSection.classList.add('d-none');
+                typeInput.value = 'Ship';
+
+                // 2. Tính lại phí ship dựa trên vị trí hiện tại
+                calculateShipping(currentLat, currentLng);
+            }
+        }
+
+        // --- HÀM TÍNH SHIP (LOGIC CŨ) ---
+        function calculateShipping(lat, lng) {
+            currentLat = lat;
+            currentLng = lng;
+
+            let minDistance = Infinity;
+            let nearestShop = null;
+
+            shops.forEach(shop => {
+                let dist = getDistance(lat, lng, shop.lat, shop.lng);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    nearestShop = shop;
+                }
+            });
+
+            let km = Math.round(minDistance * 10) / 10;
+            let fee = 0;
+
+            if (km > freeShipDistance) {
+                let chargeableKm = (freeShipDistance > 0) ? (km - freeShipDistance) : km;
+                if(freeShipDistance === 0 && km <= 5) chargeableKm = 0;
+                else if(chargeableKm < 0) chargeableKm = 0;
+
+                fee = Math.round(chargeableKm * shippingRate);
+            }
+
+            // Cập nhật hiển thị
+            document.getElementById('warehouseDisplay').innerHTML = `Vận chuyển từ: <strong>${nearestShop.name}</strong> (${km} km)`;
+
+            if (fee === 0) {
+                document.getElementById('shippingFeeDisplay').innerHTML = '<span class="badge bg-success">Miễn phí</span>';
+            } else {
+                document.getElementById('shippingFeeDisplay').innerText = fee.toLocaleString('vi-VN') + ' ₫';
+            }
+
+            // Cập nhật tổng tiền
+            updateTotalDisplay(fee);
+
+            // Gán tọa độ vào input ẩn
+            document.getElementById('latInput').value = lat;
+            document.getElementById('lngInput').value = lng;
+        }
+
+        // --- HÀM CẬP NHẬT TỔNG TIỀN ---
+        function updateTotalDisplay(shipFee) {
+            currentShippingFee = shipFee;
+            let discountAmount = Math.round(subtotal * discountPercent);
+
+            if (discountAmount > 0) {
+                document.getElementById('discountRow').style.display = 'flex';
+                document.getElementById('discountDisplay').innerText = '- ' + discountAmount.toLocaleString('vi-VN') + ' ₫';
+            }
+
+            let total = subtotal - discountAmount + shipFee;
+            document.getElementById('totalDisplay').innerText = total.toLocaleString('vi-VN') + ' ₫';
+        }
+
+        // Các hàm hỗ trợ Map (Giữ nguyên)
+        function getDistance(lat1, lon1, lat2, lon2) {
+            var R = 6371;
+            var dLat = deg2rad(lat2 - lat1);
+            var dLon = deg2rad(lon2 - lon1);
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+                    Math.sin(dLon/2) * Math.sin(dLon/2);
+            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        function deg2rad(deg) { return deg * (Math.PI/180); }
+
+        // Khởi tạo Map
+        var map = L.map('map').setView([16.047165, 108.219955], 5);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+        var userMarker = L.marker([16.047165, 108.219955], {draggable: true}).addTo(map);
+
+        userMarker.on('dragend', function (e) {
+            var coord = e.target.getLatLng();
+            calculateShipping(coord.lat, coord.lng);
+        });
+        map.on('click', function(e) {
+            userMarker.setLatLng(e.latlng);
+            calculateShipping(e.latlng.lat, e.latlng.lng);
+        });
+
+        if (navigator.geolocation) {
+            navigator.geolocation.getCurrentPosition(position => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                map.setView([lat, lng], 13);
+                userMarker.setLatLng([lat, lng]);
+                calculateShipping(lat, lng);
+            });
+        } else {
+            calculateShipping(16.047165, 108.219955);
+        }
+    </script>
 }

@@ -1,15 +1,16 @@
-﻿
-using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
-using TestDoAn.Data;
+using banthietbidientu.Data;
+using banthietbidientu.Services; // Đảm bảo bạn đã có namespace này
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Đăng ký DbContext với chuỗi kết nối
+// 1. CẤU HÌNH DATABASE
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Thêm session
+// 2. CẤU HÌNH SESSION (QUAN TRỌNG CHO GIỎ HÀNG)
+builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
     options.IdleTimeout = TimeSpan.FromMinutes(30);
@@ -17,25 +18,31 @@ builder.Services.AddSession(options =>
     options.Cookie.IsEssential = true;
 });
 
-// Thêm MVC
-builder.Services.AddControllersWithViews();
+// 3. ĐĂNG KÝ CÁC SERVICES
+builder.Services.AddScoped<MemberService>();
 
-// Thêm Newtonsoft.Json (dùng cho session trong GioHangController)
+// 4. CẤU HÌNH MVC & JSON
 builder.Services.AddControllersWithViews()
-    .AddNewtonsoftJson();
+    .AddNewtonsoftJson(options =>
+    {
+        // Giữ nguyên tên thuộc tính JSON (không tự đổi sang chữ thường)
+        options.SerializerSettings.ContractResolver = new Newtonsoft.Json.Serialization.DefaultContractResolver();
+    });
 
-// Thêm xác thực cookie
+// 5. CẤU HÌNH ĐĂNG NHẬP (COOKIE)
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/Login/DangNhap";
         options.LogoutPath = "/Login/Logout";
-        options.AccessDeniedPath = "/Login/DangNhap";
+        options.AccessDeniedPath = "/Login/AccessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromDays(7);
     });
 
 var app = builder.Build();
 
-// Cấu hình pipeline
+// --- CẤU HÌNH PIPELINE ---
+
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
@@ -51,9 +58,10 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
+// Thứ tự quan trọng: Session -> Auth -> Authorization
+app.UseSession();
 app.UseAuthentication();
 app.UseAuthorization();
-app.UseSession();
 
 app.MapControllerRoute(
     name: "default",

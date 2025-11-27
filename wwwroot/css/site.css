@@ -17,21 +17,23 @@ html {
     min-height: 100%;
 }
 
+/* --- SIDEBAR STYLES --- */
 .sidebar {
     height: 100vh;
     width: 250px;
     background-color: #333;
     position: fixed;
     top: 0;
-    left: -250px; /* Ẩn sidebar ban đầu */
+    left: -250px;
     transition: left 0.3s ease;
     color: white;
     padding: 20px;
     box-sizing: border-box;
+    z-index: 1030; /* Đảm bảo sidebar nằm trên nội dung */
 }
 
     .sidebar.active {
-        left: 0; /* Hiển thị sidebar khi active */
+        left: 0;
     }
 
     .sidebar ul {
@@ -49,7 +51,6 @@ html {
                 font-size: 18px;
             }
 
-/* Nút đóng sidebar */
 .close-btn {
     background: none;
     border: none;
@@ -61,8 +62,209 @@ html {
     right: 20px;
 }
 
-/* Nội dung chính */
 .main-content {
     margin-left: 60px;
     padding: 20px;
+}
+
+/* --- USER RANK STYLES --- */
+
+/* 🥈 BẠC */
+.tier-silver {
+    background: linear-gradient(135deg, #e0e0e0 0%, #bdc3c7 100%);
+    color: #2c3e50 !important;
+    border: 1px solid #bdc3c7;
+    font-weight: bold;
+}
+
+/* 🥇 VÀNG */
+.tier-gold {
+    background: linear-gradient(135deg, #fff7ad 0%, #ffa9f9 0%, #ffc107 100%);
+    background: linear-gradient(to right, #bf953f, #fcf6ba, #b38728, #fbf5b7, #aa771c);
+    color: #5c4006 !important;
+    border: 1px solid #daa520;
+    font-weight: bold;
+    text-shadow: 0px 1px 0px rgba(255,255,255,0.5);
+}
+
+/* 🏆 BẠCH KIM */
+.tier-platinum {
+    background: linear-gradient(135deg, #e0f7fa 0%, #80deea 100%);
+    color: #006064 !important;
+    border: 1px solid #4dd0e1;
+    font-weight: 800;
+    box-shadow: 0 0 10px rgba(77, 208, 225, 0.5);
+}
+
+/* 💎 KIM CƯƠNG */
+.tier-diamond {
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+    color: #fff !important;
+    border: 1px solid #e94560;
+    font-weight: 900;
+    text-transform: uppercase;
+    box-shadow: 0 0 15px rgba(233, 69, 96, 0.6);
+    position: relative;
+    overflow: hidden;
+}
+
+    .tier-diamond::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+        transform: skewX(-25deg);
+        animation: shine 3s infinite;
+    }
+
+@keyframes shine {
+    100% {
+        left: 200%;
+    }
+}
+
+/* --- [NEW] ADMIN RANK STYLES --- */
+.tier-admin {
+    background: linear-gradient(135deg, #8B0000 0%, #1a1a1a 100%); /* Đỏ thẫm sang Đen */
+    color: #fff !important;
+    border: 1px solid #ff3333;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    box-shadow: 0 0 15px rgba(220, 53, 69, 0.5);
+    position: relative;
+    overflow: hidden;
+}
+
+    .tier-admin::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(to right, transparent, rgba(255,255,255,0.4), transparent);
+        transform: skewX(-25deg);
+        animation: admin-shine 3s infinite;
+    }
+
+@keyframes admin-shine {
+    0% {
+        left: -100%;
+    }
+
+    20% {
+        left: 200%;
+    }
+
+    100% {
+        left: 200%;
+    }
+}
+
+/* Admin Profile Theme */
+.bg-admin {
+    background: radial-gradient(circle at center, #2b0505 0%, #000000 100%);
+}
+
+.border-admin {
+    border-color: #ff3333 !important;
+    box-shadow: 0 0 30px rgba(255, 51, 51, 0.3);
+}
+
+.badge-admin {
+    background: linear-gradient(to right, #cc0000, #000000);
+    color: white;
+    border: 1px solid #ff6666;
+    box-shadow: 0 0 10px rgba(204, 0, 0, 0.6);
+}
+
+/* --- MEMBER CARD STYLES --- */
+.member-card-container {
+    perspective: 1000px;
+}
+
+.member-card {
+    width: 100%;
+    height: 220px;
+    border-radius: 16px;
+    padding: 25px;
+    position: relative;
+    color: #fff;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    transition: transform 0.5s;
+}
+
+    .member-card:hover {
+        transform: translateY(-5px) scale(1.02);
+    }
+
+    .member-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        background: radial-gradient(circle at top right, rgba(255,255,255,0.3), transparent 40%);
+        pointer-events: none;
+    }
+
+.card-chip {
+    width: 50px;
+    height: 35px;
+    background: linear-gradient(135deg, #ffd700, #d4af37);
+    border-radius: 6px;
+    margin-bottom: 10px;
+    position: relative;
+    overflow: hidden;
+}
+
+    .card-chip::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 0;
+        right: 0;
+        height: 1px;
+        background: rgba(0,0,0,0.2);
+    }
+
+.card-number {
+    font-family: 'Courier New', monospace;
+    font-size: 1.4rem;
+    letter-spacing: 2px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+    margin-top: auto;
+    margin-bottom: 15px;
+}
+
+.card-info {
+    display: flex;
+    justify-content: space-between;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+}
+
+.card-name {
+    font-weight: bold;
+    font-size: 1rem;
+}
+
+.card-logo-bg {
+    position: absolute;
+    right: -20px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10rem;
+    opacity: 0.1;
+    pointer-events: none;
 }

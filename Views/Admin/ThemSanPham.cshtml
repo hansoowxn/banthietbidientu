@@ -1,42 +1,120 @@
-﻿@model TestDoAn.Models.SanPham
+﻿@model banthietbidientu.Models.SanPham
 
 @{
     ViewData["Title"] = "Thêm Sản Phẩm";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
-<h2>Thêm Sản Phẩm</h2>
+<div class="container-fluid py-4">
+    <h2 class="mb-4 fw-bold text-primary">Thêm Sản Phẩm Mới</h2>
 
-<form asp-action="ThemSanPham" method="post">
-    <div class="form-group">
-        <label asp-for="Name" class="control-label">Tên sản phẩm</label>
-        <input asp-for="Name" class="form-control" />
-        <span asp-validation-for="Name" class="text-danger"></span>
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-4">
+            <form asp-action="ThemSanPham" method="post">
+                <div class="row g-3">
+
+                    <div class="col-md-6">
+                        <label asp-for="Name" class="form-label fw-bold">Tên sản phẩm</label>
+                        <input asp-for="Name" class="form-control" required />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-md-6">
+                        <label asp-for="Price" class="form-label fw-bold">Giá bán</label>
+                        <div class="input-group">
+                            <input asp-for="Price" type="number" class="form-control" required />
+                            <span class="input-group-text">đ</span>
+                        </div>
+                        <span asp-validation-for="Price" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold text-primary">Phân bổ kho hàng (Chi nhánh)</label>
+                        <div class="card bg-light border-0 p-3 rounded-3">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-muted">Kho Hà Nội</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text border-0 bg-white"><i class="bi bi-geo-alt text-danger"></i></span>
+                                        <input type="number" name="slHaNoi" class="form-control border-0" value="10" min="0" required onchange="updateTotal()" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-muted">Kho Đà Nẵng</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text border-0 bg-white"><i class="bi bi-geo-alt text-primary"></i></span>
+                                        <input type="number" name="slDaNang" class="form-control border-0" value="10" min="0" required onchange="updateTotal()" />
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label small fw-bold text-muted">Kho TP.HCM</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text border-0 bg-white"><i class="bi bi-geo-alt text-success"></i></span>
+                                        <input type="number" name="slHCM" class="form-control border-0" value="10" min="0" required onchange="updateTotal()" />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-2 text-end small text-muted">
+                                Tổng cộng: <strong id="totalStock" class="text-dark">30</strong> sản phẩm
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Category" class="form-label fw-bold">Danh mục</label>
+                        <select asp-for="Category" class="form-select">
+                            <option value="Điện thoại">Điện thoại</option>
+                            <option value="Laptop">Laptop</option>
+                            <option value="Tablet">Tablet</option>
+                            <option value="Smartwatch">Smartwatch</option>
+                            <option value="Phụ kiện">Phụ kiện</option>
+                        </select>
+                        <span asp-validation-for="Category" class="text-danger"></span>
+                    </div>
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold">Đường dẫn ảnh</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="bi bi-link"></i></span>
+                            <input type="text"
+                                   class="form-control"
+                                   name="ImageUrl"
+                                   value="@Model?.ImageUrl"
+                                   placeholder="Ví dụ: /image/iphone15.webp"
+                                   oninput="document.getElementById('preview').src = this.value" />
+                        </div>
+                        <span class="text-danger field-validation-valid" data-valmsg-for="ImageUrl" data-valmsg-replace="true"></span>
+
+                        <div class="mt-3 text-center">
+                            <img id="preview"
+                                 src="/image/logo.png"
+                                 style="height: 150px; object-fit: contain;"
+                                 class="rounded border p-1"
+                                 onerror="this.src='/image/logo.png'" />
+                            <div class="text-muted small mt-2 fst-italic">Xem trước hình ảnh</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 text-end">
+                    <a asp-action="QuanLySanPham" class="btn btn-secondary me-2">Hủy</a>
+                    <button type="submit" class="btn btn-primary fw-bold px-4">Lưu sản phẩm</button>
+                </div>
+            </form>
+        </div>
     </div>
+</div>
 
-    <div class="form-group">
-        <label asp-for="Price" class="control-label">Giá</label>
-        <input asp-for="Price" class="form-control" />
-        <span asp-validation-for="Price" class="text-danger"></span>
-    </div>
+<script>
+    function updateTotal() {
+        let hn = parseInt(document.querySelector('[name="slHaNoi"]').value) || 0;
+        let dn = parseInt(document.querySelector('[name="slDaNang"]').value) || 0;
+        let hcm = parseInt(document.querySelector('[name="slHCM"]').value) || 0;
+        document.getElementById('totalStock').innerText = hn + dn + hcm;
+    }
+</script>
 
-    <div class="form-group">
-        <label asp-for="SoLuong" class="control-label">Số lượng</label>
-        <input asp-for="SoLuong" class="form-control" />
-        <span asp-validation-for="SoLuong" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="ImageUrl" class="control-label">Đường dẫn ảnh</label>
-        <input asp-for="ImageUrl" class="form-control" />
-        <span asp-validation-for="ImageUrl" class="text-danger"></span>
-    </div>
-
-    <div class="form-group">
-        <label asp-for="Category" class="control-label">Loại sản phẩm</label>
-        <input asp-for="Category" class="form-control" />
-        <span asp-validation-for="Category" class="text-danger"></span>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Thêm</button>
-    <a asp-action="QuanLySanPham" class="btn btn-secondary">Quay lại</a>
-</form>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

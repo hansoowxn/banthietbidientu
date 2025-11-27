@@ -1,126 +1,215 @@
-﻿@model TestDoAn.Models.TaiKhoan
+﻿@model banthietbidientu.Models.TaiKhoan
 @{
     ViewData["Title"] = "Đăng ký - SmartTech";
+
+    string emailPattern = "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$";
 }
 
-@section Styles {
-    <style>
-        /* Sửa lỗi tại đây: Thêm position: relative; cho .form-floating */
-        .form-floating {
-            position: relative;
-        }
-
-                .form-floating > .form-control:focus ~ label,
-                .form-floating > .form-control:not(:placeholder-shown) ~ label,
-                .form-floating > .form-select ~ label {
-                        transform: scale(0.85) translateY(-0.75rem) translateX(0.15rem);
-                        background-color: #fff;
-                        padding: 0 0.25rem;
-
-        }
-
-
-    </style>
-}
-
-<section class="container my-5">
+<section class="container" style="min-height: 80vh;">
     <div class="row justify-content-center">
-        <div class="col-lg-6 col-md-8">
+        <div class="col-lg-4 col-md-6 mt-3 pt-3">
 
-            <div class="card shadow-sm border-0 rounded-3">
-                <div class="card-body p-4 p-md-5">
+            <div class="text-center mb-5">
+                <h2 class="h3 fw-bold mb-3 text-dark">Tạo tài khoản</h2>
+                <p class="text-muted small">Đăng ký để trải nghiệm mua sắm tuyệt vời tại SmartTech.</p>
+            </div>
 
-                    <div class="text-center mb-4">
-                        <i class="bi bi-person-plus-fill display-3 text-primary"></i>
-                        <h2 class="h3 fw-bold mt-3 mb-0">Tạo tài khoản</h2>
+            @if (ViewData.ModelState["CustomError"]?.Errors.Any() == true)
+            {
+                <div class="alert alert-danger text-center p-2 small" role="alert">
+                    @ViewData.ModelState["CustomError"].Errors.First().ErrorMessage
+                </div>
+            }
+
+            <form asp-action="DangKy" asp-controller="Login" method="post" id="registerForm">
+
+                <h5 class="fw-bold mb-3">Thông tin tài khoản</h5>
+
+                <div class="mb-3">
+                    <label for="inputUsername" class="form-label fw-semibold">Tài khoản</label>
+                    <input asp-for="Username" class="form-control" id="inputUsername" placeholder="Tên tài khoản" required style="border-radius: 8px;" />
+                    <span asp-validation-for="Username" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Mật khẩu</label>
+                    <div class="input-group">
+                        <input asp-for="Password" type="password" class="form-control" id="reg_password" required>
+                        <button class="btn btn-outline-secondary" type="button" onclick="togglePassword('reg_password', 'icon_reg_pass')">
+                            <i class="bi bi-eye" id="icon_reg_pass"></i>
+                        </button>
                     </div>
+                    <span asp-validation-for="Password" class="text-danger"></span>
+                </div>
 
-                    @if (!ViewData.ModelState.IsValid)
-                    {
-                        <div class="alert alert-danger p-2 small" role="alert">
-                            <ul class="mb-0 ps-3">
-                                @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-                                {
-                                    <li>@error.ErrorMessage</li>
-                                }
-                            </ul>
-                        </div>
-                    }
+                <hr class="my-4">
 
-                    <form asp-action="DangKy" asp-controller="Login" method="post">
+                <h5 class="fw-bold mb-3">Thông tin cá nhân</h5>
 
-                        <div class="form-floating mb-3">
-                            <input asp-for="Username" class="form-control" id="floatingUser" placeholder="Tài khoản" required />
-                            <label for="floatingUser">Tài khoản</label>
-                            <span asp-validation-for="Username" class="text-danger small"></span>
-                        </div>
+                <div class="mb-3">
+                    <label for="inputFullName" class="form-label fw-semibold">Họ và Tên</label>
+                    <input asp-for="FullName" class="form-control" id="inputFullName" placeholder="Họ và Tên" required style="border-radius: 8px;" />
+                    <span asp-validation-for="FullName" class="text-danger small"></span>
+                </div>
 
-                        <div class="form-floating mb-3">
-                            <input asp-for="Password" class="form-control" type="password" id="floatingPass" placeholder="Mật khẩu" required />
-                            <label for="floatingPass">Mật khẩu</label>
-                            <span asp-validation-for="Password" class="text-danger small"></span>
-                        </div>
-
-                        <hr class="my-3">
-
-                        <div class="form-floating mb-3">
-                            <input asp-for="FullName" class="form-control" id="floatingFullName" placeholder="Họ và Tên" required />
-                            <label for="floatingFullName">Họ và Tên</label>
-                            <span asp-validation-for="FullName" class="text-danger small"></span>
-                        </div>
-
-                        <div class="row g-2 mb-3">
-                            <div class="col-md">
-                                <div class="form-floating">
-                                    <input asp-for="DateOfBirth" class="form-control" type="date" id="floatingDate" placeholder="Ngày sinh" required />
-                                    <label for="floatingDate">Ngày sinh</label>
-                                    <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
-                                </div>
-                            </div>
-                            <div class="col-md">
-                                <div class="form-floating">
-                                    <select asp-for="Gender" class="form-select" id="floatingGender" required>
-                                        <option value="" disabled selected>Chọn giới tính</option>
-                                        <option value="Male">Nam</option>
-                                        <option value="Female">Nữ</option>
-                                        <option value="Other">Khác</option>
-                                    </select>
-                                    <label for="floatingGender">Giới tính</label>
-                                    <span asp-validation-for="Gender" class="text-danger small"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="form-floating mb-3">
-                            <input asp-for="Address" class="form-control" id="floatingAddress" placeholder="Địa chỉ" />
-                            <label for="floatingAddress">Địa chỉ</label>
-                            <span asp-validation-for="Address" class="text-danger small"></span>
-                        </div>
-
-                        <div class="form-floating mb-3">
-                            <input asp-for="Email" class="form-control" type="email" id="floatingEmail" placeholder="Email" required />
-                            <label for="floatingEmail">Email</label>
-                            <span asp-validation-for="Email" class="text-danger small"></span>
-                        </div>
-
-                        <input type="hidden" asp-for="Role" value="User" />
-
-                        <div class="d-grid mb-3">
-                            <button type="submit" class="btn btn-primary btn-lg fw-bold">Đăng ký</button>
-                        </div>
-                    </form>
-
-                    <div class="text-center">
-                        <small class="text-muted">Đã có tài khoản?</small>
-                        <a asp-controller="Login" asp-action="DangNhap" class="ms-1 fw-bold text-decoration-none">Đăng nhập ngay</a>
+                <div class="row g-3 mb-3">
+                    <div class="col-md">
+                        <label for="inputDate" class="form-label fw-semibold">Ngày sinh</label>
+                        <input asp-for="DateOfBirth" class="form-control" type="date" id="inputDate" required style="border-radius: 8px;" />
+                        <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md">
+                        <label for="inputGender" class="form-label fw-semibold">Giới tính</label>
+                        <select asp-for="Gender" class="form-select" id="inputGender" required style="border-radius: 8px;">
+                            <option value="" disabled selected>Chọn giới tính</option>
+                            <option value="Male">Nam</option>
+                            <option value="Female">Nữ</option>
+                            <option value="Other">Khác</option>
+                        </select>
+                        <span asp-validation-for="Gender" class="text-danger small"></span>
                     </div>
                 </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Địa chỉ</label>
+
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-4">
+                            <select class="form-select" id="province" required>
+                                <option value="">Chọn Tỉnh/TP</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="district" disabled required>
+                                <option value="">Chọn Quận/Huyện</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <select class="form-select" id="ward" disabled required>
+                                <option value="">Chọn Phường/Xã</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <input type="text" class="form-control" id="specificAddress" placeholder="Số nhà, tên đường cụ thể..." required>
+
+                    <input type="hidden" asp-for="Address" id="fullAddressInput" />
+                    <span asp-validation-for="Address" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label for="inputEmail" class="form-label fw-semibold">Email</label>
+                    <input asp-for="Email"
+                           class="form-control"
+                           type="email"
+                           id="inputEmail"
+                           placeholder="Email"
+                           required
+                           style="border-radius: 8px;"
+                           pattern="@Html.Raw(emailPattern)"
+                           title="Vui lòng nhập địa chỉ email hợp lệ (ví dụ: user@domain.com)" />
+                    <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <input type="hidden" asp-for="Role" value="User" />
+
+                <div class="d-grid mb-5">
+                    <button type="submit" class="btn btn-primary btn-lg fw-bold" style="border-radius: 8px;">Đăng ký</button>
+                </div>
+            </form>
+
+            <div class="text-center pt-3 border-top">
+                <small class="text-muted">Đã có tài khoản?</small>
+                <a asp-controller="Login" asp-action="DangNhap" class="ms-1 fw-bold text-primary text-decoration-none">
+                    Đăng nhập ngay
+                </a>
             </div>
+
         </div>
     </div>
 </section>
 
 @section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        // --- LOGIC HIỆN/ẨN MẬT KHẨU ---
+        function togglePassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("bi-eye");
+                icon.classList.add("bi-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("bi-eye-slash");
+                icon.classList.add("bi-eye");
+            }
+        }
+
+        // --- LOGIC XỬ LÝ ĐỊA CHỈ (API) ---
+        const host = "https://provinces.open-api.vn/api/";
+
+        var callAPI = (api) => {
+            return $.ajax({ url: api, method: 'GET' });
+        }
+
+        // Load Tỉnh/TP khi trang vừa chạy
+        callAPI(host + "?depth=1").done((data) => {
+            renderData(data, "province");
+        });
+
+        // Sự kiện chọn Tỉnh -> Load Huyện
+        $("#province").change(() => {
+            let code = $("#province").val();
+            $("#district").html('<option value="">Chọn Quận/Huyện</option>').prop("disabled", true);
+            $("#ward").html('<option value="">Chọn Phường/Xã</option>').prop("disabled", true);
+
+            if(code) {
+                callAPI(host + "p/" + code + "?depth=2").done((data) => {
+                    renderData(data.districts, "district");
+                    $("#district").prop("disabled", false);
+                });
+            }
+        });
+
+        // Sự kiện chọn Huyện -> Load Xã
+        $("#district").change(() => {
+            let code = $("#district").val();
+            $("#ward").html('<option value="">Chọn Phường/Xã</option>').prop("disabled", true);
+
+            if(code) {
+                callAPI(host + "d/" + code + "?depth=2").done((data) => {
+                    renderData(data.wards, "ward");
+                    $("#ward").prop("disabled", false);
+                });
+            }
+        });
+
+        var renderData = (array, select) => {
+            let row = ' <option value="">Chọn ' + (select == "province" ? "Tỉnh/TP" : (select == "district" ? "Quận/Huyện" : "Phường/Xã")) + '</option>';
+            array.forEach(element => {
+                row += `<option value="${element.code}" data-name="${element.name}">${element.name}</option>`;
+            });
+            document.querySelector("#" + select).innerHTML = row;
+        }
+
+        // KHI ẤN NÚT ĐĂNG KÝ: Gộp địa chỉ lại thành chuỗi
+        $("#registerForm").submit(function() {
+            let province = $("#province option:selected").data("name");
+            let district = $("#district option:selected").data("name");
+            let ward = $("#ward option:selected").data("name");
+            let specific = $("#specificAddress").val();
+
+            if (province && district && ward && specific) {
+                // Tạo chuỗi địa chỉ đầy đủ
+                let fullAddress = `${specific}, ${ward}, ${district}, ${province}`;
+                $("#fullAddressInput").val(fullAddress);
+            }
+        });
+    </script>
+
     @{
         <partial name="_ValidationScriptsPartial" />
     }

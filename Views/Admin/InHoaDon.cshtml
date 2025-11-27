@@ -1,0 +1,241 @@
+﻿@model banthietbidientu.Models.DonHangViewModel
+@{
+    Layout = null;
+    decimal tienThuHo = Model.PhuongThucThanhToan.Contains("COD") ? Model.TongTien : 0;
+    string ngayDat = Model.NgayDat?.ToString("dd/MM/yyyy HH:mm") ?? DateTime.Now.ToString("dd/MM/yyyy HH:mm");
+    
+    // Lấy dữ liệu từ Controller
+    string shopAddress = ViewBag.ShopAddress as string ?? "120 Xuân Thủy, Cầu Giấy, Hà Nội";
+    string zoneCode = ViewBag.ZoneCode as string ?? "HN-CG-01";
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <title>In đơn hàng @Model.MaDon</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script> 
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background: #555;
+            display: flex;
+            justify-content: center;
+            padding-top: 20px;
+            font-family: 'Roboto', sans-serif;
+        }
+
+        .print-container {
+            background: #fff;
+            width: 100mm; /* Khổ giấy in nhiệt */
+            min-height: 150mm;
+            padding: 10px;
+            box-sizing: border-box;
+            border: 1px solid #000;
+            position: relative;
+        }
+
+        .row-flex { display: flex; width: 100%; }
+        .dashed-line { border-bottom: 1px dashed #000; margin: 8px 0; width: 100%; }
+        .solid-line { border-bottom: 2px solid #000; margin: 8px 0; width: 100%; }
+
+        /* HEADER */
+        .header-logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: #ee4d2d;
+            text-transform: uppercase;
+            line-height: 1;
+            letter-spacing: -0.5px; /* Giúp chữ SmartTech nhìn khít và xịn hơn */
+        }
+
+        .header-sub {
+            font-size: 11px;
+            font-weight: bold;
+            color: #ee4d2d;
+            margin-top: 3px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        /* BARCODE AREA - Sửa lỗi tràn lề */
+        .barcode-area {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* Luôn căn mã vạch sang phải */
+            justify-content: center;
+        }
+
+            /* Quan trọng: Giúp mã vạch tự co lại nếu quá dài */
+            .barcode-area svg {
+                max-width: 100% !important;
+                height: auto;
+                display: block;
+            }
+
+        .order-id-text {
+            font-size: 11px;
+            font-weight: bold;
+            text-align: right; /* Căn phải số mã đơn */
+            margin-top: 2px;
+        }
+
+        /* INFO */
+        .info-section { display: flex; font-size: 11px; }
+        .info-col { flex: 1; }
+        .info-label { font-weight: bold; text-transform: uppercase; font-size: 10px; color: #333; }
+        .info-content { line-height: 1.3; margin-bottom: 5px; }
+        .customer-name { font-weight: 900; font-size: 13px; text-transform: uppercase; }
+        .customer-phone { font-weight: bold; }
+
+        /* MÃ VÙNG TO */
+        .zone-code {
+            font-size: 28px;
+            font-weight: 900;
+            text-align: center;
+            border: 2px solid #000;
+            padding: 5px;
+            margin: 10px 0;
+            border-radius: 4px;
+            line-height: 1;
+        }
+
+        /* CONTENT */
+        .content-wrapper { display: flex; min-height: 100px; }
+        .product-list { flex: 1; padding-right: 5px; font-size: 11px; }
+        .qr-area { width: 90px; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding-top: 10px;}
+        .product-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+        .prod-name { font-weight: 500; }
+        .prod-qty { font-weight: bold; white-space: nowrap; margin-left: 5px;}
+
+        /* FOOTER */
+        .money-section { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 5px; }
+        .money-label { font-size: 11px; font-weight: bold; }
+        .money-value { font-size: 26px; font-weight: 900; }
+        .signature-box { height: 40px; width: 100%; border: 1px solid #ccc; margin-top: 5px;}
+
+        .no-print {
+            position: fixed; top: 20px; right: 20px;
+            background: #333; color: #fff; padding: 10px 20px;
+            cursor: pointer; border-radius: 5px; font-weight: bold;
+            border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .no-print:hover { background: #000; }
+
+        @@media print {
+            body { background: #fff; padding: 0; display: block; }
+            .print-container { width: 100%; height: auto; border: none; margin: 0; padding: 0; }
+            .no-print { display: none; }
+            @@page { size: 100mm 150mm; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <button class="no-print" onclick="window.print()">🖨️ IN ĐƠN HÀNG</button>
+
+    <div class="print-container">
+        <div class="row-flex">
+            <div style="width: 40%">
+                <div class="header-logo">SmartTech</div>
+                <div class="header-sub">Hỏa Tốc - Chính Hãng</div>
+            </div>
+            <div style="width: 60%;" class="barcode-area">
+                <svg id="barcode"></svg>
+                <div class="order-id-text">Mã đơn: @Model.MaDon</div>
+            </div>
+        </div>
+
+        <div class="solid-line"></div>
+
+        <div class="info-section">
+            <div class="info-col" style="padding-right: 10px; border-right: 1px dashed #000;">
+                <div class="info-label">Từ (Người gửi):</div>
+                <div class="info-content">
+                    <strong>SmartTech Store</strong><br>
+                    @shopAddress<br>
+                    Hotline: <strong>0965.629.698</strong>
+                </div>
+            </div>
+            <div class="info-col" style="padding-left: 10px;">
+                <div class="info-label">Đến (Người nhận):</div>
+                <div class="info-content">
+                    <div class="customer-name">@Model.TenKhachHang</div>
+                    <div>@Model.DiaChiGiaoHang</div>
+                    <div class="customer-phone">SĐT: @Model.SoDienThoai</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="zone-code">@zoneCode</div>
+
+        <div class="dashed-line"></div>
+
+        <div class="content-wrapper">
+            <div class="product-list">
+                <div class="info-label" style="margin-bottom: 5px;">Nội dung hàng (Tổng SL: @Model.SanPhams.Sum(x => x.SoLuong))</div>
+                @foreach (var item in Model.SanPhams)
+                {
+                    <div class="product-row">
+                        <span class="prod-name">- @item.TenSanPham</span>
+                        <span class="prod-qty">x @item.SoLuong</span>
+                    </div>
+                }
+                <div style="margin-top: 10px; font-style: italic; font-size: 10px;">
+                    Lưu ý: Quay video khi mở hàng.
+                </div>
+            </div>
+
+            <div class="qr-area" style="border-left: 1px dashed #000; padding-left: 5px;">
+                <div id="qrcode"></div>
+                <div style="font-size: 9px; text-align: center; margin-top: 3px;">@ngayDat</div>
+            </div>
+        </div>
+
+        <div class="dashed-line"></div>
+
+        <div class="money-section">
+            <div>
+                <div class="money-label">Tiền thu Người nhận:</div>
+                <div class="money-value">@tienThuHo.ToString("#,##0")</div>
+            </div>
+            <div style="text-align: right; width: 120px;">
+                <div class="info-label" style="text-align: center;">Chữ ký người nhận</div>
+                <div class="signature-box"></div>
+            </div>
+        </div>
+
+        <div style="text-align: center; font-size: 10px; font-weight: bold; margin-top: 5px;">
+            @if (tienThuHo == 0) { <span>(ĐÃ THANH TOÁN) - </span> }
+            <span>KHÔNG ĐỒNG KIỂM</span>
+        </div>
+
+        <div class="solid-line" style="margin-top: 5px; margin-bottom: 2px;"></div>
+        <div style="text-align: center; font-size: 9px; font-weight: bold; color: #ee4d2d;">
+            SmartTech - Hotline: 0965.629.698
+        </div>
+    </div>
+
+    <script>
+        JsBarcode("#barcode", "@Model.MaDon", {
+            format: "CODE128",
+            lineColor: "#000",
+            width: 1.3,
+            height: 40,
+            displayValue: false,
+            margin: 0
+        });
+
+        new QRCode(document.getElementById("qrcode"), {
+            text: "@Model.MaDon",
+            width: 70,
+            height: 70,
+            colorDark : "#000000",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    </script>
+</body>
+</html>

@@ -1,76 +1,234 @@
-﻿@{
-    ViewData["Title"] = "Sửa tài khoản - Electronic Store";
+﻿@model banthietbidientu.Models.TaiKhoan
+
+@{
+    ViewData["Title"] = "Cập nhật tài khoản";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    // Tạo Avatar từ tên
+    string firstLetter = !string.IsNullOrEmpty(Model.FullName) ? Model.FullName.Substring(0, 1).ToUpper() : "U";
+    string avatarColor = "bg-primary"; // Mặc định màu xanh
+    if (Model.Role == "Admin") { avatarColor = "bg-danger"; } // Admin màu đỏ
 }
 
-@model TestDoAn.Models.TaiKhoan
+<div class="container-fluid py-4">
 
-<h2>Sửa tài khoản</h2>
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-action="QuanLyTaiKhoan" class="text-decoration-none">Quản lý tài khoản</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Cập nhật thông tin</li>
+        </ol>
+    </nav>
 
-@if (!ViewData.ModelState.IsValid)
-{
-    <div class="alert alert-danger">
-        <ul>
-            @foreach (var error in ViewData.ModelState.Values.SelectMany(v => v.Errors))
-            {
-                <li>@error.ErrorMessage</li>
-            }
-        </ul>
-    </div>
-}
+    <form asp-action="SuaTaiKhoan" method="post" id="adminEditUserForm">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger shadow-sm mb-3"></div>
+        <input type="hidden" asp-for="Id" />
 
-<form asp-action="SuaTaiKhoan" method="post">
-    <input type="hidden" asp-for="Id" />
-    <div class="form-group">
-        <label asp-for="Username">Tên đăng nhập</label>
-        <input asp-for="Username" class="form-control" />
-        <span asp-validation-for="Username" class="text-danger"></span>
-    </div><div class="form-group">
-        <label asp-for="Password">Mật Khẩu</label>
-        <input asp-for="Password" class="form-control" />
-        <span asp-validation-for="Password" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="FullName">Họ và tên</label>
-        <input asp-for="FullName" class="form-control" />
-        <span asp-validation-for="FullName" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="DateOfBirth">Ngày sinh</label>
-        <input asp-for="DateOfBirth" type="date" class="form-control" />
-        <span asp-validation-for="DateOfBirth" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Address">Địa chỉ</label>
-        <input asp-for="Address" class="form-control" />
-        <span asp-validation-for="Address" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Gender">Giới tính</label>
-        <select asp-for="Gender" class="form-control">
-            <option value="Male">Nam</option>
-            <option value="Female">Nữ</option>
-            <option value="Other">Khác</option>
-        </select>
-        <span asp-validation-for="Gender" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Email">Email</label>
-        <input asp-for="Email" type="email" class="form-control" />
-        <span asp-validation-for="Email" class="text-danger"></span>
-    </div>
-    <div class="form-group">
-        <label asp-for="Role">Vai trò</label>
-        <select asp-for="Role" class="form-control">
-            <option value="User">Người dùng</option>
-            <option value="Admin">Admin</option>
-        </select>
-        <span asp-validation-for="Role" class="text-danger"></span>
-    </div>
-    <button type="submit" class="btn btn-success">Lưu</button>
-    <a asp-action="QuanLyTaiKhoan" asp-controller="Admin" class="btn btn-secondary">Hủy</a>
-    @Html.AntiForgeryToken()
-</form>
+        <div class="row g-4">
+            <div class="col-lg-4">
+                <div class="card border-0 shadow-sm h-100 text-center p-4">
+                    <div class="card-body">
+                        <div class="mx-auto mb-3 rounded-circle text-white d-flex align-items-center justify-content-center shadow @avatarColor"
+                             style="width: 120px; height: 120px; font-size: 48px; font-weight: bold;">
+                            @firstLetter
+                        </div>
+
+                        <h4 class="fw-bold text-dark mb-1">@Model.FullName</h4>
+                        <p class="text-muted mb-3">@Model.Username</p>
+
+                        @if (Model.Role == "Admin")
+                        {
+                            <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">
+                                <i class="bi bi-shield-lock-fill me-1"></i> Quản trị viên
+                            </span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">
+                                <i class="bi bi-person-fill me-1"></i> Khách hàng
+                            </span>
+                        }
+
+                        <hr class="my-4 text-muted opacity-25">
+
+                        <div class="text-start small text-muted">
+                            <p class="mb-2"><i class="bi bi-envelope-fill me-2"></i> @Model.Email</p>
+                            <p class="mb-2"><i class="bi bi-geo-alt-fill me-2"></i> @(Model.Address ?? "Chưa cập nhật địa chỉ")</p>
+                            <p class="mb-0"><i class="bi bi-calendar-event-fill me-2"></i> Ngày sinh: @(Model.DateOfBirth.Year > 1 ? Model.DateOfBirth.ToString("dd/MM/yyyy") : "---")</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-8">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header bg-white py-3 border-bottom-0">
+                        <h5 class="fw-bold text-primary mb-0"><i class="bi bi-pencil-square me-2"></i>Thông tin chi tiết</h5>
+                    </div>
+                    <div class="card-body p-4">
+
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3"><i class="bi bi-shield-lock me-1"></i> Tài khoản & Bảo mật</h6>
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label asp-for="Username" class="form-label fw-semibold">Tên đăng nhập</label>
+                                <input asp-for="Username" class="form-control bg-light" readonly />
+                                <span asp-validation-for="Username" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="Email" class="form-label fw-semibold">Email</label>
+                                <div class="input-group">
+                                    <span class="input-group-text bg-light border-end-0"><i class="bi bi-envelope"></i></span>
+                                    <input asp-for="Email" class="form-control border-start-0" placeholder="name@example.com" />
+                                </div>
+                                <span asp-validation-for="Email" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-12">
+                                <label asp-for="Role" class="form-label fw-semibold">Vai trò hệ thống</label>
+                                <select asp-for="Role" class="form-select">
+                                    <option value="User">Khách hàng (User)</option>
+                                    <option value="Admin">Quản trị viên (Admin)</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <hr class="text-muted opacity-25">
+
+                        <h6 class="text-uppercase text-muted small fw-bold mb-3 mt-4"><i class="bi bi-person-lines-fill me-1"></i> Thông tin cá nhân</h6>
+                        <div class="row g-3">
+                            <div class="col-md-12">
+                                <label asp-for="FullName" class="form-label fw-semibold">Họ và tên</label>
+                                <input asp-for="FullName" class="form-control" placeholder="Nhập họ tên đầy đủ" />
+                                <span asp-validation-for="FullName" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="DateOfBirth" class="form-label fw-semibold">Ngày sinh</label>
+                                <input asp-for="DateOfBirth" type="date" class="form-control" asp-format="{0:yyyy-MM-dd}" />
+                                <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
+                                <label asp-for="Gender" class="form-label fw-semibold">Giới tính</label>
+                                <select asp-for="Gender" class="form-select">
+                                    <option value="">-- Chọn giới tính --</option>
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-12">
+                                <label class="form-label fw-semibold">Địa chỉ</label>
+
+                                <div class="row g-2 mb-2">
+                                    <div class="col-md-4">
+                                        <select class="form-select" id="province" required>
+                                            <option value="">Chọn Tỉnh/TP</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-select" id="district" disabled required>
+                                            <option value="">Chọn Quận/Huyện</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <select class="form-select" id="ward" disabled required>
+                                            <option value="">Chọn Phường/Xã</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <input type="text" class="form-control" id="specificAddress" placeholder="Số nhà, tên đường cụ thể..." required>
+
+                                <input type="hidden" asp-for="Address" id="fullAddressInput" />
+                                <span asp-validation-for="Address" class="text-danger small"></span>
+
+                                <div class="form-text text-muted fst-italic mt-2">
+                                    Địa chỉ hiện tại trong DB: <span class="text-dark fw-bold">@(Model.Address ?? "Chưa có")</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-end gap-2 mt-5">
+                            <a asp-action="QuanLyTaiKhoan" class="btn btn-light border px-4">Hủy bỏ</a>
+                            <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">
+                                <i class="bi bi-check-circle me-2"></i>Cập nhật
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
 
 @section Scripts {
-    <partial name="_ValidationScriptsPartial" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        const host = "https://provinces.open-api.vn/api/";
+
+        var callAPI = (api) => {
+            return $.ajax({ url: api, method: 'GET' });
+        }
+
+        // Load danh sách Tỉnh/TP khi trang chạy
+        callAPI(host + "?depth=1").done((data) => {
+            renderData(data, "province");
+        });
+
+        // Sự kiện chọn Tỉnh
+        $("#province").change(() => {
+            let code = $("#province").val();
+            $("#district").html('<option value="">Chọn Quận/Huyện</option>').prop("disabled", true);
+            $("#ward").html('<option value="">Chọn Phường/Xã</option>').prop("disabled", true);
+
+            if(code) {
+                callAPI(host + "p/" + code + "?depth=2").done((data) => {
+                    renderData(data.districts, "district");
+                    $("#district").prop("disabled", false);
+                });
+            }
+        });
+
+        // Sự kiện chọn Huyện
+        $("#district").change(() => {
+            let code = $("#district").val();
+            $("#ward").html('<option value="">Chọn Phường/Xã</option>').prop("disabled", true);
+
+            if(code) {
+                callAPI(host + "d/" + code + "?depth=2").done((data) => {
+                    renderData(data.wards, "ward");
+                    $("#ward").prop("disabled", false);
+                });
+            }
+        });
+
+        var renderData = (array, select) => {
+            let row = ' <option value="">Chọn ' + (select == "province" ? "Tỉnh/TP" : (select == "district" ? "Quận/Huyện" : "Phường/Xã")) + '</option>';
+            array.forEach(element => {
+                row += `<option value="${element.code}" data-name="${element.name}">${element.name}</option>`;
+            });
+            document.querySelector("#" + select).innerHTML = row;
+        }
+
+        // Xử lý trước khi Submit Form
+        $("#adminEditUserForm").submit(function() {
+            let province = $("#province option:selected").data("name");
+            let district = $("#district option:selected").data("name");
+            let ward = $("#ward option:selected").data("name");
+            let specific = $("#specificAddress").val();
+
+            // Nếu admin đã chọn lại địa chỉ mới thì gộp chuỗi
+            if (province && district && ward && specific) {
+                let fullAddress = `${specific}, ${ward}, ${district}, ${province}`;
+                $("#fullAddressInput").val(fullAddress);
+            }
+            // Nếu không chọn gì cả (giữ nguyên) thì input ẩn Address vẫn giữ giá trị cũ từ Model
+        });
+    </script>
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
 }

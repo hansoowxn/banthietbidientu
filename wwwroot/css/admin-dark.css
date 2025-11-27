@@ -1,0 +1,199 @@
+﻿/* ===========================================================
+   ❄️ BLUE FIRE LIGHT THEME (LỬA XANH DƯƠNG - NỀN TRẮNG) ❄️
+   =========================================================== */
+
+:root {
+    /* Bảng màu Lửa Xanh */
+    --plasma-core: #e0ffff; /* Trắng xanh (Tâm lửa) */
+    --plasma-mid: #00e5ff; /* Xanh Cyan (Giữa) */
+    --plasma-outer: #2979ff; /* Xanh đậm (Ngoài cùng) */
+    /* Nền Trắng */
+    --bg-body: #f8f9fa; /* Nền web xám rất nhạt */
+    --bg-sidebar: #ffffff; /* Sidebar Trắng tinh */
+    --text-main: #333333; /* Chữ đen */
+    --text-hover: #ffffff; /* Chữ trắng khi lửa cháy */
+
+    --sidebar-width: 260px;
+}
+
+/* 1. CẤU TRÚC LAYOUT (GIỮ NGUYÊN ĐỂ KHÔNG VỠ) */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-body) !important;
+    color: var(--text-main) !important;
+    overflow-x: hidden;
+}
+
+.wrapper {
+    display: flex;
+    width: 100%;
+    min-height: 100vh;
+}
+
+/* 2. SIDEBAR TRẮNG SẠCH SẼ */
+#sidebar {
+    min-width: var(--sidebar-width);
+    max-width: var(--sidebar-width);
+    background-color: var(--bg-sidebar) !important;
+    border-right: 1px solid #e9ecef; /* Viền xám nhạt */
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100vh;
+    z-index: 1000;
+    box-shadow: 4px 0 15px rgba(0, 0, 0, 0.05); /* Bóng mờ nhẹ */
+}
+
+    /* Header Logo */
+    #sidebar .sidebar-header {
+        padding: 20px;
+        background-color: #fff !important;
+        border-bottom: 1px solid #f0f0f0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        #sidebar .sidebar-header h5 {
+            color: var(--plasma-outer) !important;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+    /* 3. MENU & HIỆU ỨNG PHUN LỬA XANH */
+    #sidebar ul.components {
+        padding: 20px 10px;
+    }
+
+    #sidebar ul li {
+        margin-bottom: 5px;
+    }
+
+        #sidebar ul li a {
+            color: #555 !important; /* Màu chữ gốc: Xám đen */
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            position: relative; /* Để chứa lửa */
+            z-index: 1;
+            font-weight: 600;
+            border-radius: 8px;
+            overflow: hidden; /* Khóa lửa bên trong nút */
+            transition: color 0.2s ease;
+        }
+
+            /* --- LỚP LỬA (PSEUDO ELEMENT) --- */
+            #sidebar ul li a::before {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 0%; /* Ban đầu ẩn */
+                height: 100%;
+                z-index: -1; /* Nằm dưới chữ */
+                /* Gradient lửa xanh dương */
+                background: linear-gradient( 90deg, var(--plasma-outer) 0%, var(--plasma-mid) 50%, var(--plasma-outer) 100% );
+                /* Hiệu ứng phun: Nhanh và dứt khoát (Ease-Out) */
+                transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                /* Làm nghiêng nhẹ đầu lửa cho giống tia năng lượng */
+                transform: skewX(-10deg);
+                transform-origin: left;
+            }
+
+            /* --- KHI DI CHUỘT (LỬA PHUN) --- */
+            #sidebar ul li a:hover::before,
+            #sidebar ul li a.active::before {
+                width: 150%; /* Phun tràn qua nút */
+                transform: skewX(0deg); /* Trả về thẳng */
+            }
+
+            #sidebar ul li a:hover,
+            #sidebar ul li a.active {
+                color: #fff !important; /* Chữ chuyển trắng ngay lập tức */
+                box-shadow: 0 5px 15px rgba(0, 229, 255, 0.4); /* Phát sáng xanh ra ngoài */
+            }
+
+            /* --- ICON BAN ĐẦU --- */
+            #sidebar ul li a i {
+                margin-right: 15px;
+                font-size: 1.2rem;
+                color: #888; /* Icon xám */
+                transition: all 0.2s;
+            }
+
+/* --- HIỆU ỨNG ICON BỐC CHÁY (ANIMATION) --- */
+@keyframes blueBurn {
+    0% {
+        transform: scale(1);
+        text-shadow: 0 0 0 transparent;
+    }
+
+    50% {
+        transform: scale(1.2) rotate(5deg);
+        text-shadow: 0 0 10px var(--plasma-mid), 0 0 20px var(--plasma-core);
+    }
+
+    100% {
+        transform: scale(1.1) rotate(-5deg);
+        text-shadow: 0 0 15px var(--plasma-core), 0 0 30px var(--plasma-mid);
+    }
+}
+
+/* Khi lửa chạm tới (Hover/Active) */
+#sidebar ul li a:hover i,
+#sidebar ul li a.active i {
+    color: #fff !important; /* Icon chuyển trắng sáng */
+    /* Kích hoạt Animation rung lắc cháy */
+    animation: blueBurn 0.4s infinite alternate;
+    /* Delay 0.15s: Đợi lửa phun tới nơi mới cháy */
+    transition-delay: 0.15s;
+}
+
+/* Tiêu đề nhóm */
+#sidebar ul li.text-uppercase {
+    color: #999 !important;
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-top: 20px;
+    padding-left: 10px;
+}
+
+/* 4. CÁC PHẦN KHÁC (CONTENT, HEADER) - GIỮ NGUYÊN VỊ TRÍ */
+#content {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
+}
+
+.admin-navbar {
+    height: 70px;
+    background-color: #fff !important;
+    border-bottom: 1px solid #e9ecef;
+    padding: 0 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    #sidebar {
+        margin-left: calc(var(--sidebar-width) * -1);
+    }
+
+    #content {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    #sidebar.active {
+        margin-left: 0;
+        box-shadow: 0 0 50px rgba(0,0,0,0.5);
+    }
+}

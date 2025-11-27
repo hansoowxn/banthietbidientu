@@ -1,7 +1,7 @@
-﻿using Microsoft.EntityFrameworkCore;
-using TestDoAn.Models;
+﻿using banthietbidientu.Models;
+using Microsoft.EntityFrameworkCore;
 
-namespace TestDoAn.Data
+namespace banthietbidientu.Data
 {
     public class ApplicationDbContext : DbContext
     {
@@ -13,7 +13,13 @@ namespace TestDoAn.Data
         public DbSet<GioHang> GioHangs { get; set; }
         public DbSet<TaiKhoan> TaiKhoans { get; set; }
         public DbSet<LichSuMuaHang> LichSuMuaHangs { get; set; }
-
+        public DbSet<ThongBao> ThongBaos { get; set; }
+        public DbSet<PhieuNhap> PhieuNhaps { get; set; }
+        public DbSet<ChiTietPhieuNhap> ChiTietPhieuNhaps { get; set; }
+        public DbSet<LichSuNhapHang> LichSuNhapHangs { get; set; }
+        public DbSet<DoanhThu> DoanhThus { get; set; }
+        public DbSet<DonHang> DonHangs { get; set; }
+        public DbSet<ChiTietDonHang> ChiTietDonHangs { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Cấu hình mối quan hệ GioHang - SanPham
@@ -21,12 +27,6 @@ namespace TestDoAn.Data
                 .HasOne(g => g.SanPham)
                 .WithMany(s => s.GioHangs)
                 .HasForeignKey(g => g.ProductId);
-
-            // Cấu hình mối quan hệ GioHang - TaiKhoan
-            modelBuilder.Entity<GioHang>()
-                .HasOne(g => g.TaiKhoan)
-                .WithMany(t => t.GioHangs)
-                .HasForeignKey(g => g.UserId);
 
             modelBuilder.Entity<GioHang>()
                 .Property(g => g.UserId)
