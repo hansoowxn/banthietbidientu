@@ -423,11 +423,13 @@ namespace banthietbidientu.Controllers
         // --- 7. BÁO CÁO THỐNG KÊ ---
         public IActionResult BaoCao()
         {
+            // 1. Tính tổng quan
             var tongDoanhThu = _context.DonHangs.Where(d => d.TrangThai == 3).Sum(d => d.TongTien);
             var tongDonHang = _context.DonHangs.Count();
             var sanPhamSapHet = _context.SanPhams.Count(s => s.SoLuong < 5);
             var tongSanPhamDaBan = _context.ChiTietDonHangs.Where(ct => ct.DonHang.TrangThai == 3).Sum(ct => ct.SoLuong);
 
+            // 2. Dữ liệu biểu đồ doanh thu (7 ngày gần nhất)
             var labelsNgay = new List<string>();
             var valuesDoanhThu = new List<decimal>();
 
@@ -441,6 +443,7 @@ namespace banthietbidientu.Controllers
                 valuesDoanhThu.Add(revenue);
             }
 
+            // 3. Top 5 Sản phẩm bán chạy nhất
             var topProducts = _context.ChiTietDonHangs
                 .Where(ct => ct.DonHang.TrangThai == 3)
                 .GroupBy(ct => ct.SanPham.Name)
@@ -449,6 +452,7 @@ namespace banthietbidientu.Controllers
                 .Take(5)
                 .ToList();
 
+            // 4. Top 5 Khách hàng VIP (ĐÃ SỬA: Lấy thêm Role)
             var topUsers = _context.DonHangs
                 .Where(d => d.TrangThai == 3 && d.TaiKhoanId != null)
                 .GroupBy(d => d.TaiKhoan)
@@ -456,6 +460,7 @@ namespace banthietbidientu.Controllers
                 {
                     HoTen = g.Key.FullName ?? "Ẩn danh",
                     Email = g.Key.Email ?? "---",
+                    Role = g.Key.Role, // <--- Lấy Role để check Admin
                     SoLanMua = g.Count(),
                     TongChiTieu = g.Sum(x => x.TongTien)
                 })
@@ -463,6 +468,7 @@ namespace banthietbidientu.Controllers
                 .Take(5)
                 .ToList();
 
+            // 5. Đóng gói
             var model = new BaoCaoViewModel
             {
                 TongDoanhThu = tongDoanhThu,
