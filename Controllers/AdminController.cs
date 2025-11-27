@@ -484,5 +484,39 @@ namespace banthietbidientu.Controllers
 
             return View(model);
         }
+
+        [HttpGet]
+        public IActionResult LichSuMuaHang(int userId)
+        {
+            var user = _context.TaiKhoans.Find(userId);
+            if (user == null) return NotFound("Không tìm thấy người dùng này.");
+
+            var listDonHang = _context.DonHangs
+                .Include(d => d.ChiTietDonHangs)
+                    .ThenInclude(ct => ct.SanPham)
+                .Where(d => d.TaiKhoanId == userId)
+                .OrderByDescending(d => d.NgayDat)
+                .Select(d => new HistoryViewModel
+                {
+                    MaDon = d.MaDon,
+                    NgayDat = d.NgayDat ?? DateTime.Now,
+
+                    TrangThai = d.TrangThai == 1 ? "Đã xác nhận" :
+                                d.TrangThai == 2 ? "Đang giao" :
+                                d.TrangThai == 3 ? "Hoàn thành" :
+                                d.TrangThai == -1 ? "Đã hủy" : "Chờ xử lý",
+
+                    TongTien = d.TongTien,
+                    PaymentMethod = "COD",
+                    SanPhams = d.ChiTietDonHangs.ToList()
+                })
+                .ToList();
+
+            ViewBag.TaiKhoan = user;
+            ViewBag.TongChiTieu = listDonHang.Where(d => d.TrangThai == "Hoàn thành").Sum(d => d.TongTien);
+            ViewBag.TongDon = listDonHang.Count;
+
+            return View(listDonHang);
+        }
     }
 }
