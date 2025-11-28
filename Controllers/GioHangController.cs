@@ -58,7 +58,6 @@ namespace banthietbidientu.Controllers
             }
         }
 
-        // ... (Giữ nguyên các hàm Index, Add, Remove, GiamSoLuong, ThanhToan) ...
         // --- 3. TRANG GIỎ HÀNG ---
         public IActionResult Index()
         {
@@ -144,7 +143,7 @@ namespace banthietbidientu.Controllers
         // Action Alias cho nút xóa
         public IActionResult XoaKhoiGio(int id) => Remove(id);
 
-        // --- 6. CẬP NHẬT SỐ LƯỢNG ---
+        // --- 6. CẬP NHẬT SỐ LƯỢNG (GiamSoLuong - Logic cũ) ---
         public IActionResult GiamSoLuong(int id)
         {
             var cart = GetCart();
@@ -153,6 +152,38 @@ namespace banthietbidientu.Controllers
             {
                 if (item.Quantity > 1) item.Quantity--;
                 else cart.Remove(item);
+                SaveCart(cart);
+            }
+            return RedirectToAction("Index");
+        }
+
+        // --- 11. CẬP NHẬT SỐ LƯỢNG (UPDATE - MỚI THÊM ĐỂ FIX LỖI 404) ---
+        public IActionResult Update(int id, int quantity)
+        {
+            var cart = GetCart();
+            var item = cart.FirstOrDefault(x => x.Id == id);
+
+            if (item != null)
+            {
+                // Kiểm tra tồn kho (Optional)
+                var product = _context.SanPhams.Find(id);
+                if (product != null)
+                {
+                    // Nếu số lượng mua lớn hơn tồn kho
+                    if (quantity > product.SoLuong)
+                    {
+                        TempData["Error"] = $"Kho chỉ còn {product.SoLuong} sản phẩm!";
+                        item.Quantity = product.SoLuong;
+                    }
+                    else if (quantity > 0)
+                    {
+                        item.Quantity = quantity;
+                    }
+                    else
+                    {
+                        cart.Remove(item);
+                    }
+                }
                 SaveCart(cart);
             }
             return RedirectToAction("Index");
@@ -192,7 +223,7 @@ namespace banthietbidientu.Controllers
             return View(model);
         }
 
-        // --- 8. XÁC NHẬN THANH TOÁN (ĐÃ SỬA ĐỂ HỖ TRỢ VNPAY) ---
+        // --- 8. XÁC NHẬN THANH TOÁN ---
         [HttpPost]
         public async Task<IActionResult> XacNhanThanhToan(ThanhToanViewModel model, string paymentMethod)
         {
@@ -202,8 +233,6 @@ namespace banthietbidientu.Controllers
             var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == User.Identity.Name);
             if (user == null) return RedirectToAction("DangNhap", "Login");
 
-            // 1. Tạo dữ liệu đơn hàng (Chưa lưu DB ngay nếu là VNPAY)
-            // Lưu tạm thông tin vào Session để dùng lại sau khi thanh toán VNPAY xong
             var tempOrder = new DonHang
             {
                 MaDon = "DH" + DateTime.Now.ToString("yyyyMMddHHmmss"),
@@ -219,32 +248,27 @@ namespace banthietbidientu.Controllers
 
             if (paymentMethod == "VNPAY")
             {
-                // --- LOGIC GỬI YÊU CẦU SANG VNPAY ---
                 var vnpay = new VnPayLibrary();
-
                 vnpay.AddRequestData("vnp_Version", "2.1.0");
                 vnpay.AddRequestData("vnp_Command", "pay");
                 vnpay.AddRequestData("vnp_TmnCode", _configuration["VnPay:TmnCode"]);
-                vnpay.AddRequestData("vnp_Amount", ((long)tempOrder.TongTien * 100).ToString()); // Số tiền * 100
+                vnpay.AddRequestData("vnp_Amount", ((long)tempOrder.TongTien * 100).ToString());
                 vnpay.AddRequestData("vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss"));
                 vnpay.AddRequestData("vnp_CurrCode", "VND");
                 vnpay.AddRequestData("vnp_IpAddr", Utils.GetIpAddress(HttpContext));
                 vnpay.AddRequestData("vnp_Locale", "vn");
                 vnpay.AddRequestData("vnp_OrderInfo", "Thanh toan don hang " + tempOrder.MaDon);
                 vnpay.AddRequestData("vnp_OrderType", "other");
-                vnpay.AddRequestData("vnp_ReturnUrl", Url.Action("PaymentCallback", "GioHang", null, Request.Scheme)); // URL Callback
-                vnpay.AddRequestData("vnp_TxnRef", tempOrder.MaDon); // Mã đơn hàng
+                vnpay.AddRequestData("vnp_ReturnUrl", Url.Action("PaymentCallback", "GioHang", null, Request.Scheme));
+                vnpay.AddRequestData("vnp_TxnRef", tempOrder.MaDon);
 
                 string paymentUrl = vnpay.CreateRequestUrl(_configuration["VnPay:BaseUrl"], _configuration["VnPay:HashSecret"]);
 
-                // Lưu tạm thông tin đơn hàng vào Session để dùng ở Callback
                 HttpContext.Session.SetString("PendingOrder", JsonConvert.SerializeObject(tempOrder));
-
                 return Redirect(paymentUrl);
             }
             else
             {
-                // --- LOGIC COD (THANH TOÁN KHI NHẬN HÀNG) ---
                 return await ProcessOrderSuccess(tempOrder, cart, "COD");
             }
         }
@@ -268,29 +292,22 @@ namespace banthietbidientu.Controllers
                     }
                 }
 
-                // Lấy thông tin
                 string vnp_ResponseCode = vnpay.GetResponseData("vnp_ResponseCode");
-                string vnp_TxnRef = vnpay.GetResponseData("vnp_TxnRef");
                 string vnp_SecureHash = vnpayData["vnp_SecureHash"];
 
                 bool checkSignature = vnpay.ValidateSignature(vnp_SecureHash, vnp_HashSecret);
 
                 if (checkSignature)
                 {
-                    if (vnp_ResponseCode == "00") // Thanh toán thành công
+                    if (vnp_ResponseCode == "00")
                     {
-                        // Lấy lại thông tin đơn hàng từ Session
                         var pendingOrderJson = HttpContext.Session.GetString("PendingOrder");
                         if (!string.IsNullOrEmpty(pendingOrderJson))
                         {
                             var order = JsonConvert.DeserializeObject<DonHang>(pendingOrderJson);
-                            var cart = GetCart(); // Lấy lại giỏ hàng (vẫn còn trong session)
+                            var cart = GetCart();
+                            order.TrangThai = 1; // Đã xác nhận (đã thanh toán)
 
-                            // Xử lý lưu đơn hàng (Trạng thái đã thanh toán nếu cần, ở đây để 0 chờ xử lý hoặc 1 đã xác nhận)
-                            // Nếu muốn đánh dấu đã thanh toán, bạn có thể thêm cột PaymentStatus vào bảng DonHang
-                            order.TrangThai = 1; // Đã xác nhận (Vì đã trả tiền rồi)
-
-                            // Gọi hàm xử lý chung
                             await ProcessOrderSuccess(order, cart, "VNPAY");
 
                             HttpContext.Session.Remove("PendingOrder");
@@ -299,23 +316,20 @@ namespace banthietbidientu.Controllers
                     }
                     else
                     {
-                        // Thanh toán thất bại / Hủy bỏ
-                        TempData["Error"] = "Giao dịch VNPAY thất bại hoặc bị hủy. Mã lỗi: " + vnp_ResponseCode;
+                        TempData["Error"] = "Giao dịch VNPAY thất bại. Mã lỗi: " + vnp_ResponseCode;
                         return RedirectToAction("ThanhToan");
                     }
                 }
             }
-            TempData["Error"] = "Có lỗi xảy ra trong quá trình xử lý VNPAY.";
+            TempData["Error"] = "Lỗi xử lý VNPAY.";
             return RedirectToAction("Index");
         }
 
-        // --- 10. HÀM XỬ LÝ CHUNG: LƯU ĐƠN HÀNG VÀO DB ---
+        // --- 10. HÀM XỬ LÝ CHUNG ---
         private async Task<IActionResult> ProcessOrderSuccess(DonHang order, List<CartItem> cart, string method)
         {
-            // A. Lưu Đơn Hàng Header
             _context.DonHangs.Add(order);
 
-            // Tạo thông báo
             var thongBao = new ThongBao
             {
                 TieuDe = "Đơn hàng mới #" + order.MaDon,
@@ -328,7 +342,6 @@ namespace banthietbidientu.Controllers
 
             await _context.SaveChangesAsync();
 
-            // B. Lưu Chi Tiết & Trừ Kho
             foreach (var item in cart)
             {
                 var chiTiet = new ChiTietDonHang
@@ -348,40 +361,11 @@ namespace banthietbidientu.Controllers
             }
             await _context.SaveChangesAsync();
 
-            // C. Dọn dẹp
             HttpContext.Session.Remove("GioHang");
             HttpContext.Session.Remove("Cart");
 
             TempData["Success"] = $"Đặt hàng thành công ({method})! Mã đơn: {order.MaDon}";
             return RedirectToAction("LichSuMuaHang", "Login");
-        }
-    }
-
-    // Helper để lấy IP (Cần cho VNPAY)
-    public static class Utils
-    {
-        public static string GetIpAddress(HttpContext context)
-        {
-            var ipAddress = string.Empty;
-            try
-            {
-                var remoteIpAddress = context.Connection.RemoteIpAddress;
-                if (remoteIpAddress != null)
-                {
-                    if (remoteIpAddress.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
-                    {
-                        remoteIpAddress = System.Net.Dns.GetHostEntry(remoteIpAddress).AddressList
-                            .FirstOrDefault(x => x.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork);
-                    }
-                    if (remoteIpAddress != null) ipAddress = remoteIpAddress.ToString();
-                    return ipAddress;
-                }
-            }
-            catch (Exception ex)
-            {
-                return "Invalid IP:" + ex.Message;
-            }
-            return "127.0.0.1";
         }
     }
 }
