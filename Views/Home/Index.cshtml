@@ -335,7 +335,6 @@
                             <div class="mt-auto">
                                 <div class="d-flex justify-content-between align-items-center mb-3">
                                     <span class="fs-5 fw-bold text-primary">@product.Price.ToString("N0", cultureInfo) ₫</span>
-                                    <!-- ĐÃ XÓA PHẦN HIỂN THỊ KHO TẠI ĐÂY -->
                                 </div>
 
                                 <div class="d-grid gap-2 card-actions" style="position: relative; z-index: 20;">
@@ -412,7 +411,7 @@
                 </div>
                 <hr class="opacity-25">
 
-                <!-- PHẦN CHỌN BIẾN THỂ (Có ID để ẩn/hiện và thay đổi label) -->
+                <!-- PHẦN CHỌN BIẾN THỂ -->
                 <div class="mb-3" id="storageSection">
                     <label class="fw-bold mb-2 text-muted small text-uppercase" id="storageLabel">Chọn phiên bản:</label>
                     <div class="d-flex flex-wrap gap-2" id="storageOptions"></div>
@@ -425,11 +424,23 @@
                     <div id="colorName" class="small text-muted mt-1"></div>
                 </div>
 
+                <!-- PHẦN CHỌN SỐ LƯỢNG (MỚI THÊM) -->
+                <div class="mb-4">
+                    <label class="fw-bold mb-2 text-muted small text-uppercase">Số lượng:</label>
+                    <div class="input-group" style="width: 140px;">
+                        <button class="btn btn-outline-secondary" type="button" onclick="updateModalQuantity(-1)"><i class="bi bi-dash"></i></button>
+                        <input type="number" class="form-control text-center fw-bold bg-white" id="modalQuantityInput" value="1" min="1" readonly>
+                        <button class="btn btn-outline-secondary" type="button" onclick="updateModalQuantity(1)"><i class="bi bi-plus"></i></button>
+                    </div>
+                </div>
+
                 <form id="addToCartForm" asp-controller="GioHang" asp-action="Add" method="post">
                     <input type="hidden" name="id" id="inputProductId" />
                     <input type="hidden" name="capacity" id="inputCapacity" />
                     <input type="hidden" name="color" id="inputColor" />
-                    <input type="hidden" name="quantity" value="1" />
+                    <!-- Input ẩn để gửi số lượng chính xác về server -->
+                    <input type="hidden" name="quantity" id="inputQuantity" value="1" />
+
                     <button type="submit" class="btn btn-primary w-100 py-2 fw-bold rounded-pill shadow-sm">XÁC NHẬN THÊM VÀO GIỎ</button>
                 </form>
             </div>
@@ -453,6 +464,7 @@
     <script>
         let currentBasePrice = 0;
         let selectedCapacityPrice = 0;
+        let currentQuantity = 1; // Biến lưu số lượng
 
         document.addEventListener('DOMContentLoaded', function () {
             var modalElement = document.getElementById('productOptionModal');
@@ -473,11 +485,30 @@
             currentBasePrice = price;
             selectedCapacityPrice = 0;
 
-            renderOptions(category); // Truyền category vào hàm render
+            // Reset số lượng về 1 mỗi khi mở modal
+            currentQuantity = 1;
+            document.getElementById('modalQuantityInput').value = 1;
+            document.getElementById('inputQuantity').value = 1;
+
+            renderOptions(category);
             updatePriceDisplay();
 
             var myModal = new bootstrap.Modal(document.getElementById('productOptionModal'));
             myModal.show();
+        }
+
+        // Hàm cập nhật số lượng (+ / -)
+        function updateModalQuantity(change) {
+            let newVal = currentQuantity + change;
+            if (newVal >= 1) {
+                currentQuantity = newVal;
+                // Cập nhật UI
+                document.getElementById('modalQuantityInput').value = newVal;
+                // Cập nhật input ẩn để gửi form
+                document.getElementById('inputQuantity').value = newVal;
+                // Cập nhật lại giá tổng
+                updatePriceDisplay();
+            }
         }
 
         function renderOptions(category) {
@@ -488,47 +519,35 @@
             const storageSection = document.getElementById('storageSection');
             const storageLabel = document.getElementById('storageLabel');
 
-            // Các bộ dữ liệu giả lập cho từng loại
-            // Điện thoại & Tablet: Dung lượng bộ nhớ
-            const mobileCaps = [{ label: '64GB', priceAdd: 0 }, { label: '128GB', priceAdd: 500000 }, { label: '256GB', priceAdd: 1500000 }];
-
-            // Laptop: RAM
-            const laptopCaps = [{ label: '8GB RAM', priceAdd: 0 }, { label: '16GB RAM', priceAdd: 1000000 }, { label: '32GB RAM', priceAdd: 2500000 }];
-
-            // Smartwatch: Size mặt đồng hồ
+            // Dữ liệu giả lập
+            const mobileCaps = [{ label: '128GB', priceAdd: 0 }, { label: '256GB', priceAdd: 1500000 }, { label: '512GB', priceAdd: 3000000 }];
+            const laptopCaps = [{ label: '8GB/256GB', priceAdd: 0 }, { label: '16GB/512GB', priceAdd: 2000000 }, { label: '32GB/1TB', priceAdd: 5000000 }];
             const watchCaps = [{ label: '40mm', priceAdd: 0 }, { label: '44mm', priceAdd: 800000 }];
+            const colors = [{ name: 'Đen', code: '#1b1b1d' }, { name: 'Trắng', code: '#f2f2f2' }, { name: 'Xanh Dương', code: '#0071e3' }, { name: 'Vàng', code: '#ffcc00' }];
 
-            // Màu sắc chung
-            const colors = [{ name: 'Đen', code: '#000' }, { name: 'Trắng', code: '#f8f9fa' }, { name: 'Xanh', code: '#0d6efd' }, { name: 'Vàng', code: '#ffc107' }];
-
-            // --- LOGIC PHÂN LOẠI DANH MỤC ---
-
-            // 1. Phụ kiện: ẨN phần chọn biến thể, chỉ hiện màu
+            // Logic phân loại
             if (category === 'Phụ kiện') {
                 storageSection.style.display = 'none';
                 inputCap.value = "";
                 selectedCapacityPrice = 0;
             }
-            // 2. Laptop: Hiện tùy chọn RAM
             else if (category === 'Laptop') {
                 storageSection.style.display = 'block';
-                storageLabel.innerText = 'CHỌN CẤU HÌNH (RAM):';
+                storageLabel.innerText = 'CHỌN CẤU HÌNH (RAM/SSD):';
                 renderCapacityButtons(laptopCaps, storageDiv, inputCap);
             }
-            // 3. Smartwatch: Hiện tùy chọn Size mặt
             else if (category === 'Smartwatch' || category === 'Đồng hồ') {
                 storageSection.style.display = 'block';
                 storageLabel.innerText = 'CHỌN KÍCH THƯỚC MẶT:';
                 renderCapacityButtons(watchCaps, storageDiv, inputCap);
             }
-            // 4. Điện thoại & Tablet (và các loại khác): Hiện tùy chọn Dung lượng
             else {
                 storageSection.style.display = 'block';
                 storageLabel.innerText = 'CHỌN PHIÊN BẢN (BỘ NHỚ):';
                 renderCapacityButtons(mobileCaps, storageDiv, inputCap);
             }
 
-            // Render Color (Luôn hiện cho tất cả danh mục)
+            // Render Color
             colorDiv.innerHTML = '';
             inputColor.value = colors[0].name;
             document.getElementById('colorName').innerText = colors[0].name;
@@ -546,11 +565,8 @@
             });
         }
 
-        // Hàm phụ trợ để render các nút bấm tùy chọn (tránh lặp code)
         function renderCapacityButtons(dataArray, container, inputElement) {
             container.innerHTML = '';
-
-            // Mặc định chọn cái đầu tiên
             inputElement.value = dataArray[0].label;
             selectedCapacityPrice = dataArray[0].priceAdd;
 
@@ -570,7 +586,9 @@
         }
 
         function updatePriceDisplay() {
-            let totalPrice = currentBasePrice + selectedCapacityPrice;
+            let unitPrice = currentBasePrice + selectedCapacityPrice;
+            // Tính tổng tiền = Giá đơn vị * Số lượng
+            let totalPrice = unitPrice * currentQuantity;
             document.getElementById('modalPrice').innerText = totalPrice.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' });
         }
     </script>
