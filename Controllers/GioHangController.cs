@@ -239,9 +239,12 @@ namespace banthietbidientu.Controllers
                 TaiKhoanId = user.Id,
                 NgayDat = DateTime.Now,
                 TrangThai = 0, // Chờ xử lý
-                NguoiNhan = model.NguoiNhan ?? user.FullName,
-                SDT = model.SoDienThoai ?? user.PhoneNumber,
-                DiaChi = model.DiaChi ?? user.Address,
+
+                // Sửa lỗi: Thêm ?? string.Empty để ngăn chặn giá trị NULL
+                NguoiNhan = model.NguoiNhan ?? user.FullName ?? string.Empty,
+                SDT = model.SoDienThoai ?? user.PhoneNumber ?? string.Empty, // <-- Đã sửa lỗi ở đây
+                DiaChi = model.DiaChi ?? user.Address ?? string.Empty,
+
                 PhiShip = 0,
                 TongTien = cart.Sum(x => x.Total)
             };
