@@ -1,45 +1,45 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
-using banthietbidientu.Models;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace banthietbidientu.Models
 {
+    [Table("TaiKhoan")]
     public class TaiKhoan
     {
+        [Key]
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Username is required")]
-        [StringLength(50, ErrorMessage = "Username cannot be longer than 50 characters")]
+        [Required]
+        [StringLength(50)]
         public string Username { get; set; }
 
-        [Required(ErrorMessage = "Password is required")]
-        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be between 6 and 100 characters")]
+        [Required]
+        [StringLength(100)]
         public string Password { get; set; }
 
-        [Required(ErrorMessage = "Role is required")]
-        public string Role { get; set; }
+        [StringLength(20)]
+        public string Role { get; set; } = "User";
 
-        [Required(ErrorMessage = "Full name is required")]
-        [StringLength(100, ErrorMessage = "Full name cannot be longer than 100 characters")]
+        [StringLength(100)]
         public string FullName { get; set; }
 
-        [DataType(DataType.Date)]
-        [Display(Name = "Date of Birth")]
-        public DateTime DateOfBirth { get; set; }
+        public DateTime? DateOfBirth { get; set; }
 
-        [StringLength(200, ErrorMessage = "Address cannot be longer than 200 characters")]
+        [StringLength(200)]
         public string Address { get; set; }
 
-        [Required(ErrorMessage = "Gender is required")]
+        [StringLength(10)]
         public string Gender { get; set; }
 
-        [Required(ErrorMessage = "Email is required")]
-        [EmailAddress(ErrorMessage = "Invalid Email Address")]
-        [StringLength(100, ErrorMessage = "Email cannot be longer than 100 characters")]
+        [EmailAddress]
         public string Email { get; set; }
 
-        public string? PhoneNumber { get; set; }
-        public virtual ICollection<DonHang> DonHangs { get; set; } = new List<DonHang>();
+        // --- CHỈ ĐỂ 1 DÒNG NÀY THÔI ---
+        [StringLength(15)]
+        public string PhoneNumber { get; set; }
+
+        public virtual ICollection<DonHang> DonHangs { get; set; }
     }
 }

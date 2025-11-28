@@ -45,7 +45,7 @@
             position: relative;
         }
 
-    /* Badge Hạng Thành Viên (Dựa theo site.css cũ nhưng tinh chỉnh nhỏ) */
+    /* Badge Hạng Thành Viên */
     .rank-badge {
         font-size: 0.75rem;
         padding: 5px 10px;
@@ -59,7 +59,7 @@
         border: 1px solid rgba(0,0,0,0.1);
     }
 
-    /* Ghi đè lại màu nếu cần thiết để hiển thị tốt trên nền trắng */
+    /* Ghi đè lại màu nếu cần thiết */
     .tier-admin {
         background: linear-gradient(135deg, #8B0000, #1a1a1a);
         color: white;
@@ -111,7 +111,6 @@
 
 <div class="container-fluid py-4">
 
-    <!-- Header & Search -->
     <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
         <div>
             <h4 class="fw-bold text-dark mb-1">
@@ -133,7 +132,6 @@
         </div>
     </div>
 
-    <!-- Table Card -->
     <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
         <div class="table-responsive">
             <table class="table align-middle mb-0" id="userTable">
@@ -176,7 +174,6 @@
                                 </td>
 
                                 <td>
-                                    <!-- Vai trò -->
                                     <div class="mb-2">
                                         @if (item.Role == "Admin")
                                         {
@@ -191,11 +188,9 @@
                                             </span>
                                         }
                                     </div>
-                                    <!-- Hạng thành viên (Hiển thị Class màu sắc từ Service) -->
                                     <div class="rank-badge @tier.CssClass shadow-sm">
                                         <i class="bi @tier.Icon me-1"></i> @tier.Name
                                     </div>
-                                    <!-- Hiển thị tiền chi tiêu nhỏ bên dưới -->
                                     @if (item.Role != "Admin")
                                     {
                                         <div class="text-muted fst-italic mt-1" style="font-size: 10px;">
@@ -220,7 +215,7 @@
                                     </div>
                                     <div>
                                         <i class="bi bi-cake2 me-1 text-warning"></i>
-                                        @(item.DateOfBirth.Year > 1 ? item.DateOfBirth.ToString("dd/MM/yyyy") : "---")
+                                        @(item.DateOfBirth.HasValue ? item.DateOfBirth.Value.ToString("dd/MM/yyyy") : "---")
                                     </div>
                                 </td>
 

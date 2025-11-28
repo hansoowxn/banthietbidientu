@@ -53,7 +53,8 @@
                         <div class="text-start small text-muted">
                             <p class="mb-2"><i class="bi bi-envelope-fill me-2"></i> @Model.Email</p>
                             <p class="mb-2"><i class="bi bi-geo-alt-fill me-2"></i> @(Model.Address ?? "Chưa cập nhật địa chỉ")</p>
-                            <p class="mb-0"><i class="bi bi-calendar-event-fill me-2"></i> Ngày sinh: @(Model.DateOfBirth.Year > 1 ? Model.DateOfBirth.ToString("dd/MM/yyyy") : "---")</p>
+
+                            <p class="mb-0"><i class="bi bi-calendar-event-fill me-2"></i> Ngày sinh: @(Model.DateOfBirth.HasValue ? Model.DateOfBirth.Value.ToString("dd/MM/yyyy") : "---")</p>
                         </div>
                     </div>
                 </div>
@@ -102,7 +103,10 @@
 
                             <div class="col-md-6">
                                 <label asp-for="DateOfBirth" class="form-label fw-semibold">Ngày sinh</label>
-                                <input asp-for="DateOfBirth" type="date" class="form-control" asp-format="{0:yyyy-MM-dd}" />
+
+                                <input asp-for="DateOfBirth" type="date" class="form-control"
+                                       value="@(Model.DateOfBirth.HasValue ? Model.DateOfBirth.Value.ToString("yyyy-MM-dd") : "")" />
+
                                 <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
                             </div>
 
@@ -167,7 +171,6 @@
 
     <script>
         const host = "https://provinces.open-api.vn/api/";
-
         var callAPI = (api) => {
             return $.ajax({ url: api, method: 'GET' });
         }
