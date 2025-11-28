@@ -197,7 +197,6 @@ namespace banthietbidientu.Data
                      Address = "123 Đường Admin, TP.HCM",
                      Gender = "Male",
                      Email = "admin@example.com",
-                     // THÊM DÒNG NÀY:
                      PhoneNumber = "0901234567"
                  },
                  new TaiKhoan
@@ -211,7 +210,6 @@ namespace banthietbidientu.Data
                      Address = "456 Đường User, Hà Nội",
                      Gender = "Male",
                      Email = "user@example.com",
-                     // THÊM DÒNG NÀY:
                      PhoneNumber = "0909876543"
                  }
              );
