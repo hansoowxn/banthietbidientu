@@ -1,4 +1,6 @@
-﻿@{
+﻿@model banthietbidientu.Models.ThanhToanViewModel
+
+@{
     ViewData["Title"] = "Thanh toán - Electronic Store";
     // Tính tổng tiền hàng (Subtotal)
     decimal subtotal = Model.GioHangs.Sum(item => item.Price * item.Quantity);
@@ -8,8 +10,6 @@
     decimal totalSpent = tier?.TotalSpent ?? 0;
     string rankName = tier?.Name ?? "Thành Viên";
 }
-
-@model banthietbidientu.Models.ThanhToanViewModel
 
 <link rel="stylesheet" href="~/css/leaflet.css" />
 
@@ -89,11 +89,16 @@
                         <dl class="row mb-3">
                             <dt class="col-sm-4 fw-bold">Họ và tên</dt>
                             <dd class="col-sm-8">
-                                @Model.TaiKhoan.FullName
-                                <span class="badge bg-warning text-dark ms-2">@rankName</span>
+                                <input type="text" class="form-control" asp-for="NguoiNhan" required>
                             </dd>
-                            <dt class="col-sm-4 fw-bold">Email</dt>
-                            <dd class="col-sm-8">@Model.TaiKhoan.Email</dd>
+
+                            <dt class="col-sm-4 fw-bold mt-2">Số điện thoại</dt>
+                            <dd class="col-sm-8 mt-2">
+                                <input type="text" class="form-control" asp-for="SoDienThoai" placeholder="Ví dụ: 0987654321" required>
+                            </dd>
+
+                            <dt class="col-sm-4 fw-bold mt-2">Email</dt>
+                            <dd class="col-sm-8 mt-2">@Model.TaiKhoan.Email</dd>
                         </dl>
 
                         <div class="mb-3">
@@ -195,7 +200,6 @@
                         <div class="mb-4">
                             <label class="form-label fw-bold">Hình thức thanh toán</label>
 
-                            <!-- COD -->
                             <div class="form-check mb-2 p-3 border rounded">
                                 <input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="COD" checked>
                                 <label class="form-check-label fw-bold" for="cod">
@@ -203,7 +207,6 @@
                                 </label>
                             </div>
 
-                            <!-- VNPAY (ĐÃ BỎ DISABLED) -->
                             <div class="form-check mb-2 p-3 border rounded bg-light">
                                 <input class="form-check-input" type="radio" name="paymentMethod" id="vnpay" value="VNPAY">
                                 <label class="form-check-label fw-bold text-primary" for="vnpay">
@@ -233,25 +236,10 @@
 
     <script>
         // --- KHAI BÁO DỮ LIỆU ---
-            const shops = [
-            {
-                id: 1,
-                name: '120 Xuân Thủy, P. Dịch Vọng Hậu, Cầu Giấy, Hà Nội',
-                lat: 21.0357,
-                lng: 105.7981
-            },
-            {
-                id: 2,
-                name: '78 Bạch Đằng, P. Hải Châu I, Hải Châu, Đà Nẵng',
-                lat: 16.0691,
-                lng: 108.2238
-            },
-            {
-                id: 3,
-                name: '55 Nguyễn Huệ, P. Bến Nghé, Quận 1, TP.HCM',
-                lat: 10.7725,
-                lng: 106.7045
-            }
+        const shops = [
+            { id: 1, name: '120 Xuân Thủy, Cầu Giấy, Hà Nội', lat: 21.0357, lng: 105.7981 },
+            { id: 2, name: '78 Bạch Đằng, Hải Châu, Đà Nẵng', lat: 16.0691, lng: 108.2238 },
+            { id: 3, name: '55 Nguyễn Huệ, Quận 1, TP.HCM', lat: 10.7725, lng: 106.7045 }
         ];
 
         const subtotal = @(subtotal.ToString("0", System.Globalization.CultureInfo.InvariantCulture));
@@ -262,19 +250,14 @@
         let discountPercent = 0;
         let freeShipDistance = 0;
 
-        if (totalSpent >= 20000000000000000) {
-            console.log("=> Hạng: TỐI THƯỢNG (ADMIN)");
-            discountPercent = 0.50;
-            freeShipDistance = 99999;
+        if (totalSpent >= 20000000000000000) { // ADMIN
+            discountPercent = 0.50; freeShipDistance = 99999;
         }
-
         else if (totalSpent >= 100000000) { discountPercent = 0.10; freeShipDistance = 99999; } // Kim Cương
         else if (totalSpent >= 50000000) { discountPercent = 0.05; freeShipDistance = 99999; } // Bạch Kim
         else if (totalSpent >= 20000000) { freeShipDistance = 300; } // Vàng
         else if (totalSpent >= 10000000) { freeShipDistance = 15; } // Bạc
 
-        // Biến toàn cục lưu phí ship hiện tại
-        let currentShippingFee = 0;
         let currentLat = 16.047165, currentLng = 108.219955; // Mặc định ĐN
 
         // --- HÀM CHUYỂN ĐỔI GIAO HÀNG / NHẬN TẠI QUÁN ---
@@ -284,29 +267,21 @@
             const typeInput = document.getElementById('deliveryTypeInput');
 
             if (type === 'store') {
-                // 1. Hiện tab Store, Ẩn tab Ship
                 shipSection.classList.add('d-none');
                 storeSection.classList.remove('d-none');
                 typeInput.value = 'Store';
-
-                // 2. Reset phí ship về 0
                 updateTotalDisplay(0);
-
                 document.getElementById('warehouseDisplay').innerText = "(Nhận tại cửa hàng)";
                 document.getElementById('shippingFeeDisplay').innerHTML = '<span class="badge bg-primary">Miễn phí</span>';
-
             } else {
-                // 1. Hiện tab Ship, Ẩn tab Store
                 shipSection.classList.remove('d-none');
                 storeSection.classList.add('d-none');
                 typeInput.value = 'Ship';
-
-                // 2. Tính lại phí ship dựa trên vị trí hiện tại
                 calculateShipping(currentLat, currentLng);
             }
         }
 
-        // --- HÀM TÍNH SHIP (LOGIC CŨ) ---
+        // --- HÀM TÍNH SHIP ---
         function calculateShipping(lat, lng) {
             currentLat = lat;
             currentLng = lng;
@@ -329,11 +304,9 @@
                 let chargeableKm = (freeShipDistance > 0) ? (km - freeShipDistance) : km;
                 if(freeShipDistance === 0 && km <= 5) chargeableKm = 0;
                 else if(chargeableKm < 0) chargeableKm = 0;
-
                 fee = Math.round(chargeableKm * shippingRate);
             }
 
-            // Cập nhật hiển thị
             document.getElementById('warehouseDisplay').innerHTML = `Vận chuyển từ: <strong>${nearestShop.name}</strong> (${km} km)`;
 
             if (fee === 0) {
@@ -342,17 +315,13 @@
                 document.getElementById('shippingFeeDisplay').innerText = fee.toLocaleString('vi-VN') + ' ₫';
             }
 
-            // Cập nhật tổng tiền
             updateTotalDisplay(fee);
-
-            // Gán tọa độ vào input ẩn
             document.getElementById('latInput').value = lat;
             document.getElementById('lngInput').value = lng;
         }
 
         // --- HÀM CẬP NHẬT TỔNG TIỀN ---
         function updateTotalDisplay(shipFee) {
-            currentShippingFee = shipFee;
             let discountAmount = Math.round(subtotal * discountPercent);
 
             if (discountAmount > 0) {
@@ -364,7 +333,7 @@
             document.getElementById('totalDisplay').innerText = total.toLocaleString('vi-VN') + ' ₫';
         }
 
-        // Các hàm hỗ trợ Map (Giữ nguyên)
+        // Các hàm hỗ trợ Map
         function getDistance(lat1, lon1, lat2, lon2) {
             var R = 6371;
             var dLat = deg2rad(lat2 - lat1);

@@ -1,0 +1,39 @@
+﻿@{
+    Layout = null; // Không dùng layout chung để tránh rối, hoặc dùng nếu muốn
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Thanh toán thành công</title>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #f4f6f9;
+        }
+    </style>
+</head>
+<body>
+    <script>
+        // Khi trang load xong, hiện thông báo ngay
+        window.onload = function() {
+            Swal.fire({
+                title: 'Thanh toán thành công!',
+                text: 'Cảm ơn bạn đã mua hàng. Đơn hàng của bạn đã được xác nhận.',
+                icon: 'success',
+                confirmButtonText: 'Xem đơn hàng',
+                allowOutsideClick: false,
+                showCancelButton: true,
+                cancelButtonText: 'Về trang chủ'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/DonHang/LichSu';
+                } else {
+                    window.location.href = '/';
+                }
+            });
+        };
+    </script>
+</body>
+</html>
