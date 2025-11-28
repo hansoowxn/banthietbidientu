@@ -139,7 +139,7 @@ namespace banthietbidientu.Controllers
         [HttpGet]
         public IActionResult NhapHang()
         {
-            ViewBag.SanPhams = _context.SanPhams.ToList();
+                ViewBag.SanPhams = _context.SanPhams.ToList();
             return View();
         }
 
@@ -608,7 +608,14 @@ namespace banthietbidientu.Controllers
             var yeuCau = _context.YeuCauThuMuas.Find(id);
             if (yeuCau != null)
             {
+                if (yeuCau.TrangThai == 2 || yeuCau.TrangThai == -1)
+                {
+                    TempData["Error"] = "Yêu cầu này đã hoàn tất hoặc đã hủy, không thể thay đổi trạng thái nữa!";
+                    return RedirectToAction("QuanLyThuMua");
+                }
+
                 yeuCau.TrangThai = trangThai;
+
                 if (!string.IsNullOrEmpty(ghiChuAdmin))
                 {
                     yeuCau.GhiChu = ghiChuAdmin;

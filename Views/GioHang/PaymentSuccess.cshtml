@@ -1,39 +1,38 @@
 ﻿@{
-    Layout = null; // Không dùng layout chung để tránh rối, hoặc dùng nếu muốn
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Thanh toán thành công";
 }
 
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Thanh toán thành công</title>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <style>
-        body {
-            font-family: sans-serif;
-            background-color: #f4f6f9;
-        }
-    </style>
-</head>
-<body>
-    <script>
-        // Khi trang load xong, hiện thông báo ngay
-        window.onload = function() {
-            Swal.fire({
-                title: 'Thanh toán thành công!',
-                text: 'Cảm ơn bạn đã mua hàng. Đơn hàng của bạn đã được xác nhận.',
-                icon: 'success',
-                confirmButtonText: 'Xem đơn hàng',
-                allowOutsideClick: false,
-                showCancelButton: true,
-                cancelButtonText: 'Về trang chủ'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    window.location.href = '/DonHang/LichSu';
-                } else {
-                    window.location.href = '/';
-                }
-            });
-        };
-    </script>
-</body>
-</html>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<div class="container py-5 text-center" style="min-height: 60vh;">
+    <div id="fallback-content" style="display:none;">
+        <h2 class="text-success mb-3"><i class="bi bi-check-circle-fill"></i> Đặt hàng thành công!</h2>
+        <p>Hệ thống đang xử lý đơn hàng của bạn...</p>
+        <a href="/Login/LichSuMuaHang" class="btn btn-primary">Xem đơn hàng</a>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        Swal.fire({
+            title: 'Thanh toán thành công!',
+            text: 'Cảm ơn bạn đã mua hàng. Đơn hàng của bạn đã được khởi tạo.',
+            icon: 'success',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Xem lịch sử đơn hàng',
+            cancelButtonText: 'Về trang chủ',
+            allowOutsideClick: false
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Chuyển hướng đến lịch sử mua hàng
+                window.location.href = '/Login/LichSuMuaHang';
+            } else {
+                // Chuyển hướng về trang chủ
+                window.location.href = '/';
+            }
+        });
+    });
+</script>

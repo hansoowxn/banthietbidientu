@@ -164,7 +164,7 @@ namespace banthietbidientu.Controllers
         {
             if (ModelState.IsValid)
             {
-                // 1. Xử lý upload ảnh
+                // 1. Xử lý upload ảnh (Giữ nguyên)
                 string imagePath = "";
                 if (model.HinhAnhMay != null)
                 {
@@ -181,31 +181,41 @@ namespace banthietbidientu.Controllers
                     imagePath = "/uploads/thumua/" + uniqueFileName;
                 }
 
-                // 2. Lưu vào bảng YeuCauThuMua (MỚI)
+                // 2. Lấy ID tài khoản nếu đã đăng nhập (MỚI)
+                int? taiKhoanId = null;
+                if (User.Identity.IsAuthenticated)
+                {
+                    var username = User.Identity.Name;
+                    var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == username);
+                    if (user != null) taiKhoanId = user.Id;
+                }
+
+                // 3. Lưu vào bảng YeuCauThuMua
                 var yeuCau = new YeuCauThuMua
                 {
+                    TaiKhoanId = taiKhoanId, // <-- Lưu liên kết tài khoản
                     TenMay = model.TenMay,
                     TinhTrang = model.TinhTrang,
                     SoDienThoai = model.SoDienThoai,
                     GhiChu = model.GhiChu ?? "",
                     HinhAnh = imagePath,
-                    TrangThai = 0, // Chờ xử lý
+                    TrangThai = 0,
                     NgayTao = DateTime.Now
                 };
 
                 _context.YeuCauThuMuas.Add(yeuCau);
-                await _context.SaveChangesAsync(); // Lưu để lấy ID
+                await _context.SaveChangesAsync();
 
-                // 3. Tạo thông báo (CÓ LINK DẪN)
+                // 4. Tạo thông báo (Giữ nguyên)
                 var thongBao = new ThongBao
                 {
-                    TieuDe = "Yêu cầu Thu cũ đổi mới",
+                    TieuDe = "Yêu cầu Thu cũ mới",
                     NoiDung = $"Khách {model.SoDienThoai} muốn bán {model.TenMay}",
                     NgayTao = DateTime.Now,
                     DaDoc = false,
-                    LoaiThongBao = 2, // 2 = Thu cũ
-                    RedirectId = yeuCau.Id.ToString(), // ID của yêu cầu vừa tạo
-                    RedirectAction = "QuanLyThuMua"   // Tên Action quản lý (sẽ làm ở bước sau)
+                    LoaiThongBao = 2,
+                    RedirectId = yeuCau.Id.ToString(),
+                    RedirectAction = "QuanLyThuMua"
                 };
 
                 _context.ThongBaos.Add(thongBao);
