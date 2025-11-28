@@ -1,372 +1,212 @@
-﻿@using Newtonsoft.Json
-@model List<banthietbidientu.Models.DonHangViewModel>
+﻿@model IEnumerable<banthietbidientu.Models.DonHangViewModel>
 
 @{
     ViewData["Title"] = "Quản lý đơn hàng";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 
+    // Lấy thông tin phân trang từ ViewBag
     int currentPage = ViewBag.CurrentPage ?? 1;
     int totalPages = ViewBag.TotalPages ?? 1;
 }
 
-<style>
-    .table-hover tbody tr:hover {
-        background-color: #f8f9fa;
-        transition: background-color 0.2s;
-    }
-
-    .status-select {
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 0.85rem;
-        padding: 0.375rem 1.5rem 0.375rem 1rem;
-        border: 1px solid transparent;
-        cursor: pointer;
-        appearance: none;
-        background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23343a40' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m2 5 6 6 6-6'/%3e%3c/svg%3e");
-        background-repeat: no-repeat;
-        background-position: right 0.75rem center;
-        background-size: 10px 10px;
-        transition: all 0.3s ease;
-        min-width: 160px;
-    }
-
-        /* Style cho trạng thái bị khóa */
-        .status-select:disabled {
-            opacity: 0.8;
-            cursor: not-allowed;
-            background-image: none; /* Ẩn mũi tên */
-            border: 1px solid #dee2e6;
-        }
-
-    .stt-cho-xu-ly {
-        background-color: #fff3cd;
-        color: #856404;
-        border-color: #ffeeba;
-    }
-
-    .stt-da-xac-nhan {
-        background-color: #cff4fc;
-        color: #055160;
-        border-color: #b6effb;
-    }
-
-    .stt-dang-giao {
-        background-color: #cfe2ff;
-        color: #084298;
-        border-color: #b6d4fe;
-    }
-
-    .stt-hoan-thanh {
-        background-color: #d1e7dd;
-        color: #0f5132;
-        border-color: #badbcc;
-    }
-
-    .stt-da-huy {
-        background-color: #f8d7da;
-        color: #842029;
-        border-color: #f5c2c7;
-    }
-
-    .updating {
-        opacity: 0.6;
-        pointer-events: none;
-        background-image: url("https://i.gifer.com/ZZ5H.gif") !important;
-        background-size: 15px 15px;
-    }
-</style>
-
-<div class="container-fluid py-4">
-
-    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
-        <div>
-            <h4 class="fw-bold text-dark mb-1">
-                <i class="bi bi-receipt-cutoff text-primary me-2"></i>Quản Lý Đơn Hàng
-            </h4>
-            <p class="text-muted small mb-0">
-                Các đơn hàng "Hoàn thành" hoặc "Đã hủy" sẽ bị khóa trạng thái.
-            </p>
-        </div>
-
-        <a asp-action="XuatExcelDonHang" asp-controller="Admin" class="btn btn-success shadow-sm fw-bold">
-            <i class="bi bi-file-earmark-excel me-2"></i>Xuất Báo Cáo Excel
-        </a>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary"><i class="bi bi-receipt me-2"></i>Quản lý Đơn hàng</h2>
     </div>
 
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="bg-light text-uppercase small text-muted fw-bold">
-                    <tr>
-                        <th class="ps-4">Mã Đơn</th>
-                        <th>Khách Hàng</th>
-                        <th class="text-center">Thời gian</th>
-                        <th class="text-end">Tổng Tiền</th>
-                        <th class="text-center" style="width: 200px;">Trạng Thái</th>
-                        <th class="text-end pe-4">Hành động</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        foreach (var item in Model)
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4">Mã đơn</th>
+                            <th>Khách hàng</th>
+                            <th>Ngày đặt</th>
+                            <th>Tổng tiền</th>
+                            <th>Trạng thái</th>
+                            <th>Cập nhật</th>
+                            <th class="text-end pe-4">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
                         {
-                            string jsonProducts = JsonConvert.SerializeObject(item.SanPhams);
-                            string currentStatus = item.TrangThai ?? "Chờ xử lý";
-
-                            // Xác định màu sắc
-                            string sttClass = "stt-cho-xu-ly";
-                            if (currentStatus == "Đã xác nhận") sttClass = "stt-da-xac-nhan";
-                            else if (currentStatus == "Đang giao") sttClass = "stt-dang-giao";
-                            else if (currentStatus == "Hoàn thành") sttClass = "stt-hoan-thanh";
-                            else if (currentStatus == "Đã hủy") sttClass = "stt-da-huy";
-
-                            // --- LOGIC MỚI: Khóa nếu là trạng thái cuối ---
-                            bool isLocked = (currentStatus == "Hoàn thành" || currentStatus == "Đã hủy");
-
-                            <tr>
+                            // --- QUAN TRỌNG: ID phục vụ Highlight ---
+                            <tr id="row-@item.MaDon" class="data-row">
                                 <td class="ps-4 fw-bold text-primary">#@item.MaDon</td>
 
                                 <td>
                                     <div class="fw-bold text-dark">@item.TenKhachHang</div>
-                                    <div class="small text-muted">@(item.SanPhams?.Count ?? 0) sản phẩm</div>
+                                    <div class="small text-muted">@item.SanPhams.Count sản phẩm</div>
                                 </td>
 
-                                <td class="text-center">
-                                    <div class="fw-medium">@(item.NgayDat.HasValue ? item.NgayDat.Value.ToString("dd/MM/yyyy") : "--/--")</div>
-                                    <div class="text-muted small" style="font-size: 11px;">@(item.NgayDat.HasValue ? item.NgayDat.Value.ToString("HH:mm") : "")</div>
+                                <td class="text-muted small">
+                                    @(item.NgayDat.HasValue ? item.NgayDat.Value.ToString("dd/MM/yyyy HH:mm") : "")
                                 </td>
 
-                                <td class="text-end fw-bold text-danger fs-6">
+                                <td class="fw-bold text-danger">
                                     @item.TongTien.ToString("#,##0") đ
                                 </td>
 
-                                <td class="text-center">
-                                    <select class="form-select form-select-sm status-select @sttClass shadow-none"
-                                            onchange="updateStatus(this, '@item.MaDon')"
-                                    @(isLocked ? "disabled" : "")>
-                                        <!-- Thêm thuộc tính disabled -->
+                                <td>
+                                    @if (item.TrangThai == "Hoàn thành")
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success px-3 py-2 rounded-pill">Hoàn thành</span>
+                                    }
+                                    else if (item.TrangThai == "Đã hủy")
+                                    {
+                                        <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">Đã hủy</span>
+                                    }
+                                    else if (item.TrangThai == "Đang giao")
+                                    {
+                                        <span class="badge bg-primary bg-opacity-10 text-primary px-3 py-2 rounded-pill">Đang giao</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">@item.TrangThai</span>
+                                    }
+                                </td>
 
-                                        <option value="Chờ xử lý" selected="@(currentStatus == "Chờ xử lý")">⏳ Chờ xử lý</option>
-                                        <option value="Đã xác nhận" selected="@(currentStatus == "Đã xác nhận")">☑️ Đã xác nhận</option>
-                                        <option value="Đang giao" selected="@(currentStatus == "Đang giao")">🚚 Đang giao</option>
-                                        <option value="Hoàn thành" selected="@(currentStatus == "Hoàn thành")">✅ Hoàn thành</option>
-                                        <option value="Đã hủy" selected="@(currentStatus == "Đã hủy")">❌ Đã hủy</option>
+                                <td>
+                                    <select class="form-select form-select-sm border-0 bg-light fw-bold text-secondary shadow-none"
+                                            style="width: 130px; cursor: pointer;"
+                                            onchange="updateStatus('@item.MaDon', this.value)">
+                                        <option value="Chờ xử lý" selected="@(item.TrangThai == "Chờ xử lý")">Chờ xử lý</option>
+                                        <option value="Đã xác nhận" selected="@(item.TrangThai == "Đã xác nhận")">Đã xác nhận</option>
+                                        <option value="Đang giao" selected="@(item.TrangThai == "Đang giao")">Đang giao</option>
+                                        <option value="Hoàn thành" selected="@(item.TrangThai == "Hoàn thành")">Hoàn thành</option>
+                                        <option value="Đã hủy" selected="@(item.TrangThai == "Đã hủy")">Hủy đơn</option>
                                     </select>
                                 </td>
 
                                 <td class="text-end pe-4">
-                                    <div class="d-flex justify-content-end gap-2">
-                                        <button class="btn btn-sm btn-outline-primary rounded-circle border-0 bg-light"
-                                                title="Xem chi tiết"
-                                                onclick='showOrderDetails(@Html.Raw(jsonProducts), "#@item.MaDon")'>
-                                            <i class="bi bi-eye-fill"></i>
-                                        </button>
+                                    <a href="@Url.Action("InHoaDon", "Admin", new { orderId = item.MaDon })"
+                                       target="_blank"
+                                       class="btn btn-sm btn-outline-secondary"
+                                       title="In hóa đơn">
+                                        <i class="bi bi-printer"></i>
+                                    </a>
 
-                                        <!-- Nút In hóa đơn -->
-                                        <a href="@Url.Action("InHoaDon", "Admin", new { orderId = item.MaDon })"
-                                           target="_blank"
-                                           class="btn btn-sm btn-outline-dark rounded-circle border-0 bg-light"
-                                           title="In hóa đơn">
-                                            <i class="bi bi-printer-fill"></i>
-                                        </a>
+                                    <button class="btn btn-sm btn-outline-primary ms-1"
+                                            type="button"
+                                            data-bs-toggle="collapse"
+                                            data-bs-target="#detail-@item.MaDon">
+                                        <i class="bi bi-chevron-down"></i>
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <tr class="collapse bg-light" id="detail-@item.MaDon">
+                                <td colspan="7" class="p-4">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <h6 class="fw-bold text-primary mb-3">Danh sách sản phẩm</h6>
+                                            <ul class="list-group">
+                                                @foreach (var sp in item.SanPhams)
+                                                {
+                                                    <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent">
+                                                        <div class="d-flex align-items-center">
+                                                            <img src="@(sp.HinhAnh ?? "/image/logo.png")" class="rounded border me-3" style="width: 40px; height: 40px; object-fit: cover;">
+                                                            <div>
+                                                                <div class="fw-bold small">@sp.TenSanPham</div>
+                                                                <div class="text-muted small">x @sp.SoLuong</div>
+                                                            </div>
+                                                        </div>
+                                                        <span class="fw-bold small">@((sp.Gia ?? 0).ToString("#,##0")) đ</span>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </div>
+                                        <div class="col-md-4 border-start">
+                                            <h6 class="fw-bold text-secondary mb-3">Thông tin giao hàng</h6>
+                                            <p class="small mb-1"><i class="bi bi-person me-2"></i>@item.TenKhachHang</p>
+                                            <p class="small mb-1"><i class="bi bi-telephone me-2"></i>@(item.SoDienThoai ?? "Chưa cập nhật")</p>
+                                            <p class="small mb-1"><i class="bi bi-geo-alt me-2"></i>@(item.DiaChiGiaoHang ?? "Nhận tại cửa hàng")</p>
+                                        </div>
                                     </div>
                                 </td>
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="6" class="text-center py-5 text-muted">
-                                <i class="bi bi-inbox fs-1 d-block mb-3 opacity-25"></i>
-                                <p class="mb-0">Chưa có đơn hàng nào trong hệ thống.</p>
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
-        </div>
+                    </tbody>
+                </table>
 
-        @if (totalPages > 1)
-        {
-            <div class="card-footer bg-white border-0 py-3">
-                <nav>
-                    <ul class="pagination pagination-sm justify-content-end mb-0">
-                        <li class="page-item @(currentPage == 1 ? "disabled" : "")">
-                            <a class="page-link border-0 rounded-circle mx-1" href="@Url.Action("QuanLyDonHang", new { page = currentPage - 1 })">
-                                <i class="bi bi-chevron-left"></i>
-                            </a>
-                        </li>
-                        @for (int i = 1; i <= totalPages; i++)
-                        {
-                            <li class="page-item @(currentPage == i ? "active" : "")">
-                                <a class="page-link border-0 rounded-circle mx-1" href="@Url.Action("QuanLyDonHang", new { page = i })">@i</a>
-                            </li>
-                        }
-                        <li class="page-item @(currentPage == totalPages ? "disabled" : "")">
-                            <a class="page-link border-0 rounded-circle mx-1" href="@Url.Action("QuanLyDonHang", new { page = currentPage + 1 })">
-                                <i class="bi bi-chevron-right"></i>
-                            </a>
-                        </li>
-                    </ul>
-                </nav>
-            </div>
-        }
-    </div>
-</div>
-
-<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
-    <div id="liveToast" class="toast align-items-center text-white bg-success border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
-        <div class="d-flex">
-            <div class="toast-body fw-bold fs-6">
-                <i class="bi bi-check-circle-fill me-2"></i> <span id="toastMsg">Cập nhật thành công!</span>
-            </div>
-            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-        </div>
-    </div>
-</div>
-
-<!-- Modal Chi Tiết -->
-<div class="modal fade" id="detailModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0 shadow rounded-4">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title fw-bold" id="modalTitle"><i class="bi bi-receipt me-2"></i>Chi tiết đơn hàng</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-0">
-                <div class="table-responsive">
-                    <table class="table align-middle mb-0">
-                        <thead class="bg-light text-uppercase small text-muted">
-                            <tr>
-                                <th class="ps-4">Sản phẩm</th>
-                                <th class="text-center">Đơn giá</th>
-                                <th class="text-center">Số lượng</th>
-                                <th class="text-end pe-4">Thành tiền</th>
-                            </tr>
-                        </thead>
-                        <tbody id="modalBodyContent">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer border-0 bg-light">
-                <button type="button" class="btn btn-secondary px-4 fw-bold" data-bs-dismiss="modal">Đóng</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<script>
-    async function updateStatus(selectElement, orderId) {
-        const newStatus = selectElement.value;
-
-        if(newStatus === 'Đã hủy') {
-            if(!confirm("Cảnh báo: Hủy đơn hàng sẽ dừng mọi quy trình xử lý. Bạn có chắc chắn không?")) {
-                location.reload(); return;
-            }
-        }
-
-        selectElement.classList.add("updating");
-
-        try {
-            const formData = new FormData();
-            formData.append('orderId', orderId);
-            formData.append('status', newStatus);
-
-            const response = await fetch('/Admin/CapNhatTrangThai', {
-                method: 'POST',
-                body: formData
-            });
-
-            if (!response.ok) throw new Error("Lỗi kết nối máy chủ");
-            const data = await response.json();
-
-            if (data.success) {
-                updateDropdownColor(selectElement, newStatus);
-                showToast("Cập nhật trạng thái thành công!");
-
-                // --- LOGIC MỚI: Khóa ngay lập tức nếu chọn Hủy hoặc Hoàn thành ---
-                if (newStatus === 'Đã hủy' || newStatus === 'Hoàn thành') {
-                    selectElement.disabled = true;
+                @if (!Model.Any())
+                {
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox text-muted opacity-25" style="font-size: 3rem;"></i>
+                        <p class="text-muted mt-2">Chưa có đơn hàng nào.</p>
+                    </div>
                 }
-            } else {
-                alert("Lỗi: " + data.message);
-                location.reload();
+            </div>
+
+            @if (totalPages > 1)
+            {
+                <div class="d-flex justify-content-center py-3 border-top">
+                    <nav>
+                        <ul class="pagination pagination-sm mb-0">
+                            @for (int i = 1; i <= totalPages; i++)
+                            {
+                                <li class="page-item @(i == currentPage ? "active" : "")">
+                                    <a class="page-link" href="@Url.Action("QuanLyDonHang", new { page = i })">@i</a>
+                                </li>
+                            }
+                        </ul>
+                    </nav>
+                </div>
             }
+        </div>
+    </div>
+</div>
 
-        } catch (error) {
-            console.error("AJAX Error:", error);
-            alert("Không thể kết nối đến máy chủ.");
-            location.reload();
-        } finally {
-            selectElement.classList.remove("updating");
-        }
-    }
+@section Scripts {
+    <script>
+        // 1. Script Highlight (Tiêu điểm)
+        document.addEventListener("DOMContentLoaded", function () {
+            const params = new URLSearchParams(window.location.search);
+            const highlightId = params.get('highlightId');
 
-    function updateDropdownColor(el, status) {
-        el.classList.remove('stt-cho-xu-ly', 'stt-da-xac-nhan', 'stt-dang-giao', 'stt-hoan-thanh', 'stt-da-huy');
-        if (status === 'Chờ xử lý') el.classList.add('stt-cho-xu-ly');
-        else if (status === 'Đã xác nhận') el.classList.add('stt-da-xac-nhan');
-        else if (status === 'Đang giao') el.classList.add('stt-dang-giao');
-        else if (status === 'Hoàn thành') el.classList.add('stt-hoan-thanh');
-        else if (status === 'Đã hủy') el.classList.add('stt-da-huy');
-    }
+            if (highlightId) {
+                const row = document.getElementById('row-' + highlightId);
+                if (row) {
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    row.classList.add('table-warning');
 
-    function showToast(message) {
-        const toastEl = document.getElementById('liveToast');
-        if (toastEl) {
-            document.getElementById('toastMsg').innerText = message;
-            const toast = new bootstrap.Toast(toastEl, { delay: 3000 });
-            toast.show();
-        }
-    }
+                    // Mở luôn phần chi tiết nếu cần
+                    const detailBtn = row.querySelector('[data-bs-toggle="collapse"]');
+                    if(detailBtn) detailBtn.click();
 
-    function showOrderDetails(products, title) {
-        document.getElementById('modalTitle').innerText = "Chi tiết đơn hàng " + title;
-        let html = '';
-        let total = 0;
+                    setTimeout(() => {
+                        row.classList.remove('table-warning');
+                    }, 3000);
+                }
+            }
+        });
 
-        if (products && products.length > 0) {
-            products.forEach(p => {
-                let sum = (p.Gia || 0) * (p.SoLuong || 0);
-                total += sum;
-                let imgUrl = p.HinhAnh || '/image/logo.png';
-                let giaStr = (p.Gia || 0).toLocaleString('vi-VN');
-                let sumStr = sum.toLocaleString('vi-VN');
+        // 2. Script Cập nhật trạng thái (AJAX)
+        function updateStatus(orderId, newStatus) {
+            if(!confirm('Bạn có chắc muốn đổi trạng thái đơn ' + orderId + ' sang: ' + newStatus + '?')) return;
 
-                html += `
-                    <tr>
-                        <td class="ps-4">
-                            <div class="d-flex align-items-center">
-                                <img src="${imgUrl}" class="rounded border me-3 shadow-sm"
-                                     style="width: 45px; height: 45px; object-fit: cover; background: #fff;"
-                                     onerror="this.src='/image/logo.png'">
-                                <div>
-                                    <div class="fw-bold text-dark">${p.TenSanPham || "Sản phẩm"}</div>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="text-center text-muted">${giaStr} đ</td>
-                        <td class="text-center"><span class="badge bg-light text-dark border">x${p.SoLuong}</span></td>
-                        <td class="text-end pe-4 fw-bold text-primary">${sumStr} đ</td>
-                    </tr>
-                `;
+            fetch('/Admin/CapNhatTrangThai', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `orderId=${orderId}&status=${newStatus}`
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Cập nhật thành công!');
+                    location.reload(); // Load lại để cập nhật màu sắc Badge
+                } else {
+                    alert('Lỗi: ' + data.message);
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('Lỗi kết nối server!');
             });
-            html += `
-                <tr class="bg-light fw-bold text-dark">
-                    <td colspan="3" class="text-end text-uppercase small pe-3">Tổng cộng:</td>
-                    <td class="text-end pe-4 text-danger fs-5">${total.toLocaleString('vi-VN')} đ</td>
-                </tr>
-            `;
-        } else {
-            html = `<tr><td colspan="4" class="text-center py-4 text-muted">Không có dữ liệu chi tiết</td></tr>`;
         }
-
-        document.getElementById('modalBodyContent').innerHTML = html;
-        var myModal = new bootstrap.Modal(document.getElementById('detailModal'));
-        myModal.show();
-    }
-</script>
+    </script>
+}

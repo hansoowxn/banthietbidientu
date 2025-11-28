@@ -164,11 +164,12 @@ namespace banthietbidientu.Controllers
         {
             if (ModelState.IsValid)
             {
+                // 1. Xử lý upload ảnh
                 string imagePath = "";
                 if (model.HinhAnhMay != null)
                 {
                     string uploadsFolder = Path.Combine(_webHostEnvironment.WebRootPath, "uploads/thumua");
-                    Directory.CreateDirectory(uploadsFolder);
+                    if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
                     string uniqueFileName = Guid.NewGuid().ToString() + "_" + model.HinhAnhMay.FileName;
                     string filePath = Path.Combine(uploadsFolder, uniqueFileName);
@@ -180,15 +181,31 @@ namespace banthietbidientu.Controllers
                     imagePath = "/uploads/thumua/" + uniqueFileName;
                 }
 
-                string noiDungThongBao = $"THU CŨ: Khách (SĐT: {model.SoDienThoai}) muốn bán {model.TenMay}. Tình trạng: {model.TinhTrang}. {(string.IsNullOrEmpty(model.GhiChu) ? "" : "Note: " + model.GhiChu)}";
+                // 2. Lưu vào bảng YeuCauThuMua (MỚI)
+                var yeuCau = new YeuCauThuMua
+                {
+                    TenMay = model.TenMay,
+                    TinhTrang = model.TinhTrang,
+                    SoDienThoai = model.SoDienThoai,
+                    GhiChu = model.GhiChu,
+                    HinhAnh = imagePath,
+                    TrangThai = 0, // Chờ xử lý
+                    NgayTao = DateTime.Now
+                };
 
+                _context.YeuCauThuMuas.Add(yeuCau);
+                await _context.SaveChangesAsync(); // Lưu để lấy ID
+
+                // 3. Tạo thông báo (CÓ LINK DẪN)
                 var thongBao = new ThongBao
                 {
-                    TieuDe = "Yêu cầu Thu cũ đổi mới", // Đã fix lỗi thiếu TieuDe
-                    NoiDung = noiDungThongBao,
+                    TieuDe = "Yêu cầu Thu cũ đổi mới",
+                    NoiDung = $"Khách {model.SoDienThoai} muốn bán {model.TenMay}",
                     NgayTao = DateTime.Now,
                     DaDoc = false,
-                    LoaiThongBao = 2
+                    LoaiThongBao = 2, // 2 = Thu cũ
+                    RedirectId = yeuCau.Id.ToString(), // ID của yêu cầu vừa tạo
+                    RedirectAction = "QuanLyThuMua"   // Tên Action quản lý (sẽ làm ở bước sau)
                 };
 
                 _context.ThongBaos.Add(thongBao);

@@ -1,0 +1,164 @@
+﻿@model IEnumerable<banthietbidientu.Models.YeuCauThuMua>
+
+@{
+    ViewData["Title"] = "Quản lý Thu cũ đổi mới";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="fw-bold text-primary"><i class="bi bi-phone-flip me-2"></i>Quản lý Yêu cầu Thu cũ</h2>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bi bi-check-circle me-2"></i> @TempData["Success"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+    }
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-secondary">
+                        <tr>
+                            <th class="ps-4">Hình ảnh</th>
+                            <th>Thông tin máy</th>
+                            <th>Khách hàng</th>
+                            <th>Trạng thái</th>
+                            <th>Ghi chú</th>
+                            <th class="text-end pe-4">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                                <tr id="row-@item.Id" class="data-row">
+                                    <td class="ps-4">
+                                    @if (!string.IsNullOrEmpty(item.HinhAnh))
+                                    {
+                                                <a href="@item.HinhAnh" target="_blank">
+                                                    <img src="@item.HinhAnh" class="rounded border" style="width: 60px; height: 60px; object-fit: cover;" alt="Ảnh máy">
+                                                </a>
+                                    }
+                                    else
+                                    {
+                                                <span class="text-muted small">Không có ảnh</span>
+                                    }
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold text-dark">@item.TenMay</div>
+                                        <div class="small text-muted">Tình trạng: <span class="text-info fw-bold">@item.TinhTrang</span></div>
+                                        <div class="small text-secondary fst-italic">@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold"><i class="bi bi-telephone me-1"></i>@item.SoDienThoai</div>
+                                    </td>
+                                    <td>
+                                    @if (item.TrangThai == 0)
+                                    {
+                                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass-split"></i> Chờ xử lý</span>
+                                    }
+                                    else if (item.TrangThai == 1)
+                                    {
+                                                <span class="badge bg-primary"><i class="bi bi-telephone-outbound"></i> Đã liên hệ</span>
+                                    }
+                                    else if (item.TrangThai == 2)
+                                    {
+                                                <span class="badge bg-success"><i class="bi bi-check-circle"></i> Hoàn thành</span>
+                                    }
+                                    else
+                                    {
+                                                <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Đã hủy</span>
+                                    }
+                                    </td>
+                                    <td style="max-width: 200px;">
+                                        <small class="text-muted">@item.GhiChu</small>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <button class="btn btn-sm btn-outline-primary"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#modal-@item.Id">
+                                            <i class="bi bi-pencil-square"></i> Xử lý
+                                        </button>
+
+                                        <div class="modal fade" id="modal-@item.Id" tabindex="-1">
+                                            <div class="modal-dialog">
+                                                <form asp-action="CapNhatThuMua" method="post">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title fw-bold">Xử lý yêu cầu #@item.Id</h5>
+                                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        </div>
+                                                        <div class="modal-body text-start">
+                                                            <input type="hidden" name="id" value="@item.Id" />
+
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold">Trạng thái:</label>
+                                                                <select name="trangThai" class="form-select">
+                                                                    <option value="0" selected="@(item.TrangThai == 0)">Chờ xử lý</option>
+                                                                    <option value="1" selected="@(item.TrangThai == 1)">Đã liên hệ & Định giá</option>
+                                                                    <option value="2" selected="@(item.TrangThai == 2)">Hoàn thành (Đã thu)</option>
+                                                                    <option value="-1" selected="@(item.TrangThai == -1)">Hủy yêu cầu</option>
+                                                                </select>
+                                                            </div>
+
+                                                            <div class="mb-3">
+                                                                <label class="form-label fw-bold">Ghi chú (Giá chốt / Lý do hủy):</label>
+                                                                <textarea name="ghiChuAdmin" class="form-control" rows="3">@item.GhiChu</textarea>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                                                        </div>
+                                                    </div>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                        }
+                    </tbody>
+                </table>
+
+                @if (!Model.Any())
+                {
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox text-muted opacity-25" style="font-size: 3rem;"></i>
+                            <p class="text-muted mt-2">Chưa có yêu cầu nào.</p>
+                        </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                // Lấy tham số highlightId từ URL
+                const params = new URLSearchParams(window.location.search);
+                const highlightId = params.get('highlightId');
+
+                if (highlightId) {
+                    // Tìm dòng có ID tương ứng
+                    const row = document.getElementById('row-' + highlightId);
+                    if (row) {
+                        // 1. Cuộn màn hình đến dòng đó
+                        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+                        // 2. Thêm class màu vàng (table-warning)
+                        row.classList.add('table-warning');
+
+                        // 3. Sau 3 giây thì tắt màu vàng đi
+                        setTimeout(() => {
+                            row.classList.remove('table-warning');
+                        }, 3000);
+                    }
+                }
+            });
+        </script>
+}

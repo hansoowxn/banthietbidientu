@@ -21,15 +21,28 @@ namespace banthietbidientu.Models
 
         // 4. Danh sách Top khách hàng chi tiêu nhiều
         public List<TopKhachHang> TopKhachHangs { get; set; }
+
+        // 5. --- MỚI THÊM: DANH SÁCH LỢI NHUẬN SẢN PHẨM ---
+        public List<LoiNhuanSanPham> BaoCaoLoiNhuan { get; set; }
     }
 
-    // Class con để chứa thông tin khách hàng VIP
     public class TopKhachHang
     {
         public string HoTen { get; set; }
         public string Email { get; set; }
-        public string Role { get; set; } // <--- THÊM DÒNG NÀY (Để phân biệt Admin)
+        public string Role { get; set; }
         public decimal TongChiTieu { get; set; }
         public int SoLanMua { get; set; }
+    }
+
+    // Class con chứa thông tin Lợi nhuận
+    public class LoiNhuanSanPham
+    {
+        public string TenSanPham { get; set; }
+        public string HinhAnh { get; set; }
+        public int SoLuongBan { get; set; }     // Tổng số lượng bán
+        public decimal DoanhThu { get; set; }   // Tổng tiền thu về (Giá bán * SL)
+        public decimal GiaVon { get; set; }     // Tổng giá vốn (Giá gốc * SL)
+        public decimal LoiNhuan { get; set; }   // DoanhThu - GiaVon
     }
 }

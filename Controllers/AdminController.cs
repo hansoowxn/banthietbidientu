@@ -4,11 +4,9 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using banthietbidientu.Data;
 using banthietbidientu.Models;
-using System.Globalization;
 using System.Collections.Generic;
 using System;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace banthietbidientu.Controllers
 {
@@ -151,12 +149,25 @@ namespace banthietbidientu.Controllers
             var sanPham = _context.SanPhams.Find(sanPhamId);
             if (sanPham == null) return NotFound();
 
+            // --- 1. TÍNH GIÁ VỐN BÌNH QUÂN GIA QUYỀN (Moving Average) ---
+            decimal tongGiaTriCu = sanPham.SoLuong * sanPham.GiaNhap;
+            decimal tongGiaTriNhap = soLuong * giaNhap;
+            int tongSoLuongMoi = sanPham.SoLuong + soLuong;
+
+            if (tongSoLuongMoi > 0)
+            {
+                // Cập nhật giá nhập mới cho sản phẩm
+                sanPham.GiaNhap = (tongGiaTriCu + tongGiaTriNhap) / tongSoLuongMoi;
+            }
+
+            // Cập nhật số lượng tồn kho
             sanPham.SoLuong += soLuong;
 
+            // --- 2. LƯU PHIẾU NHẬP ---
             var phieuNhap = new PhieuNhap
             {
                 NgayNhap = DateTime.Now,
-                GhiChu = string.IsNullOrEmpty(ghiChu) ? "Nhập hàng nhanh" : ghiChu,
+                GhiChu = string.IsNullOrEmpty(ghiChu) ? "Nhập hàng" : ghiChu,
                 TongTien = soLuong * giaNhap
             };
 
@@ -172,13 +183,15 @@ namespace banthietbidientu.Controllers
             };
 
             _context.ChiTietPhieuNhaps.Add(chiTiet);
+
+            // Lưu tất cả thay đổi (bao gồm giá nhập mới của sản phẩm)
             _context.SaveChanges();
 
-            TempData["Success"] = $"Đã nhập kho thành công {soLuong} sản phẩm {sanPham.Name}!";
+            TempData["Success"] = $"Đã nhập kho {soLuong} {sanPham.Name}. Giá vốn mới: {sanPham.GiaNhap:N0}đ";
             return RedirectToAction("QuanLyNhapHang");
         }
 
-        // --- 4. API THÔNG BÁO ---
+        // --- 4. API THÔNG BÁO (ĐÃ UPDATE CHO HIGHLIGHT) ---
         [HttpGet]
         public IActionResult GetThongBao()
         {
@@ -193,7 +206,10 @@ namespace banthietbidientu.Controllers
                         noiDung = x.NoiDung,
                         ngayTao = x.NgayTao,
                         daDoc = x.DaDoc,
-                        loaiThongBao = x.LoaiThongBao
+                        loaiThongBao = x.LoaiThongBao,
+                        // Thêm 2 trường này để frontend điều hướng
+                        redirectId = x.RedirectId,
+                        redirectAction = x.RedirectAction
                     })
                     .ToList();
 
@@ -219,7 +235,7 @@ namespace banthietbidientu.Controllers
             catch { return Json(new { success = false }); }
         }
 
-        // --- 5. QUẢN LÝ SẢN PHẨM (CÓ LOGIC KHO) ---
+        // --- 5. QUẢN LÝ SẢN PHẨM ---
         public IActionResult QuanLySanPham() => View(_context.SanPhams.AsNoTracking().ToList());
 
         [HttpGet]
@@ -436,14 +452,15 @@ namespace banthietbidientu.Controllers
         // --- 7. BÁO CÁO THỐNG KÊ ---
         public IActionResult BaoCao()
         {
+            // 1. Số liệu tổng quan
             var tongDoanhThu = _context.DonHangs.Where(d => d.TrangThai == 3).Sum(d => d.TongTien);
             var tongDonHang = _context.DonHangs.Count();
             var sanPhamSapHet = _context.SanPhams.Count(s => s.SoLuong < 5);
             var tongSanPhamDaBan = _context.ChiTietDonHangs.Where(ct => ct.DonHang.TrangThai == 3).Sum(ct => ct.SoLuong);
 
+            // 2. Biểu đồ 7 ngày
             var labelsNgay = new List<string>();
             var valuesDoanhThu = new List<decimal>();
-
             for (int i = 6; i >= 0; i--)
             {
                 var date = DateTime.Today.AddDays(-i);
@@ -454,6 +471,7 @@ namespace banthietbidientu.Controllers
                 valuesDoanhThu.Add(revenue);
             }
 
+            // 3. Top sản phẩm bán chạy (theo số lượng)
             var topProducts = _context.ChiTietDonHangs
                 .Where(ct => ct.DonHang.TrangThai == 3)
                 .GroupBy(ct => ct.SanPham.Name)
@@ -462,6 +480,7 @@ namespace banthietbidientu.Controllers
                 .Take(5)
                 .ToList();
 
+            // 4. Top khách hàng
             var topUsers = _context.DonHangs
                 .Where(d => d.TrangThai == 3 && d.TaiKhoanId != null)
                 .GroupBy(d => d.TaiKhoan)
@@ -477,6 +496,30 @@ namespace banthietbidientu.Controllers
                 .Take(5)
                 .ToList();
 
+            // 5. --- TÍNH TOÁN LỢI NHUẬN CHI TIẾT TỪNG SẢN PHẨM ---
+            // Chỉ lấy các đơn hàng đã Hoàn thành (TrangThai == 3)
+            var baoCaoLoiNhuan = _context.ChiTietDonHangs
+                .Include(ct => ct.SanPham)
+                .Where(ct => ct.DonHang.TrangThai == 3)
+                .GroupBy(ct => new { ct.SanPhamId, ct.SanPham.Name, ct.SanPham.ImageUrl })
+                .Select(g => new LoiNhuanSanPham
+                {
+                    TenSanPham = g.Key.Name,
+                    HinhAnh = g.Key.ImageUrl,
+                    SoLuongBan = g.Sum(x => x.SoLuong),
+
+                    // Doanh thu = Tổng (Giá bán * Số lượng)
+                    DoanhThu = g.Sum(x => (x.Gia ?? 0) * x.SoLuong),
+
+                    // Giá vốn = Tổng (Giá gốc lúc bán * Số lượng)
+                    GiaVon = g.Sum(x => x.GiaGoc * x.SoLuong),
+
+                    // Lợi nhuận = Doanh thu - Giá vốn
+                    LoiNhuan = g.Sum(x => ((x.Gia ?? 0) - x.GiaGoc) * x.SoLuong)
+                })
+                .OrderByDescending(x => x.LoiNhuan) // Sắp xếp theo lợi nhuận cao nhất
+                .ToList();
+
             var model = new BaoCaoViewModel
             {
                 TongDoanhThu = tongDoanhThu,
@@ -487,15 +530,14 @@ namespace banthietbidientu.Controllers
                 ValuesDoanhThu = valuesDoanhThu,
                 TopSanPhamTen = topProducts.Select(p => p.Name).ToList(),
                 TopSanPhamSoLuong = topProducts.Select(p => p.Count).ToList(),
-                TopKhachHangs = topUsers
+                TopKhachHangs = topUsers,
+                BaoCaoLoiNhuan = baoCaoLoiNhuan // Gán dữ liệu vào ViewModel
             };
 
             return View(model);
         }
 
-        // --- 8. QUẢN LÝ ĐÁNH GIÁ (MỚI THÊM) ---
-
-        // Hiển thị danh sách đánh giá
+        // --- 8. QUẢN LÝ ĐÁNH GIÁ (MỚI) ---
         public IActionResult QuanLyDanhGia()
         {
             var listDanhGia = _context.DanhGias
@@ -507,14 +549,12 @@ namespace banthietbidientu.Controllers
             return View(listDanhGia);
         }
 
-        // Action Duyệt/Ẩn đánh giá (Dùng AJAX)
         [HttpPost]
         public IActionResult DuyetDanhGia(int id)
         {
             var danhGia = _context.DanhGias.Find(id);
             if (danhGia != null)
             {
-                // Đảo ngược trạng thái: Đang hiện -> Ẩn, Đang ẩn -> Hiện
                 danhGia.DaDuyet = !danhGia.DaDuyet;
                 _context.SaveChanges();
                 return Json(new { success = true, newStatus = danhGia.DaDuyet });
@@ -522,7 +562,6 @@ namespace banthietbidientu.Controllers
             return Json(new { success = false });
         }
 
-        // Action Admin trả lời đánh giá
         [HttpPost]
         public IActionResult TraLoiDanhGia(int id, string noiDungTraLoi)
         {
@@ -541,7 +580,6 @@ namespace banthietbidientu.Controllers
             return RedirectToAction("QuanLyDanhGia");
         }
 
-        // Action Xóa đánh giá (nếu cần)
         [HttpPost]
         public IActionResult XoaDanhGia(int id)
         {
@@ -553,6 +591,33 @@ namespace banthietbidientu.Controllers
                 TempData["Success"] = "Đã xóa đánh giá.";
             }
             return RedirectToAction("QuanLyDanhGia");
+        }
+
+        // --- 9. QUẢN LÝ THU CŨ ĐỔI MỚI (MỚI) ---
+        public IActionResult QuanLyThuMua()
+        {
+            var listYeuCau = _context.YeuCauThuMuas
+                .OrderByDescending(y => y.NgayTao)
+                .ToList();
+            return View(listYeuCau);
+        }
+
+        [HttpPost]
+        public IActionResult CapNhatThuMua(int id, int trangThai, string ghiChuAdmin)
+        {
+            var yeuCau = _context.YeuCauThuMuas.Find(id);
+            if (yeuCau != null)
+            {
+                yeuCau.TrangThai = trangThai;
+                if (!string.IsNullOrEmpty(ghiChuAdmin))
+                {
+                    yeuCau.GhiChu = ghiChuAdmin;
+                }
+
+                _context.SaveChanges();
+                TempData["Success"] = "Đã cập nhật trạng thái yêu cầu.";
+            }
+            return RedirectToAction("QuanLyThuMua");
         }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using banthietbidientu.Data;
 
@@ -11,9 +12,11 @@ using banthietbidientu.Data;
 namespace TestDoAn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251128122537_UpdateThuMuaFeatures")]
+    partial class UpdateThuMuaFeatures
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -31,9 +34,6 @@ namespace TestDoAn.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal?>("Gia")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<decimal>("GiaGoc")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("MaDon")
@@ -353,28 +353,18 @@ namespace TestDoAn.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Category")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<decimal>("GiaNhap")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("ImageUrl")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MoTa")
-                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal>("Price")
                         .HasColumnType("decimal(18,2)");
@@ -384,17 +374,13 @@ namespace TestDoAn.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SanPham");
+                    b.ToTable("SanPhams");
 
                     b.HasData(
                         new
                         {
                             Id = 1,
-                            Category = "Điện thoại",
-                            Description = "Điện thoại thông minh cao cấp với màn hình tràn viền.",
-                            GiaNhap = 500.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Galaxy+X",
-                            MoTa = "Smartphone Galaxy X sở hữu thiết kế đột phá...",
                             Name = "Smartphone Galaxy X",
                             Price = 699.99m,
                             SoLuong = 1000
@@ -402,11 +388,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 2,
-                            Category = "Laptop",
-                            Description = "Laptop hiệu năng cao cho công việc chuyên nghiệp.",
-                            GiaNhap = 1000.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Laptop+Pro",
-                            MoTa = "Laptop Pro 15 được trang bị chip xử lý mới nhất...",
                             Name = "Laptop Pro 15",
                             Price = 1299.99m,
                             SoLuong = 1000
@@ -414,11 +396,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 3,
-                            Category = "Phụ kiện",
-                            Description = "Tai nghe không dây chống ồn chủ động.",
-                            GiaNhap = 150.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Headphones",
-                            MoTa = "Trải nghiệm âm thanh đỉnh cao với Wireless Headphones Elite...",
                             Name = "Wireless Headphones Elite",
                             Price = 199.99m,
                             SoLuong = 1000
@@ -426,11 +404,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 4,
-                            Category = "Đồng hồ",
-                            Description = "Đồng hồ thông minh theo dõi sức khỏe toàn diện.",
-                            GiaNhap = 300.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Smartwatch",
-                            MoTa = "Smartwatch Series 7 hỗ trợ đo nhịp tim, SpO2...",
                             Name = "Smartwatch Series 7",
                             Price = 399.99m,
                             SoLuong = 1000
@@ -438,11 +412,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 5,
-                            Category = "TV",
-                            Description = "TV 4K sắc nét, trải nghiệm điện ảnh tại gia.",
-                            GiaNhap = 600.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Smart+TV",
-                            MoTa = "Màn hình 55 inch độ phân giải 4K HDR...",
                             Name = "4K Smart TV 55\"",
                             Price = 799.99m,
                             SoLuong = 1000
@@ -450,11 +420,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 6,
-                            Category = "Phụ kiện",
-                            Description = "Loa Bluetooth di động âm bass mạnh mẽ.",
-                            GiaNhap = 100.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Speaker",
-                            MoTa = "Bluetooth Speaker nhỏ gọn, pin trâu...",
                             Name = "Bluetooth Speaker",
                             Price = 149.99m,
                             SoLuong = 1000
@@ -462,11 +428,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 7,
-                            Category = "Console",
-                            Description = "Máy chơi game thế hệ mới, đồ họa đỉnh cao.",
-                            GiaNhap = 400.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Console",
-                            MoTa = "Gaming Console X hỗ trợ chơi game 4K 120fps...",
                             Name = "Gaming Console X",
                             Price = 499.99m,
                             SoLuong = 1000
@@ -474,11 +436,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 8,
-                            Category = "Phụ kiện",
-                            Description = "Chuột không dây tiện lợi, độ nhạy cao.",
-                            GiaNhap = 30.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Mouse",
-                            MoTa = "Thiết kế Ergonomic giúp cầm nắm thoải mái...",
                             Name = "Wireless Mouse",
                             Price = 49.99m,
                             SoLuong = 1000
@@ -486,11 +444,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 9,
-                            Category = "Phụ kiện",
-                            Description = "Sạc dự phòng dung lượng lớn, sạc nhanh.",
-                            GiaNhap = 20.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Charger",
-                            MoTa = "Dung lượng 10000mAh sạc được nhiều lần...",
                             Name = "Portable Charger 10000mAh",
                             Price = 29.99m,
                             SoLuong = 1000
@@ -498,11 +452,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 10,
-                            Category = "Tablet",
-                            Description = "Máy tính bảng mỏng nhẹ, hiệu năng tốt.",
-                            GiaNhap = 350.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Tablet",
-                            MoTa = "Màn hình Retina sắc nét, chip xử lý mạnh mẽ...",
                             Name = "Tablet Air 10",
                             Price = 499.99m,
                             SoLuong = 1000
@@ -510,11 +460,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 11,
-                            Category = "Phụ kiện",
-                            Description = "Bàn phím không dây gõ êm, kết nối ổn định.",
-                            GiaNhap = 50.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Keyboard",
-                            MoTa = "Tương thích nhiều thiết bị, hành trình phím tốt...",
                             Name = "Wireless Keyboard",
                             Price = 79.99m,
                             SoLuong = 1000
@@ -522,11 +468,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 12,
-                            Category = "Camera",
-                            Description = "Camera hành trình quay 4K chống rung.",
-                            GiaNhap = 200.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Camera",
-                            MoTa = "Quay video 4K 60fps, chống nước...",
                             Name = "Action Camera 4K",
                             Price = 249.99m,
                             SoLuong = 1000
@@ -697,7 +639,7 @@ namespace TestDoAn.Migrations
                         .IsRequired();
 
                     b.HasOne("banthietbidientu.Models.SanPham", "SanPham")
-                        .WithMany("ChiTietDonHangs")
+                        .WithMany()
                         .HasForeignKey("SanPhamId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -716,7 +658,7 @@ namespace TestDoAn.Migrations
                         .IsRequired();
 
                     b.HasOne("banthietbidientu.Models.SanPham", "SanPham")
-                        .WithMany("ChiTietPhieuNhaps")
+                        .WithMany()
                         .HasForeignKey("SanPhamId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -735,7 +677,7 @@ namespace TestDoAn.Migrations
                         .IsRequired();
 
                     b.HasOne("banthietbidientu.Models.SanPham", "SanPham")
-                        .WithMany("DanhGias")
+                        .WithMany()
                         .HasForeignKey("SanPhamId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -823,12 +765,6 @@ namespace TestDoAn.Migrations
 
             modelBuilder.Entity("banthietbidientu.Models.SanPham", b =>
                 {
-                    b.Navigation("ChiTietDonHangs");
-
-                    b.Navigation("ChiTietPhieuNhaps");
-
-                    b.Navigation("DanhGias");
-
                     b.Navigation("GioHangs");
                 });
 

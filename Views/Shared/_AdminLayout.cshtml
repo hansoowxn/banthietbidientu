@@ -170,6 +170,7 @@
                 <li><a href="@Url.Action("QuanLySanPham", "Admin")" class="@(currentAction == "QuanLySanPham" || currentAction == "ThemSanPham" || currentAction == "SuaSanPham" ? "active" : "")"><i class="bi bi-box-seam-fill"></i> Kho hàng</a></li>
                 <li><a href="@Url.Action("QuanLyDonHang", "Admin")" class="@(currentAction == "QuanLyDonHang" ? "active" : "")"><i class="bi bi-receipt"></i> Đơn hàng</a></li>
                 <li><a href="@Url.Action("QuanLyTaiKhoan", "Admin")" class="@(currentAction == "QuanLyTaiKhoan" || currentAction == "ThemTaiKhoan" ? "active" : "")"><i class="bi bi-people-fill"></i> Tài khoản</a></li>
+                <li><a href="@Url.Action("QuanLyThuMua", "Admin")" class="@(currentAction == "QuanLyThuMua" ? "active" : "")"><i class="bi bi-phone-flip"></i> Thu cũ đổi mới</a></li>
                 <li><a href="@Url.Action("QuanLyDanhGia", "Admin")" class="@(currentAction == "QuanLyDanhGia" ? "active" : "")"><i class="bi bi-star-half"></i> Đánh giá</a></li>
                 <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Thống kê</li>
                 <li><a href="@Url.Action("BaoCao", "Admin")" class="@(currentAction == "BaoCao" ? "active" : "")"><i class="bi bi-bar-chart-line-fill"></i> Báo cáo doanh thu</a></li>
@@ -254,14 +255,15 @@
             if (overlay) overlay.addEventListener('click', toggleSidebar);
 
             loadThongBao();
-            setInterval(loadThongBao, 10000);
+            setInterval(loadThongBao, 10000); // Tự động tải lại sau mỗi 10 giây
         });
 
-                function loadThongBao() {
+        function loadThongBao() {
             fetch('/Admin/GetThongBao')
                 .then(response => response.json())
                 .then(res => {
                     if (res.success) {
+                        // 1. Cập nhật số lượng Badge (Huy hiệu đỏ)
                         const badge = document.getElementById('notif-badge');
                         if (res.unread > 0) {
                             badge.innerText = res.unread;
@@ -270,6 +272,7 @@
                             badge.classList.add('d-none');
                         }
 
+                        // 2. Cập nhật danh sách thông báo
                         const listContainer = document.getElementById('notif-list');
                         listContainer.innerHTML = '';
 
@@ -277,27 +280,33 @@
                             listContainer.innerHTML = '<li class="dropdown-item text-center text-muted py-3 small">Không có thông báo mới</li>';
                         } else {
                             res.data.forEach(item => {
-                                // --- SỬA LỖI INVALID DATE TẠI ĐÂY ---
-                                // Chuyển đổi chuỗi ISO thành đối tượng Date
+                                // --- XỬ LÝ NGÀY THÁNG ---
                                 const d = new Date(item.ngayTao);
-
-                                // Format thủ công thành: HH:mm dd/MM/yyyy
                                 const timeStr = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
                                 const dateStr = d.getDate().toString().padStart(2, '0') + "/" + (d.getMonth() + 1).toString().padStart(2, '0') + "/" + d.getFullYear();
                                 const finalDate = `${timeStr} ${dateStr}`;
-                                // ------------------------------------
 
-                                let icon = item.loaiThongBao == 0
-                                    ? '<div class="bg-light-success text-success rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-cart-check-fill"></i></div>'
-                                    : (item.loaiThongBao == 2
-                                        ? '<div class="bg-light-warning text-warning rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-recycle"></i></div>'
-                                        : '<div class="bg-light-info text-info rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-info-circle-fill"></i></div>');
+                                // --- XỬ LÝ ICON THEO LOẠI THÔNG BÁO ---
+                                let icon = '';
+                                if (item.loaiThongBao == 0) { // Đơn hàng
+                                    icon = '<div class="bg-light-success text-success rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-cart-check-fill"></i></div>';
+                                } else if (item.loaiThongBao == 2) { // Thu cũ đổi mới
+                                    icon = '<div class="bg-light-warning text-warning rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-recycle"></i></div>';
+                                } else { // Khác
+                                    icon = '<div class="bg-light-info text-info rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-info-circle-fill"></i></div>';
+                                }
 
                                 let bgClass = item.daDoc ? '' : 'bg-light';
 
+                                // --- [QUAN TRỌNG] XỬ LÝ LINK CÓ HIGHLIGHT ---
+                                // Nếu API trả về RedirectAction (vd: QuanLyThuMua) thì tạo link kèm ID
+                                let linkUrl = item.redirectAction
+                                    ? `/Admin/${item.redirectAction}?highlightId=${item.redirectId}`
+                                    : '/Admin/Index';
+
                                 let html = `
                                     <li>
-                                        <a class="dropdown-item d-flex align-items-start p-2 border-bottom ${bgClass}" href="/Admin/QuanLyDonHang">
+                                        <a class="dropdown-item d-flex align-items-start p-2 border-bottom ${bgClass}" href="${linkUrl}">
                                             ${icon}
                                             <div>
                                                 <div class="small fw-bold text-wrap mb-1" style="line-height: 1.3;">

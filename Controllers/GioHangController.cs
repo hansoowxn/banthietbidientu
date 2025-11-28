@@ -332,18 +332,22 @@ namespace banthietbidientu.Controllers
         {
             _context.DonHangs.Add(order);
 
+            // CẬP NHẬT: Thêm RedirectId và RedirectAction
             var thongBao = new ThongBao
             {
                 TieuDe = "Đơn hàng mới #" + order.MaDon,
                 NoiDung = $"Khách {order.NguoiNhan} đặt đơn {method} trị giá {order.TongTien:N0}đ",
                 NgayTao = DateTime.Now,
                 DaDoc = false,
-                LoaiThongBao = 0
+                LoaiThongBao = 0, // 0 = Đơn hàng
+                RedirectId = order.MaDon,           // Mã đơn hàng
+                RedirectAction = "QuanLyDonHang"    // Dẫn về trang quản lý đơn
             };
             _context.ThongBaos.Add(thongBao);
 
             await _context.SaveChangesAsync();
 
+            // ... (Phần còn lại giữ nguyên) ...
             foreach (var item in cart)
             {
                 var chiTiet = new ChiTietDonHang
