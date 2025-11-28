@@ -312,7 +312,6 @@ namespace banthietbidientu.Controllers
                             order.TrangThai = 1; // Đã xác nhận (đã thanh toán)
 
                             await ProcessOrderSuccess(order, cart, "VNPAY");
-
                             HttpContext.Session.Remove("PendingOrder");
                             return RedirectToAction("LichSuMuaHang", "Login");
                         }
