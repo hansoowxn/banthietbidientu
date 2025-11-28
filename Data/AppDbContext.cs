@@ -186,31 +186,35 @@ namespace banthietbidientu.Data
 
             // Seeding dữ liệu mẫu cho TaiKhoan
             modelBuilder.Entity<TaiKhoan>().HasData(
-                new TaiKhoan
-                {
-                    Id = 1,
-                    Username = "admin",
-                    Password = "password",
-                    Role = "Admin",
-                    FullName = "Quản Trị Viên",
-                    DateOfBirth = new DateTime(1990, 1, 1),
-                    Address = "123 Đường Admin, TP.HCM",
-                    Gender = "Male",
-                    Email = "admin@example.com"
-                },
-                new TaiKhoan
-                {
-                    Id = 2,
-                    Username = "user",
-                    Password = "password",
-                    Role = "User",
-                    FullName = "Nguyễn Văn A",
-                    DateOfBirth = new DateTime(1995, 5, 15),
-                    Address = "456 Đường User, Hà Nội",
-                    Gender = "Male",
-                    Email = "user@example.com"
-                }
-            );
+                 new TaiKhoan
+                 {
+                     Id = 1,
+                     Username = "admin",
+                     Password = "password",
+                     Role = "Admin",
+                     FullName = "Quản Trị Viên",
+                     DateOfBirth = new DateTime(1990, 1, 1),
+                     Address = "123 Đường Admin, TP.HCM",
+                     Gender = "Male",
+                     Email = "admin@example.com",
+                     // THÊM DÒNG NÀY:
+                     PhoneNumber = "0901234567"
+                 },
+                 new TaiKhoan
+                 {
+                     Id = 2,
+                     Username = "user",
+                     Password = "password",
+                     Role = "User",
+                     FullName = "Nguyễn Văn A",
+                     DateOfBirth = new DateTime(1995, 5, 15),
+                     Address = "456 Đường User, Hà Nội",
+                     Gender = "Male",
+                     Email = "user@example.com",
+                     // THÊM DÒNG NÀY:
+                     PhoneNumber = "0909876543"
+                 }
+             );
         }
     }
 }
