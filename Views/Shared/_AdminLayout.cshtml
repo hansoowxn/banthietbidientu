@@ -116,35 +116,32 @@
         }
 
         @@media (max-width: 768px) {
-            #sidebar
-
-        {
-            margin-left: -260px;
-            position: fixed;
-            height: 100%;
-        }
-
-        #sidebar.active {
-            margin-left: 0;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-
-        .overlay {
-            display: none;
-            position: fixed;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 998;
-            opacity: 0;
-            transition: all 0.5s ease-in-out;
-        }
-
-            .overlay.active {
-                display: block;
-                opacity: 1;
+            #sidebar {
+                margin-left: -260px;
+                position: fixed;
+                height: 100%;
             }
 
+                #sidebar.active {
+                    margin-left: 0;
+                    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+                }
+
+            .overlay {
+                display: none;
+                position: fixed;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 998;
+                opacity: 0;
+                transition: all 0.5s ease-in-out;
+            }
+
+                .overlay.active {
+                    display: block;
+                    opacity: 1;
+                }
         }
     </style>
 </head>
@@ -184,7 +181,6 @@
                 </button>
 
                 <div class="d-flex align-items-center ms-auto gap-3">
-
                     <div class="dropdown">
                         <a href="#" class="text-secondary position-relative" id="bellDropdown" data-bs-toggle="dropdown" aria-expanded="false" onclick="danhDauDaDoc()">
                             <i class="bi bi-bell fs-5"></i>
@@ -213,13 +209,9 @@
 
                     <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownUser1">
                         <li><a class="dropdown-item" href="/"><i class="bi bi-shop me-2 text-secondary"></i> Xem trang chủ</a></li>
-
                         <li><a class="dropdown-item" asp-controller="Login" asp-action="Profile"><i class="bi bi-person me-2 text-secondary"></i> Thông tin cá nhân</a></li>
-
                         <li><a class="dropdown-item" asp-controller="Login" asp-action="LichSuMuaHang"><i class="bi bi-clock-history me-2 text-secondary"></i> Lịch sử đơn hàng</a></li>
-
                         <li><hr class="dropdown-divider"></li>
-
                         <li>
                             <form asp-controller="Login" asp-action="Logout" method="post" class="m-0">
                                 <button type="submit" class="dropdown-item text-danger"><i class="bi bi-box-arrow-right me-2"></i> Đăng xuất</button>
@@ -263,7 +255,7 @@
                 .then(response => response.json())
                 .then(res => {
                     if (res.success) {
-                        // 1. Cập nhật số lượng Badge (Huy hiệu đỏ)
+                        // 1. Cập nhật số lượng Badge
                         const badge = document.getElementById('notif-badge');
                         if (res.unread > 0) {
                             badge.innerText = res.unread;
@@ -280,17 +272,17 @@
                             listContainer.innerHTML = '<li class="dropdown-item text-center text-muted py-3 small">Không có thông báo mới</li>';
                         } else {
                             res.data.forEach(item => {
-                                // --- XỬ LÝ NGÀY THÁNG ---
+                                // Xử lý ngày tháng
                                 const d = new Date(item.ngayTao);
                                 const timeStr = d.getHours().toString().padStart(2, '0') + ":" + d.getMinutes().toString().padStart(2, '0');
                                 const dateStr = d.getDate().toString().padStart(2, '0') + "/" + (d.getMonth() + 1).toString().padStart(2, '0') + "/" + d.getFullYear();
                                 const finalDate = `${timeStr} ${dateStr}`;
 
-                                // --- XỬ LÝ ICON THEO LOẠI THÔNG BÁO ---
+                                // Xử lý Icon
                                 let icon = '';
                                 if (item.loaiThongBao == 0) { // Đơn hàng
                                     icon = '<div class="bg-light-success text-success rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-cart-check-fill"></i></div>';
-                                } else if (item.loaiThongBao == 2) { // Thu cũ đổi mới
+                                } else if (item.loaiThongBao == 2) { // Thu cũ
                                     icon = '<div class="bg-light-warning text-warning rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-recycle"></i></div>';
                                 } else { // Khác
                                     icon = '<div class="bg-light-info text-info rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-info-circle-fill"></i></div>';
@@ -298,8 +290,8 @@
 
                                 let bgClass = item.daDoc ? '' : 'bg-light';
 
-                                // --- [QUAN TRỌNG] XỬ LÝ LINK CÓ HIGHLIGHT ---
-                                // Nếu API trả về RedirectAction (vd: QuanLyThuMua) thì tạo link kèm ID
+                                // --- [QUAN TRỌNG] XỬ LÝ LINK CÓ HIGHLIGHT (ĐÃ FIX) ---
+                                // Nếu API trả về RedirectAction, tạo link kèm highlightId
                                 let linkUrl = item.redirectAction
                                     ? `/Admin/${item.redirectAction}?highlightId=${item.redirectId}`
                                     : '/Admin/Index';
