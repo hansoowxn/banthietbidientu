@@ -4,10 +4,49 @@
     ViewData["Title"] = "Quản lý đơn hàng";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 
-    // Lấy thông tin phân trang từ ViewBag
     int currentPage = ViewBag.CurrentPage ?? 1;
     int totalPages = ViewBag.TotalPages ?? 1;
 }
+
+<style>
+    /* --- HIỆU ỨNG HIGHLIGHT MẠNH MẼ (FLASH) --- */
+    @@keyframes flash-animation {
+        0% {
+            background-color: #ff4757;
+            color: white;
+        }
+        /* Đỏ rực */
+        25% {
+            background-color: #ff6b81;
+            color: white;
+        }
+        /* Hồng đậm */
+        50% {
+            background-color: #ffa502;
+            color: black;
+        }
+        /* Cam vàng */
+        75% {
+            background-color: #fff200;
+            color: black;
+        }
+        /* Vàng chanh */
+        100% {
+            background-color: transparent;
+            color: inherit;
+        }
+    }
+
+    .row-highlight {
+        animation: flash-animation 6s ease-out forwards;
+    }
+
+        /* Text trong link và badge cũng đổi màu theo cho dễ đọc */
+        .row-highlight a, .row-highlight .badge {
+            color: inherit !important;
+            border-color: currentColor !important;
+        }
+</style>
 
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -32,7 +71,6 @@
                     <tbody>
                         @foreach (var item in Model)
                         {
-                            // --- QUAN TRỌNG: ID phục vụ Highlight ---
                             <tr id="row-@item.MaDon" class="data-row">
                                 <td class="ps-4 fw-bold text-primary">#@item.MaDon</td>
 
@@ -161,7 +199,7 @@
 
 @section Scripts {
     <script>
-        // 1. Script Highlight (Tiêu điểm)
+        // 1. Script Highlight (Tiêu điểm - Hiệu ứng mới)
         document.addEventListener("DOMContentLoaded", function () {
             const params = new URLSearchParams(window.location.search);
             const highlightId = params.get('highlightId');
@@ -170,15 +208,18 @@
                 const row = document.getElementById('row-' + highlightId);
                 if (row) {
                     row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    row.classList.add('table-warning');
+
+                    // Thêm class highlight mới
+                    row.classList.add('row-highlight');
 
                     // Mở luôn phần chi tiết nếu cần
                     const detailBtn = row.querySelector('[data-bs-toggle="collapse"]');
                     if(detailBtn) detailBtn.click();
 
+                    // Xóa class sau 6s
                     setTimeout(() => {
-                        row.classList.remove('table-warning');
-                    }, 3000);
+                        row.classList.remove('row-highlight');
+                    }, 6000);
                 }
             }
         });
@@ -198,7 +239,7 @@
             .then(data => {
                 if (data.success) {
                     alert('Cập nhật thành công!');
-                    location.reload(); // Load lại để cập nhật màu sắc Badge
+                    location.reload();
                 } else {
                     alert('Lỗi: ' + data.message);
                 }

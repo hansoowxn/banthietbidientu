@@ -187,7 +187,7 @@ namespace banthietbidientu.Controllers
                     TenMay = model.TenMay,
                     TinhTrang = model.TinhTrang,
                     SoDienThoai = model.SoDienThoai,
-                    GhiChu = model.GhiChu,
+                    GhiChu = model.GhiChu ?? "",
                     HinhAnh = imagePath,
                     TrangThai = 0, // Chờ xử lý
                     NgayTao = DateTime.Now
