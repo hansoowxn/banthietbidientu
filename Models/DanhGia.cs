@@ -10,27 +10,39 @@ namespace banthietbidientu.Models
         [Key]
         public int Id { get; set; }
 
-        // Liên kết với Sản phẩm được đánh giá
         public int SanPhamId { get; set; }
         [ForeignKey("SanPhamId")]
         public virtual SanPham SanPham { get; set; }
 
-        // Liên kết với Người đánh giá
         public int TaiKhoanId { get; set; }
         [ForeignKey("TaiKhoanId")]
         public virtual TaiKhoan TaiKhoan { get; set; }
 
-        // Liên kết với Đơn hàng (Để xác thực "Đã mua hàng")
         public string MaDon { get; set; }
         [ForeignKey("MaDon")]
         public virtual DonHang DonHang { get; set; }
 
         [Range(1, 5)]
-        public int Sao { get; set; } // Số sao đánh giá (1-5)
+        public int Sao { get; set; }
 
         [Required]
-        public string NoiDung { get; set; } // Nội dung bình luận
+        public string NoiDung { get; set; }
 
         public DateTime NgayTao { get; set; } = DateTime.Now;
+
+        // --- CÁC TRƯỜNG MỚI THÊM VÀO ---
+
+        // 1. Lưu tên file ảnh (nếu khách có up ảnh review)
+        public string HinhAnh { get; set; }
+
+        // 2. Trạng thái duyệt (true = Hiện, false = Ẩn/Chờ duyệt)
+        // Để mặc định là true (hiện ngay) cho tiện test, sau này muốn chặt chẽ thì sửa thành false
+        public bool DaDuyet { get; set; } = true;
+
+        // 3. Nội dung Admin trả lời lại đánh giá này
+        public string TraLoi { get; set; }
+
+        // 4. Ngày Admin trả lời
+        public DateTime? NgayTraLoi { get; set; }
     }
 }

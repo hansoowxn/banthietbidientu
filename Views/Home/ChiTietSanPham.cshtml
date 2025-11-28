@@ -4,20 +4,16 @@
     ViewData["Title"] = Model.Name;
     Layout = "~/Views/Shared/_Layout.cshtml";
 
-    // --- 1. XỬ LÝ ẢNH ---
-    // Ưu tiên ảnh trong DB, nếu lỗi hoặc null thì dùng logo
     string finalImg = Model.ImageUrl;
     if (string.IsNullOrWhiteSpace(finalImg))
     {
         finalImg = "/image/logo.png";
     }
 
-    // --- 2. DỮ LIỆU GIẢ LẬP (Rating, Sold) ---
     var random = new Random(Model.Id);
     double rating = 3.5 + (random.NextDouble() * 1.5);
     int sold = random.Next(50, 5000);
 
-    // --- 3. THÔNG SỐ KỸ THUẬT GIẢ LẬP THEO DANH MỤC ---
     string cpu = "Snapdragon 8 Gen 2";
     string ram = "8GB";
     string screen = "6.1 inch OLED";
@@ -26,9 +22,21 @@
 
     if (Model.Category != null)
     {
-        if (Model.Category.Contains("Laptop")) { cpu = "Intel Core i7 13th Gen"; ram = "16GB DDR5"; screen = "15.6 inch FHD IPS"; pin = "3 Cell 50Wh"; }
-        else if (Model.Category.Contains("Tablet")) { cpu = "Apple M2 / Snapdragon"; ram = "8GB"; screen = "11 inch Liquid Retina"; pin = "7000 mAh"; }
-        else if (Model.Category.Contains("Watch") || Model.Category.Contains("Đồng hồ")) { cpu = "S9 SiP"; ram = "1GB"; screen = "1.9 inch OLED"; pin = "18 giờ"; }
+        if (Model.Category.Contains("Laptop"))
+        {
+            cpu = "Intel Core i7 13th Gen";
+            ram = "16GB DDR5"; screen = "15.6 inch FHD IPS"; pin = "3 Cell 50Wh";
+        }
+        else if (Model.Category.Contains("Tablet"))
+        {
+            cpu = "Apple M2 / Snapdragon";
+            ram = "8GB"; screen = "11 inch Liquid Retina"; pin = "7000 mAh";
+        }
+        else if (Model.Category.Contains("Watch") || Model.Category.Contains("Đồng hồ"))
+        {
+            cpu = "S9 SiP";
+            ram = "1GB"; screen = "1.9 inch OLED"; pin = "18 giờ";
+        }
     }
 }
 
@@ -59,7 +67,6 @@
 </style>
 
 <div class="container py-5">
-
     <div class="mb-4">
         <a href="/" class="btn btn-link text-decoration-none text-muted fw-bold btn-back p-0">
             <i class="bi bi-arrow-left me-2"></i>Quay lại trang chủ
@@ -69,7 +76,6 @@
     <div class="card border-0 shadow rounded-4 overflow-hidden">
         <div class="card-body p-0">
             <div class="row g-0">
-
                 <div class="col-lg-5 hero-img-container d-flex align-items-center justify-content-center p-5 position-relative">
                     <img src="@finalImg"
                          class="img-fluid shadow rounded-3"
@@ -214,11 +220,15 @@
                         </li>
                     </ul>
                 </div>
+
                 <div class="card-body p-4 p-md-5">
                     <div class="tab-content">
                         <div class="tab-pane fade show active" id="desc">
                             <h4 class="fw-bold mb-3">Thông tin chi tiết</h4>
-                            <p>Sản phẩm <strong>@Model.Name</strong> thuộc dòng @Model.Category hiện đang là "Best Seller" tại SmartTech. Với chính sách vận chuyển linh hoạt từ 3 kho hàng lớn (Hà Nội, Đà Nẵng, TP.HCM), chúng tôi cam kết giao hàng nhanh nhất đến tay bạn.</p>
+                            <p>
+                                Sản phẩm <strong>@Model.Name</strong> thuộc dòng @Model.Category hiện đang là "Best Seller" tại SmartTech.
+                                Với chính sách vận chuyển linh hoạt từ 3 kho hàng lớn (Hà Nội, Đà Nẵng, TP.HCM), chúng tôi cam kết giao hàng nhanh nhất đến tay bạn.
+                            </p>
                             <div class="alert alert-light border border-primary border-start-4 rounded-3 mt-4">
                                 <h6 class="text-primary fw-bold"><i class="bi bi-star me-2"></i>Điểm nổi bật:</h6>
                                 <ul class="mb-0 ps-3">
@@ -250,12 +260,13 @@
                             <div class="card-header bg-white border-bottom pt-4 px-4">
                                 <h5 class="fw-bold text-primary"><i class="bi bi-star-fill me-2 text-warning"></i>Đánh giá & Nhận xét</h5>
                             </div>
-                            <div class="card-body p-4">
 
-                                <!-- Thống kê điểm số -->
+                            <div class="card-body p-4">
                                 <div class="d-flex align-items-center mb-4 p-3 bg-light rounded-3">
                                     <div class="text-center me-4">
-                                        <h1 class="fw-bold text-warning mb-0">@((ViewBag.DiemTrungBinh ?? 0).ToString("0.0"))/5</h1>
+                                        <h1 class="fw-bold text-warning mb-0">
+                                            @((ViewBag.DiemTrungBinh ?? 0).ToString("0.0"))/5
+                                        </h1>
                                         <div class="text-warning small">
                                             @for (int i = 1; i <= 5; i++)
                                             {
@@ -269,22 +280,17 @@
                                     </div>
                                 </div>
 
-                                <!-- Form Viết Đánh Giá (Chỉ hiện khi đủ điều kiện) -->
                                 @if (ViewBag.DuocPhepDanhGia == true)
                                 {
                                     <div class="mb-5 border-bottom pb-4">
                                         <h6 class="fw-bold mb-3">Viết đánh giá của bạn</h6>
-
-                                        <!-- QUAN TRỌNG: asp-controller="DanhGia", asp-action="ThemDanhGia" -->
-                                        <form asp-controller="DanhGia" asp-action="ThemDanhGia" method="post">
-                                            @Html.AntiForgeryToken() <!-- Thêm cái này để bảo mật -->
-                                            <!-- Gửi ID sản phẩm (BẮT BUỘC) -->
+                                        <form asp-controller="DanhGia" asp-action="ThemDanhGia" method="post" enctype="multipart/form-data">
+                                            @Html.AntiForgeryToken()
                                             <input type="hidden" name="sanPhamId" value="@Model.Id" />
 
                                             <div class="mb-3">
                                                 <label class="form-label small fw-bold text-muted">Mức độ hài lòng:</label>
                                                 <div class="rating-select">
-                                                    <!-- Radio buttons chọn sao -->
                                                     <div class="form-check form-check-inline">
                                                         <input class="form-check-input" type="radio" name="soSao" id="sao5" value="5" checked>
                                                         <label class="form-check-label text-warning" for="sao5"><i class="bi bi-star-fill"></i> 5 Tuyệt vời</label>
@@ -298,10 +304,19 @@
                                                         <label class="form-check-label text-warning" for="sao3"><i class="bi bi-star-fill"></i> 3 Bình thường</label>
                                                     </div>
                                                     <div class="form-check form-check-inline">
+                                                        <input class="form-check-input" type="radio" name="soSao" id="sao2" value="2">
+                                                        <label class="form-check-label text-warning" for="sao2"><i class="bi bi-star-fill"></i> 2 Kém</label>
+                                                    </div>
+                                                    <div class="form-check form-check-inline">
                                                         <input class="form-check-input" type="radio" name="soSao" id="sao1" value="1">
                                                         <label class="form-check-label text-warning" for="sao1"><i class="bi bi-star-fill"></i> 1 Tệ</label>
                                                     </div>
                                                 </div>
+                                            </div>
+
+                                            <div class="mb-3">
+                                                <label class="form-label small fw-bold text-muted">Hình ảnh thực tế (nếu có):</label>
+                                                <input type="file" name="hinhAnh" class="form-control form-control-sm" accept="image/*">
                                             </div>
 
                                             <div class="mb-3">
@@ -311,14 +326,6 @@
                                             <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">Gửi đánh giá</button>
                                         </form>
                                     </div>
-                                }
-                                ### Quy trình hoạt động sau khi sửa:
-                                1.  Bạn bấm "Gửi đánh giá".
-                                2.  Form gửi `sanPhamId`, `soSao`, `noiDung` lên `DanhGiaController`.
-                                3.  Controller kiểm tra user hiện tại.
-                                4.  Controller **tự tìm trong Database** xem user này đã có đơn hàng nào chứa `sanPhamId` này và có trạng thái `Hoàn thành` (3) hay không.
-                                5.  Nếu tìm thấy -> Lấy `MaDon` của đơn hàng đó gán vào `danhGia.MaDon`.
-                                6.  Lưu vào Database (Lúc này `MaDon` chắc chắn có giá trị, không bị NULL).
                                 }
                                 else if (User.Identity.IsAuthenticated)
                                 {
@@ -333,40 +340,62 @@
                                     </div>
                                 }
 
-                                <!-- Danh sách bình luận -->
                                 <div class="review-list">
                                     @if (ViewBag.DanhGias != null)
                                     {
                                         foreach (var dg in ViewBag.DanhGias as List<banthietbidientu.Models.DanhGia>)
                                         {
-                                            <div class="d-flex mb-4 border-bottom pb-3">
-                                                <div class="me-3">
-                                                    <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px;">
-                                                        @(dg.TaiKhoan?.FullName?.Substring(0, 1) ?? "U")
+                                            // Chỉ hiển thị đánh giá đã duyệt
+                                            if (dg.DaDuyet == true)
+                                            {
+                                                <div class="d-flex mb-4 border-bottom pb-3">
+                                                    <div class="me-3">
+                                                        <div class="bg-secondary text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width: 45px; height: 45px;">
+                                                            @(dg.TaiKhoan?.FullName?.Substring(0, 1) ?? "U")
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div>
-                                                    <div class="d-flex align-items-center mb-1">
-                                                        <h6 class="fw-bold mb-0 me-2">@dg.TaiKhoan?.FullName</h6>
-                                                        <span class="badge bg-success bg-opacity-10 text-success small"><i class="bi bi-check-circle-fill"></i> Đã mua hàng</span>
-                                                    </div>
-                                                    <div class="text-warning small mb-2">
-                                                        @for (int i = 1; i <= 5; i++)
+                                                    <div>
+                                                        <div class="d-flex align-items-center mb-1">
+                                                            <h6 class="fw-bold mb-0 me-2">@dg.TaiKhoan?.FullName</h6>
+                                                            <span class="badge bg-success bg-opacity-10 text-success small"><i class="bi bi-check-circle-fill"></i> Đã mua hàng</span>
+                                                        </div>
+                                                        <div class="text-warning small mb-2">
+                                                            @for (int i = 1; i <= 5; i++)
+                                                            {
+                                                                if (i <= dg.Sao)
+                                                                {
+                                                                    <i class="bi bi-star-fill"></i>
+                                                                }
+                                                                else
+                                                                {
+                                                                    <i class="bi bi-star"></i>
+                                                                }
+                                                            }
+                                                            <span class="text-muted ms-2 fw-normal">@dg.NgayTao.ToString("dd/MM/yyyy HH:mm")</span>
+                                                        </div>
+
+                                                        <p class="mb-2 text-dark">@dg.NoiDung</p>
+
+                                                        @if (!string.IsNullOrEmpty(dg.HinhAnh))
                                                         {
-                                                            if (i <= dg.Sao)
-                                                            {
-                                                                <i class="bi bi-star-fill"></i>
-                                                            }
-                                                            else
-                                                            {
-                                                                <i class="bi bi-star"></i>
-                                                            }
+                                                            <div class="mb-2">
+                                                                <img src="@dg.HinhAnh" class="img-fluid rounded border" style="max-height: 150px; width: auto;" alt="Ảnh đánh giá">
+                                                            </div>
                                                         }
-                                                        <span class="text-muted ms-2 fw-normal">@dg.NgayTao.ToString("dd/MM/yyyy HH:mm")</span>
+
+                                                        @if (!string.IsNullOrEmpty(dg.TraLoi))
+                                                        {
+                                                            <div class="mt-3 p-3 bg-light rounded border-start border-4 border-primary">
+                                                                <div class="d-flex align-items-center mb-1">
+                                                                    <span class="badge bg-primary me-2">Quản trị viên</span>
+                                                                    <small class="text-muted">Phản hồi vào: @(dg.NgayTraLoi?.ToString("dd/MM/yyyy HH:mm") ?? "")</small>
+                                                                </div>
+                                                                <p class="mb-0 text-dark small fst-italic">@dg.TraLoi</p>
+                                                            </div>
+                                                        }
                                                     </div>
-                                                    <p class="mb-0 text-dark">@dg.NoiDung</p>
                                                 </div>
-                                            </div>
+                                            }
                                         }
 
                                         if ((ViewBag.DanhGias as List<banthietbidientu.Models.DanhGia>).Count == 0)
@@ -378,7 +407,6 @@
                                         }
                                     }
                                 </div>
-
                             </div>
                         </div>
                     </div>

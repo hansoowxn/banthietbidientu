@@ -8,6 +8,7 @@ using System.Globalization;
 using System.Collections.Generic;
 using System;
 using System.Text;
+using System.Threading.Tasks;
 
 namespace banthietbidientu.Controllers
 {
@@ -231,7 +232,6 @@ namespace banthietbidientu.Controllers
             if (ModelState.IsValid)
             {
                 model.SoLuong = slHaNoi + slDaNang + slHCM;
-                // Lưu format đặc biệt: ||LOC:10-20-30|| vào Mô tả
                 model.MoTa = $"Sản phẩm {model.Name} chính hãng.||LOC:{slHaNoi}-{slDaNang}-{slHCM}||";
                 _context.SanPhams.Add(model);
                 _context.SaveChanges();
@@ -246,16 +246,13 @@ namespace banthietbidientu.Controllers
             var sp = _context.SanPhams.Find(id);
             if (sp == null) return NotFound();
 
-            // --- [FIX] GIẢI MÃ DỮ LIỆU KHO TỪ CỘT MOTA ---
             int hn = 0, dn = 0, hcm = 0;
 
             if (!string.IsNullOrEmpty(sp.MoTa) && sp.MoTa.Contains("||LOC:"))
             {
                 try
                 {
-                    // Tách chuỗi để lấy phần số: 10-20-30
                     var parts = sp.MoTa.Split(new[] { "||LOC:", "||" }, StringSplitOptions.RemoveEmptyEntries);
-                    // Tìm phần chứa số (thường là phần tử cuối hoặc phần tử có dấu gạch ngang)
                     foreach (var part in parts)
                     {
                         if (part.Contains("-"))
@@ -271,17 +268,12 @@ namespace banthietbidientu.Controllers
                         }
                     }
                 }
-                catch
-                {
-                    // Nếu lỗi format thì mặc định 0, không crash app
-                }
+                catch { }
             }
 
-            // Truyền ngược lại View để hiển thị
             ViewBag.SlHaNoi = hn;
             ViewBag.SlDaNang = dn;
             ViewBag.SlHCM = hcm;
-            // ---------------------------------------------
 
             return View(sp);
         }
@@ -297,8 +289,6 @@ namespace banthietbidientu.Controllers
                 sp.Price = model.Price;
                 sp.Category = model.Category;
                 sp.ImageUrl = model.ImageUrl;
-
-                // Cập nhật lại tổng và chuỗi mã hóa
                 sp.SoLuong = slHaNoi + slDaNang + slHCM;
                 sp.MoTa = $"Sản phẩm {model.Name} chính hãng.||LOC:{slHaNoi}-{slDaNang}-{slHCM}||";
 
@@ -501,6 +491,68 @@ namespace banthietbidientu.Controllers
             };
 
             return View(model);
+        }
+
+        // --- 8. QUẢN LÝ ĐÁNH GIÁ (MỚI THÊM) ---
+
+        // Hiển thị danh sách đánh giá
+        public IActionResult QuanLyDanhGia()
+        {
+            var listDanhGia = _context.DanhGias
+                .Include(d => d.SanPham)
+                .Include(d => d.TaiKhoan)
+                .OrderByDescending(d => d.NgayTao)
+                .ToList();
+
+            return View(listDanhGia);
+        }
+
+        // Action Duyệt/Ẩn đánh giá (Dùng AJAX)
+        [HttpPost]
+        public IActionResult DuyetDanhGia(int id)
+        {
+            var danhGia = _context.DanhGias.Find(id);
+            if (danhGia != null)
+            {
+                // Đảo ngược trạng thái: Đang hiện -> Ẩn, Đang ẩn -> Hiện
+                danhGia.DaDuyet = !danhGia.DaDuyet;
+                _context.SaveChanges();
+                return Json(new { success = true, newStatus = danhGia.DaDuyet });
+            }
+            return Json(new { success = false });
+        }
+
+        // Action Admin trả lời đánh giá
+        [HttpPost]
+        public IActionResult TraLoiDanhGia(int id, string noiDungTraLoi)
+        {
+            var danhGia = _context.DanhGias.Find(id);
+            if (danhGia != null)
+            {
+                danhGia.TraLoi = noiDungTraLoi;
+                danhGia.NgayTraLoi = DateTime.Now;
+                _context.SaveChanges();
+                TempData["Success"] = "Đã trả lời đánh giá thành công!";
+            }
+            else
+            {
+                TempData["Error"] = "Không tìm thấy đánh giá.";
+            }
+            return RedirectToAction("QuanLyDanhGia");
+        }
+
+        // Action Xóa đánh giá (nếu cần)
+        [HttpPost]
+        public IActionResult XoaDanhGia(int id)
+        {
+            var danhGia = _context.DanhGias.Find(id);
+            if (danhGia != null)
+            {
+                _context.DanhGias.Remove(danhGia);
+                _context.SaveChanges();
+                TempData["Success"] = "Đã xóa đánh giá.";
+            }
+            return RedirectToAction("QuanLyDanhGia");
         }
     }
 }
