@@ -2,54 +2,44 @@
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using banthietbidientu.Data;
-using banthietbidientu.Models; // Đảm bảo bạn đã import namespace chia TaiKhoanContext và SanPham
+using banthietbidientu.Models;
+using Microsoft.AspNetCore.Hosting; // Thêm dòng này để dùng IWebHostEnvironment
+using System.IO; // Thêm dòng này để dùng Path, Directory, FileStream
 
-namespace TestDoAn.Controllers
+namespace banthietbidientu.Controllers
 {
-    // Giả sử tên Controller là Home
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
-
         private readonly ApplicationDbContext _context;
-
         private readonly IWebHostEnvironment _webHostEnvironment;
-        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context)
+
+        public HomeController(ILogger<HomeController> logger, ApplicationDbContext context, IWebHostEnvironment webHostEnvironment)
         {
+            _logger = logger;
             _context = context;
+            _webHostEnvironment = webHostEnvironment;
         }
 
         public IActionResult Index(string search, string category)
         {
-
             try
             {
-
                 ViewData["Categories"] = _context.SanPhams
                                                .Select(p => p.Category)
                                                .Distinct()
                                                .ToList();
             }
-            catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Message.Contains("timeout"))
-            {
-
-                ViewData["Categories"] = new List<string>();
-                Console.WriteLine("L?i Timeout khi l?y danh m?c s?n ph?m: " + ex.Message);
-            }
             catch (Exception ex)
             {
-
                 ViewData["Categories"] = new List<string>();
-                Console.WriteLine("L?i chung khi l?y danh m?c s?n ph?m: " + ex.Message);
+                Console.WriteLine("Lỗi khi lấy danh mục sản phẩm: " + ex.Message);
             }
-
-
 
             var sanphamQuery = _context.SanPhams.AsQueryable();
 
             if (!string.IsNullOrEmpty(search))
             {
-
                 sanphamQuery = sanphamQuery.Where(p => p.Name.ToLower().Contains(search.ToLower()));
             }
 
@@ -61,47 +51,81 @@ namespace TestDoAn.Controllers
             ViewData["SearchQuery"] = search;
             ViewData["SelectedCategory"] = category;
 
-
             try
             {
                 var sanphams = sanphamQuery.ToList();
                 return View(sanphams);
             }
-            catch (Microsoft.Data.SqlClient.SqlException ex) when (ex.Message.Contains("timeout"))
-            {
-
-                ModelState.AddModelError("", "H? th?ng t?m ki?m s?n ph?m b? quá t?i (Timeout). Vui l?ng th? l?i sau giây lát.");
-                Console.WriteLine("L?i Timeout khi t?m ki?m/hi?n th? s?n ph?m: " + ex.Message);
-                return View(new List<SanPham>());
-            }
             catch (Exception ex)
             {
-                ModelState.AddModelError("", "Đ? x?y ra l?i không xác đ?nh khi t?i s?n ph?m.");
-                Console.WriteLine("L?i chung khi t?i s?n ph?m: " + ex.Message);
+                ModelState.AddModelError("", "Đã xảy ra lỗi không xác định khi tải sản phẩm.");
+                Console.WriteLine("Lỗi chung khi tải sản phẩm: " + ex.Message);
                 return View(new List<SanPham>());
             }
         }
 
+        // --- ACTION CHI TIẾT SẢN PHẨM (ĐÃ GỘP LOGIC ĐÁNH GIÁ) ---
         public IActionResult ChiTietSanPham(int id)
         {
+            // 1. Lấy sản phẩm
             var sanPham = _context.SanPhams.FirstOrDefault(p => p.Id == id);
 
             if (sanPham == null)
             {
                 return NotFound();
             }
+
+            // 2. Lấy danh sách đánh giá
+            var danhGias = _context.DanhGias
+                .Include(d => d.TaiKhoan) // Lấy thông tin người đánh giá
+                .Where(d => d.SanPhamId == id)
+                .OrderByDescending(d => d.NgayTao)
+                .ToList();
+
+            // 3. Tính điểm trung bình
+            double diemTrungBinh = 0;
+            if (danhGias.Any())
+            {
+                diemTrungBinh = danhGias.Average(d => d.Sao);
+            }
+
+            // 4. Kiểm tra quyền đánh giá
+            bool duocPhepDanhGia = false;
+            if (User.Identity.IsAuthenticated)
+            {
+                var username = User.Identity.Name;
+                var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == username);
+                if (user != null)
+                {
+                    // Check: Đã mua hàng + Đơn hoàn thành + Chưa đánh giá (hoặc cho phép đánh giá nhiều lần)
+                    var daMua = _context.DonHangs
+                        .Include(d => d.ChiTietDonHangs)
+                        .Any(d => d.TaiKhoanId == user.Id
+                               && d.TrangThai == 3
+                               && d.ChiTietDonHangs.Any(ct => ct.SanPhamId == id));
+
+                    duocPhepDanhGia = daMua;
+                }
+            }
+
+            // 5. Truyền dữ liệu qua ViewBag
+            ViewBag.DanhGias = danhGias;
+            ViewBag.DiemTrungBinh = diemTrungBinh;
+            ViewBag.LuotDanhGia = danhGias.Count;
+            ViewBag.DuocPhepDanhGia = duocPhepDanhGia;
+
             return View(sanPham);
         }
 
+        // Action này có vẻ dư thừa nếu bạn đã dùng ChiTietSanPham, 
+        // nhưng nếu bạn có dùng ở đâu đó khác thì giữ lại, đổi tên hoặc xóa đi nếu không dùng.
         public IActionResult ChiTiet(int id)
         {
             var product = _context.SanPhams.FirstOrDefault(p => p.Id == id);
-
             if (product == null)
             {
                 return NotFound();
             }
-
             return View(product);
         }
 
@@ -119,7 +143,6 @@ namespace TestDoAn.Controllers
         public IActionResult ThuMuaMayCu()
         {
             var model = new YeuCauThuMuaViewModel();
-
             if (User.Identity.IsAuthenticated)
             {
                 var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -159,10 +182,9 @@ namespace TestDoAn.Controllers
 
                 string noiDungThongBao = $"THU CŨ: Khách (SĐT: {model.SoDienThoai}) muốn bán {model.TenMay}. Tình trạng: {model.TinhTrang}. {(string.IsNullOrEmpty(model.GhiChu) ? "" : "Note: " + model.GhiChu)}";
 
-               
                 var thongBao = new ThongBao
                 {
-                    TieuDe = "Yêu cầu Thu cũ đổi mới",
+                    TieuDe = "Yêu cầu Thu cũ đổi mới", // Đã fix lỗi thiếu TieuDe
                     NoiDung = noiDungThongBao,
                     NgayTao = DateTime.Now,
                     DaDoc = false,

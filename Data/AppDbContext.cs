@@ -20,6 +20,7 @@ namespace banthietbidientu.Data
         public DbSet<DoanhThu> DoanhThus { get; set; }
         public DbSet<DonHang> DonHangs { get; set; }
         public DbSet<ChiTietDonHang> ChiTietDonHangs { get; set; }
+        public DbSet<DanhGia> DanhGias { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Cấu hình mối quan hệ GioHang - SanPham
