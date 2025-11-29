@@ -49,6 +49,11 @@
     .leaflet-routing-container {
         display: none !important;
     }
+
+    /* Con trỏ chuột trên map đổi thành default để thể hiện không click được */
+    #map {
+        cursor: default;
+    }
 </style>
 
 <section class="container my-5">
@@ -136,12 +141,12 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-bold text-primary">
-                                <i class="bi bi-pin-map-fill me-1"></i>Vị trí trên bản đồ
-                                <span id="locatingStatus" class="badge bg-warning text-dark d-none ms-2">Đang tìm...</span>
+                                <i class="bi bi-map-fill me-1"></i>Vị trí trên bản đồ
+                                <span id="locatingStatus" class="badge bg-warning text-dark d-none ms-2"><i class="bi bi-hourglass-split"></i> Đang tính toán...</span>
                             </label>
                             <div id="map"></div>
                             <div class="small text-muted fst-italic">
-                                <i class="bi bi-info-circle"></i> Kéo thả ghim đỏ để chỉnh vị trí chính xác nhất nếu cần.
+                                <i class="bi bi-info-circle"></i> Hệ thống tự động xác định vị trí và quãng đường vận chuyển tối ưu nhất.
                             </div>
                         </div>
                     </div>
@@ -236,13 +241,16 @@
         let currentLat = 21.0362, currentLng = 105.7829;
         var map = L.map('map').setView([21.0362, 105.7829], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-        var userMarker = L.marker([21.0362, 105.7829], {draggable: true}).addTo(map);
+
+        // [THAY ĐỔI] Marker tĩnh, không cho kéo (draggable: false)
+        var userMarker = L.marker([21.0362, 105.7829], {draggable: false}).addTo(map);
 
         // Biến lưu đường vẽ (Routing Control)
         var routeControl = null;
 
-        userMarker.on('dragend', function (e) { var coord = e.target.getLatLng(); calculateShipping(coord.lat, coord.lng); });
-        map.on('click', function(e) { userMarker.setLatLng(e.latlng); calculateShipping(e.latlng.lat, e.latlng.lng); });
+        // [THAY ĐỔI] Bỏ hết sự kiện click và drag trên map
+        // userMarker.on('dragend', ...); -> DELETE
+        // map.on('click', ...); -> DELETE
 
         // --- API HÀNH CHÍNH VIỆT NAM ---
         var provinces = [];
@@ -272,7 +280,7 @@
                         option.value = d.code; option.text = d.name;
                         districtSelect.add(option);
                     });
-                    autoLocateOnMap();
+                    autoLocateOnMap(); // Gọi tự động ngay khi chọn Tỉnh
                 });
             }
         }
@@ -290,12 +298,12 @@
                         option.value = w.name; option.text = w.name;
                         wardSelect.add(option);
                     });
-                    autoLocateOnMap();
+                    autoLocateOnMap(); // Gọi tự động ngay khi chọn Huyện
                 });
             }
         }
 
-        // --- [QUAN TRỌNG] HÀM TÌM ĐỊA CHỈ THÔNG MINH (Fallback) ---
+        // --- HÀM TÌM ĐỊA CHỈ THÔNG MINH (Auto Locate) ---
         function autoLocateOnMap() {
             let p = document.getElementById('province').options[document.getElementById('province').selectedIndex]?.text;
             let d = document.getElementById('district').options[document.getElementById('district').selectedIndex]?.text;
@@ -304,61 +312,44 @@
 
             if (!p || p == "Chọn Tỉnh/Thành") return;
 
-            // Tạo danh sách các cấp độ tìm kiếm từ chi tiết -> khái quát
             let queries = [];
-
-            // 1. Tìm đầy đủ nhất
             if (street && w && d) queries.push(`${street}, ${w}, ${d}, ${p}, Vietnam`);
-
-            // 2. Tìm cấp Phường/Xã
             if (w && d) queries.push(`${w}, ${d}, ${p}, Vietnam`);
-
-            // 3. Tìm cấp Quận/Huyện
             if (d && d != "Chọn Quận/Huyện") queries.push(`${d}, ${p}, Vietnam`);
-
-            // 4. Tìm cấp Tỉnh (Cuối cùng)
             queries.push(`${p}, Vietnam`);
 
             document.getElementById('locatingStatus').classList.remove('d-none'); // Hiện badge "Đang tìm..."
-
             searchLocationRecursive(queries, 0);
         }
 
-        // Hàm đệ quy thử tìm từng cấp độ địa chỉ
         function searchLocationRecursive(queries, index) {
             if (index >= queries.length) {
                 document.getElementById('locatingStatus').classList.add('d-none');
-                return; // Không tìm thấy gì cả
+                return;
             }
-
             let query = queries[index];
-            // Loại bỏ các từ khóa hành chính để dễ tìm hơn
             query = query.replace(/^(Tỉnh|Thành phố|Huyện|Quận|Thị xã|Phường|Xã|Thị trấn)\s+/gi, '');
 
             fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`)
             .then(res => res.json())
             .then(data => {
                 if(data && data.length > 0) {
-                    // TÌM THẤY!
                     let lat = parseFloat(data[0].lat);
                     let lon = parseFloat(data[0].lon);
 
                     map.setView([lat, lon], 15);
                     userMarker.setLatLng([lat, lon]);
-                    calculateShipping(lat, lon);
+                    calculateShipping(lat, lon); // Tự động tính phí luôn
 
                     document.getElementById('locatingStatus').classList.add('d-none');
                 } else {
-                    // KHÔNG THẤY -> Thử cấp độ tiếp theo (Lùi bước)
                     searchLocationRecursive(queries, index + 1);
                 }
             })
-            .catch(() => {
-                searchLocationRecursive(queries, index + 1);
-            });
+            .catch(() => { searchLocationRecursive(queries, index + 1); });
         }
 
-        // --- HÀM TÍNH SHIP & VẼ ĐƯỜNG (ROUTING) ---
+        // --- HÀM TÍNH SHIP & VẼ ĐƯỜNG ---
         function calculateShipping(lat, lng) {
             currentLat = lat; currentLng = lng;
             let minDistance = Infinity; let nearestShop = null;
@@ -368,23 +359,22 @@
                 if (dist < minDistance) { minDistance = dist; nearestShop = shop; }
             });
 
-            // --- [MỚI] VẼ ĐƯỜNG ĐI ---
+            // --- [VẼ ĐƯỜNG ĐI - Routing] ---
             if (map && nearestShop) {
-                if (routeControl) { map.removeControl(routeControl); } // Xóa đường cũ
+                if (routeControl) { map.removeControl(routeControl); }
                 routeControl = L.Routing.control({
                     waypoints: [
                         L.latLng(nearestShop.lat, nearestShop.lng),
                         L.latLng(lat, lng)
                     ],
                     lineOptions: { styles: [{color: '#0d6efd', opacity: 0.7, weight: 5}] },
-                    createMarker: function() { return null; }, // Không tạo thêm marker rác
+                    createMarker: function() { return null; },
                     addWaypoints: false,
                     draggableWaypoints: false,
-                    fitSelectedRoutes: false, // Không tự zoom
-                    show: false // Ẩn bảng chỉ dẫn text
+                    fitSelectedRoutes: true, // Tự zoom để thấy cả đường đi
+                    show: false
                 }).addTo(map);
             }
-            // ------------------------
 
             let km = Math.round(minDistance * 10) / 10;
             let fee = 0;
@@ -419,7 +409,7 @@
                 document.getElementById('storeSection').classList.remove('d-none');
                 document.getElementById('deliveryTypeInput').value = 'Store';
                 updateTotalDisplay(0);
-                if(routeControl) map.removeControl(routeControl); // Xóa đường khi chọn nhận tại quán
+                if(routeControl) map.removeControl(routeControl);
             } else {
                 document.getElementById('shippingSection').classList.remove('d-none');
                 document.getElementById('storeSection').classList.add('d-none');
@@ -428,12 +418,9 @@
             }
         }
 
-        // Khi người dùng đổi kho (trong mục Nhận tại cửa hàng), map sẽ zoom tới đó
         function updateMapForStore(storeId) {
             let shop = shops.find(s => s.id == storeId);
-            if(shop && map) {
-                map.setView([shop.lat, shop.lng], 15);
-            }
+            if(shop && map) { map.setView([shop.lat, shop.lng], 15); }
         }
 
         function submitOrder() {
@@ -451,7 +438,6 @@
                 document.getElementById('finalTinhThanh').value = p;
                 document.getElementById('finalDiaChi').value = `${street}, ${w}, ${d}`;
             }
-
             document.getElementById('paymentForm').submit();
         }
     </script>
