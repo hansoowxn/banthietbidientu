@@ -57,12 +57,15 @@
         <div class="alert alert-danger">@TempData["Error"]</div>
     }
 
-    <form asp-action="XacNhanThanhToan" asp-controller="GioHang" method="post">
+    <form asp-action="XacNhanThanhToan" asp-controller="GioHang" method="post" id="paymentForm">
         @Html.AntiForgeryToken()
         <input type="hidden" id="latInput" name="Latitude" />
         <input type="hidden" id="lngInput" name="Longitude" />
         <input type="hidden" name="TongTien" value="@tongThanhToan" />
         <input type="hidden" id="deliveryTypeInput" name="DeliveryType" value="Ship" />
+
+        <input type="hidden" id="finalDiaChi" name="DiaChi" />
+        <input type="hidden" id="finalTinhThanh" name="TinhThanh" />
 
         <div class="row g-4">
             <div class="col-lg-7">
@@ -94,95 +97,41 @@
                             <input type="text" class="form-control" name="SoDienThoai" value="@Model.TaiKhoan.PhoneNumber" placeholder="Nhập số điện thoại..." required>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Tỉnh / Thành phố <span class="text-danger">*</span></label>
-                            <select asp-for="TinhThanh" class="form-select" required onchange="updateRouting(this.value)">
-                                <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                        <hr />
+                        <h6 class="fw-bold text-primary mb-3"><i class="bi bi-geo-alt-fill me-2"></i>Địa chỉ giao hàng</h6>
 
-                                <optgroup label="Miền Bắc (Kho Hà Nội)">
-                                    <option value="Hà Nội">Hà Nội</option>
-                                    <option value="Hải Phòng">Hải Phòng</option>
-                                    <option value="Quảng Ninh">Quảng Ninh</option>
-                                    <option value="Bắc Ninh">Bắc Ninh</option>
-                                    <option value="Hà Nam">Hà Nam</option>
-                                    <option value="Hải Dương">Hải Dương</option>
-                                    <option value="Hưng Yên">Hưng Yên</option>
-                                    <option value="Nam Định">Nam Định</option>
-                                    <option value="Ninh Bình">Ninh Bình</option>
-                                    <option value="Thái Bình">Thái Bình</option>
-                                    <option value="Vĩnh Phúc">Vĩnh Phúc</option>
-                                    <option value="Phú Thọ">Phú Thọ</option>
-                                    <option value="Bắc Giang">Bắc Giang</option>
-                                    <option value="Thái Nguyên">Thái Nguyên</option>
-                                    <option value="Cao Bằng">Cao Bằng</option>
-                                    <option value="Bắc Kạn">Bắc Kạn</option>
-                                    <option value="Lạng Sơn">Lạng Sơn</option>
-                                    <option value="Tuyên Quang">Tuyên Quang</option>
-                                    <option value="Hà Giang">Hà Giang</option>
-                                    <option value="Yên Bái">Yên Bái</option>
-                                    <option value="Lào Cai">Lào Cai</option>
-                                    <option value="Điện Biên">Điện Biên</option>
-                                    <option value="Lai Châu">Lai Châu</option>
-                                    <option value="Sơn La">Sơn La</option>
-                                    <option value="Hòa Bình">Hòa Bình</option>
-                                </optgroup>
-
-                                <optgroup label="Miền Trung (Kho Đà Nẵng)">
-                                    <option value="Đà Nẵng">Đà Nẵng</option>
-                                    <option value="Thừa Thiên Huế">Thừa Thiên Huế</option>
-                                    <option value="Quảng Nam">Quảng Nam</option>
-                                    <option value="Quảng Ngãi">Quảng Ngãi</option>
-                                    <option value="Bình Định">Bình Định</option>
-                                    <option value="Phú Yên">Phú Yên</option>
-                                    <option value="Khánh Hòa">Khánh Hòa</option>
-                                    <option value="Quảng Bình">Quảng Bình</option>
-                                    <option value="Quảng Trị">Quảng Trị</option>
-                                    <option value="Nghệ An">Nghệ An</option>
-                                    <option value="Hà Tĩnh">Hà Tĩnh</option>
-                                    <option value="Thanh Hóa">Thanh Hóa</option>
-                                    <option value="Ninh Thuận">Ninh Thuận</option>
-                                    <option value="Bình Thuận">Bình Thuận</option>
-                                    <option value="Kon Tum">Kon Tum</option>
-                                    <option value="Gia Lai">Gia Lai</option>
-                                    <option value="Đắk Lắk">Đắk Lắk</option>
-                                    <option value="Đắk Nông">Đắk Nông</option>
-                                    <option value="Lâm Đồng">Lâm Đồng</option>
-                                </optgroup>
-
-                                <optgroup label="Miền Nam (Kho TP.HCM)">
-                                    <option value="Hồ Chí Minh">TP. Hồ Chí Minh</option>
-                                    <option value="Bà Rịa - Vũng Tàu">Bà Rịa - Vũng Tàu</option>
-                                    <option value="Bình Dương">Bình Dương</option>
-                                    <option value="Bình Phước">Bình Phước</option>
-                                    <option value="Đồng Nai">Đồng Nai</option>
-                                    <option value="Tây Ninh">Tây Ninh</option>
-                                    <option value="An Giang">An Giang</option>
-                                    <option value="Bạc Liêu">Bạc Liêu</option>
-                                    <option value="Bến Tre">Bến Tre</option>
-                                    <option value="Cà Mau">Cà Mau</option>
-                                    <option value="Cần Thơ">Cần Thơ</option>
-                                    <option value="Đồng Tháp">Đồng Tháp</option>
-                                    <option value="Hậu Giang">Hậu Giang</option>
-                                    <option value="Kiên Giang">Kiên Giang</option>
-                                    <option value="Long An">Long An</option>
-                                    <option value="Sóc Trăng">Sóc Trăng</option>
-                                    <option value="Tiền Giang">Tiền Giang</option>
-                                    <option value="Trà Vinh">Trà Vinh</option>
-                                    <option value="Vĩnh Long">Vĩnh Long</option>
-                                </optgroup>
-                            </select>
+                        <div class="row mb-3">
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label small fw-bold text-muted">Tỉnh / Thành phố</label>
+                                <select id="province" class="form-select" required onchange="loadDistricts()">
+                                    <option value="">Chọn Tỉnh/Thành</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label small fw-bold text-muted">Quận / Huyện</label>
+                                <select id="district" class="form-select" required onchange="loadWards()">
+                                    <option value="">Chọn Quận/Huyện</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 mb-2">
+                                <label class="form-label small fw-bold text-muted">Phường / Xã</label>
+                                <select id="ward" class="form-select" required onchange="autoLocateOnMap()">
+                                    <option value="">Chọn Phường/Xã</option>
+                                </select>
+                            </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Địa chỉ cụ thể</label>
-                            <textarea class="form-control" id="deliveryAddress" name="DiaChi" rows="2"
-                                      placeholder="Số nhà, tên đường, phường/xã...">@(Model.TaiKhoan.Address)</textarea>
+                            <label class="form-label fw-bold">Số nhà, Tên đường (Chi tiết)</label>
+                            <input type="text" class="form-control" id="houseNumber"
+                                   value="@Model.TaiKhoan.Address"
+                                   placeholder="Ví dụ: Số 120 Xuân Thủy..." required onblur="autoLocateOnMap()">
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold text-primary"><i class="bi bi-geo-alt-fill me-1"></i>Ghim vị trí (để Shipper dễ tìm)</label>
+                            <label class="form-label fw-bold text-primary">Ghim vị trí</label>
                             <div id="map"></div>
-                            <div class="small text-muted"><i class="bi bi-info-circle"></i> Phí ship được tính tự động từ kho gần nhất.</div>
+                            <div class="small text-muted"><i class="bi bi-info-circle"></i> Hệ thống sẽ tự động tính phí ship dựa trên vị trí bạn chọn.</div>
                         </div>
                     </div>
                 </div>
@@ -245,7 +194,7 @@
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success btn-lg fw-bold shadow-sm"><i class="bi bi-check-circle me-2"></i> Đặt Hàng Ngay</button>
+                            <button type="button" onclick="submitOrder()" class="btn btn-success btn-lg fw-bold shadow-sm"><i class="bi bi-check-circle me-2"></i> Đặt Hàng Ngay</button>
                             <a asp-action="Index" asp-controller="GioHang" class="btn btn-outline-secondary btn-sm">Quay lại giỏ hàng</a>
                         </div>
                     </div>
@@ -258,9 +207,9 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/leaflet.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
 
     <script>
-        // --- DANH SÁCH KHO (ĐỂ TÍNH SHIP) ---
         const shops = [
             { id: 1, name: 'Kho Hà Nội', lat: 21.0362, lng: 105.7829 },
             { id: 2, name: 'Kho Đà Nẵng', lat: 16.0718, lng: 108.2236 },
@@ -273,38 +222,106 @@
         let freeShipDistance = (discountPercent >= 0.25) ? 99999 : (@totalSpent >= 100000000 ? 99999 : (@totalSpent >= 50000000 ? 99999 : (@totalSpent >= 20000000 ? 300 : (@totalSpent >= 10000000 ? 15 : 0))));
 
         let currentLat = 21.0362, currentLng = 105.7829;
+        var map = L.map('map').setView([21.0362, 105.7829], 13);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+        var userMarker = L.marker([21.0362, 105.7829], {draggable: true}).addTo(map);
 
-        function toggleDelivery(type) {
-            const shipSection = document.getElementById('shippingSection');
-            const storeSection = document.getElementById('storeSection');
-            const typeInput = document.getElementById('deliveryTypeInput');
+        userMarker.on('dragend', function (e) { var coord = e.target.getLatLng(); calculateShipping(coord.lat, coord.lng); });
+        map.on('click', function(e) { userMarker.setLatLng(e.latlng); calculateShipping(e.latlng.lat, e.latlng.lng); });
 
-            if (type === 'store') {
-                shipSection.classList.add('d-none'); storeSection.classList.remove('d-none');
-                typeInput.value = 'Store'; updateTotalDisplay(0);
-            } else {
-                shipSection.classList.remove('d-none'); storeSection.classList.add('d-none');
-                typeInput.value = 'Ship'; calculateShipping(currentLat, currentLng);
+        // --- API HÀNH CHÍNH VIỆT NAM ---
+        var provinces = [];
+        // Load Tỉnh/Thành
+        fetch('https://provinces.open-api.vn/api/?depth=1')
+            .then(response => response.json())
+            .then(data => {
+                provinces = data;
+                let provinceSelect = document.getElementById('province');
+                data.forEach(p => {
+                    let option = document.createElement('option');
+                    option.value = p.code;
+                    option.text = p.name;
+                    provinceSelect.add(option);
+                });
+            });
+
+        function loadDistricts() {
+            let provinceCode = document.getElementById('province').value;
+            let districtSelect = document.getElementById('district');
+            districtSelect.length = 1; // Reset
+            document.getElementById('ward').length = 1; // Reset Ward
+
+            if(provinceCode) {
+                fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`)
+                .then(response => response.json())
+                .then(data => {
+                    data.districts.forEach(d => {
+                        let option = document.createElement('option');
+                        option.value = d.code;
+                        option.text = d.name;
+                        districtSelect.add(option);
+                    });
+                    autoLocateOnMap(); // Thử tìm vị trí theo Tỉnh
+                });
             }
         }
 
-        function updateRouting(tinh) {
-            // Logic JS chỉ để hiển thị gợi ý, logic chính vẫn nằm ở Controller C# để bảo mật
-            // Ở đây ta giả lập chọn kho gần nhất để tính ship
-            let targetShop = shops[0]; // Mặc định HN
-            if(["Đà Nẵng", "Huế", "Quảng Nam", "Quảng Ngãi", "Bình Định", "Phú Yên", "Khánh Hòa", "Quảng Bình", "Quảng Trị", "Nghệ An", "Hà Tĩnh", "Thanh Hóa", "Ninh Thuận", "Bình Thuận", "Kon Tum", "Gia Lai", "Đắk Lắk", "Đắk Nông", "Lâm Đồng"].includes(tinh)) {
-                targetShop = shops[1]; // Đà Nẵng
-            } else if (["Hồ Chí Minh", "Cần Thơ", "Bình Dương", "Đồng Nai", "Bà Rịa - Vũng Tàu", "Long An", "Tiền Giang", "Bến Tre", "Trà Vinh", "Vĩnh Long", "Đồng Tháp", "An Giang", "Kiên Giang", "Hậu Giang", "Sóc Trăng", "Bạc Liêu", "Cà Mau", "Tây Ninh", "Bình Phước"].includes(tinh)) {
-                targetShop = shops[2]; // HCM
-            }
+        function loadWards() {
+            let districtCode = document.getElementById('district').value;
+            let wardSelect = document.getElementById('ward');
+            wardSelect.length = 1;
 
-            // Di chuyển map về kho đó
-            if(map) {
-                map.setView([targetShop.lat, targetShop.lng], 10);
-                calculateShipping(targetShop.lat, targetShop.lng); // Tạm tính từ kho đến... kho (để reset)
+            if(districtCode) {
+                fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
+                .then(response => response.json())
+                .then(data => {
+                    data.wards.forEach(w => {
+                        let option = document.createElement('option');
+                        option.value = w.name; // Lưu tên phường để dễ search
+                        option.text = w.name;
+                        wardSelect.add(option);
+                    });
+                    autoLocateOnMap(); // Tìm vị trí theo Huyện
+                });
             }
         }
 
+        // --- AUTO LOCATE (TỰ ĐỘNG TÌM TRÊN MAP) ---
+        function autoLocateOnMap() {
+            let p = document.getElementById('province').options[document.getElementById('province').selectedIndex].text;
+            let d = document.getElementById('district').options[document.getElementById('district').selectedIndex].text;
+            let w = document.getElementById('ward').value;
+            let street = document.getElementById('houseNumber').value;
+
+            if(p == "Chọn Tỉnh/Thành") return;
+
+            // Tạo chuỗi địa chỉ để search
+            let addressQuery = "";
+            if(street) addressQuery += street + ", ";
+            if(w) addressQuery += w + ", ";
+            if(d != "Chọn Quận/Huyện") addressQuery += d + ", ";
+            addressQuery += p + ", Vietnam";
+
+            // Gọi Nominatim API (OpenStreetMap Search)
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&limit=1`)
+            .then(res => res.json())
+            .then(data => {
+                if(data && data.length > 0) {
+                    let lat = parseFloat(data[0].lat);
+                    let lon = parseFloat(data[0].lon);
+
+                    // Di chuyển Map và Marker
+                    map.setView([lat, lon], 15);
+                    userMarker.setLatLng([lat, lon]);
+
+                    // Tính ship ngay lập tức
+                    calculateShipping(lat, lon);
+                }
+            })
+            .catch(err => console.log("Không tìm thấy địa chỉ trên bản đồ"));
+        }
+
+        // --- LOGIC TÍNH SHIP (Giữ nguyên) ---
         function calculateShipping(lat, lng) {
             currentLat = lat; currentLng = lng;
             let minDistance = Infinity; let nearestShop = null;
@@ -341,18 +358,39 @@
         }
         function deg2rad(deg) { return deg * (Math.PI/180); }
 
-        var map = L.map('map').setView([21.0362, 105.7829], 13);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-        var userMarker = L.marker([21.0362, 105.7829], {draggable: true}).addTo(map);
+        function toggleDelivery(type) {
+            if (type === 'store') {
+                document.getElementById('shippingSection').classList.add('d-none');
+                document.getElementById('storeSection').classList.remove('d-none');
+                document.getElementById('deliveryTypeInput').value = 'Store';
+                updateTotalDisplay(0);
+            } else {
+                document.getElementById('shippingSection').classList.remove('d-none');
+                document.getElementById('storeSection').classList.add('d-none');
+                document.getElementById('deliveryTypeInput').value = 'Ship';
+                calculateShipping(currentLat, currentLng);
+            }
+        }
 
-        userMarker.on('dragend', function (e) { var coord = e.target.getLatLng(); calculateShipping(coord.lat, coord.lng); });
-        map.on('click', function(e) { userMarker.setLatLng(e.latlng); calculateShipping(e.latlng.lat, e.latlng.lng); });
+        // Gộp dữ liệu trước khi Submit
+        function submitOrder() {
+            let p = document.getElementById('province').options[document.getElementById('province').selectedIndex]?.text;
+            let d = document.getElementById('district').options[document.getElementById('district').selectedIndex]?.text;
+            let w = document.getElementById('ward').value;
+            let street = document.getElementById('houseNumber').value;
+            let deliveryType = document.getElementById('deliveryTypeInput').value;
 
-        if (navigator.geolocation) {
-            navigator.geolocation.getCurrentPosition(position => {
-                const lat = position.coords.latitude; const lng = position.coords.longitude;
-                map.setView([lat, lng], 13); userMarker.setLatLng([lat, lng]); calculateShipping(lat, lng);
-            });
+            if(deliveryType === 'Ship') {
+                if (!p || p === "Chọn Tỉnh/Thành" || !d || !w || !street) {
+                    alert("Vui lòng chọn đầy đủ địa chỉ giao hàng!");
+                    return;
+                }
+                // Gán dữ liệu vào input ẩn để gửi về Controller
+                document.getElementById('finalTinhThanh').value = p;
+                document.getElementById('finalDiaChi').value = `${street}, ${w}, ${d}`;
+            }
+
+            document.getElementById('paymentForm').submit();
         }
     </script>
 }
