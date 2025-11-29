@@ -155,12 +155,22 @@
             return $.ajax({ url: api, method: 'GET' });
         }
 
-        // Load Tỉnh/TP khi trang vừa chạy
+        // Hàm render dữ liệu vào Select
+        var renderData = (array, select) => {
+            let row = ' <option value="">Chọn ' + (select == "province" ? "Tỉnh/TP" : (select == "district" ? "Quận/Huyện" : "Phường/Xã")) + '</option>';
+            array.forEach(element => {
+                // Value là Code để load API con, Text hiển thị tên
+                row += `<option value="${element.code}">${element.name}</option>`;
+            });
+            document.querySelector("#" + select).innerHTML = row;
+        }
+
+        // 1. Load Tỉnh/TP khi trang vừa chạy
         callAPI(host + "?depth=1").done((data) => {
             renderData(data, "province");
         });
 
-        // Sự kiện chọn Tỉnh -> Load Huyện
+        // 2. Sự kiện chọn Tỉnh -> Load Huyện
         $("#province").change(() => {
             let code = $("#province").val();
             $("#district").html('<option value="">Chọn Quận/Huyện</option>').prop("disabled", true);
@@ -174,7 +184,7 @@
             }
         });
 
-        // Sự kiện chọn Huyện -> Load Xã
+        // 3. Sự kiện chọn Huyện -> Load Xã
         $("#district").change(() => {
             let code = $("#district").val();
             $("#ward").html('<option value="">Chọn Phường/Xã</option>').prop("disabled", true);
@@ -187,25 +197,30 @@
             }
         });
 
-        var renderData = (array, select) => {
-            let row = ' <option value="">Chọn ' + (select == "province" ? "Tỉnh/TP" : (select == "district" ? "Quận/Huyện" : "Phường/Xã")) + '</option>';
-            array.forEach(element => {
-                row += `<option value="${element.code}" data-name="${element.name}">${element.name}</option>`;
-            });
-            document.querySelector("#" + select).innerHTML = row;
-        }
-
-        // KHI ẤN NÚT ĐĂNG KÝ: Gộp địa chỉ lại thành chuỗi
-        $("#registerForm").submit(function() {
-            let province = $("#province option:selected").data("name");
-            let district = $("#district option:selected").data("name");
-            let ward = $("#ward option:selected").data("name");
+        // [QUAN TRỌNG] KHI ẤN NÚT ĐĂNG KÝ
+        $("#registerForm").submit(function(event) {
+            // Lấy text (Tên) của các ô đã chọn
+            let province = $("#province option:selected").text();
+            let district = $("#district option:selected").text();
+            let ward = $("#ward option:selected").text();
             let specific = $("#specificAddress").val();
 
+            // Kiểm tra xem người dùng đã chọn chưa (Text mặc định thường có chữ "Chọn...")
+            if (!province || province.includes("Chọn")) province = "";
+            if (!district || district.includes("Chọn")) district = "";
+            if (!ward || ward.includes("Chọn")) ward = "";
+
             if (province && district && ward && specific) {
-                // Tạo chuỗi địa chỉ đầy đủ
+                // Gộp địa chỉ
                 let fullAddress = `${specific}, ${ward}, ${district}, ${province}`;
                 $("#fullAddressInput").val(fullAddress);
+
+                // Debug: In ra console để kiểm tra
+                console.log("Full Address:", fullAddress);
+            } else {
+                // Nếu thiếu địa chỉ -> Chặn submit và báo lỗi (để tránh reload trang mất dữ liệu)
+                event.preventDefault();
+                alert("Vui lòng chọn đầy đủ địa chỉ (Tỉnh, Huyện, Xã và Số nhà)!");
             }
         });
     </script>
