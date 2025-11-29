@@ -97,7 +97,7 @@
                     <span asp-validation-for="Address" class="text-danger small"></span>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-3">
                     <label for="inputEmail" class="form-label fw-semibold">Email</label>
                     <input asp-for="Email"
                            class="form-control"
@@ -109,6 +109,19 @@
                            pattern="@Html.Raw(emailPattern)"
                            title="Vui lòng nhập địa chỉ email hợp lệ (ví dụ: user@domain.com)" />
                     <span asp-validation-for="Email" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-4">
+                    <label for="inputPhone" class="form-label fw-semibold">Số điện thoại</label>
+                    <input asp-for="PhoneNumber"
+                           class="form-control"
+                           id="inputPhone"
+                           placeholder="Nhập số điện thoại"
+                           required
+                           style="border-radius: 8px;"
+                           pattern="[0-9]{10}"
+                           title="Số điện thoại phải có 10 chữ số" />
+                    <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
                 </div>
 
                 <input type="hidden" asp-for="Role" value="User" />
@@ -198,7 +211,7 @@
         });
 
         // [QUAN TRỌNG] KHI ẤN NÚT ĐĂNG KÝ
-        $("#registerForm").submit(function(event) {
+        $("#registerForm").submit(function(e) {
             // Lấy text (Tên) của các ô đã chọn
             let province = $("#province option:selected").text();
             let district = $("#district option:selected").text();
@@ -219,8 +232,9 @@
                 console.log("Full Address:", fullAddress);
             } else {
                 // Nếu thiếu địa chỉ -> Chặn submit và báo lỗi (để tránh reload trang mất dữ liệu)
-                event.preventDefault();
+                e.preventDefault();
                 alert("Vui lòng chọn đầy đủ địa chỉ (Tỉnh, Huyện, Xã và Số nhà)!");
+                return false;
             }
         });
     </script>
