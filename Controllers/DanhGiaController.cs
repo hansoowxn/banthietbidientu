@@ -85,10 +85,11 @@ namespace banthietbidientu.Controllers
                 TaiKhoanId = user.Id,
                 MaDon = donHang.MaDon,
                 Sao = soSao,
-                NoiDung = noiDung ?? "", // Chặn lỗi null nội dung
+                NoiDung = noiDung ?? "",
+                HinhAnh = imagePath ?? "", // Xử lý null ảnh
 
-                // --- SỬA LỖI TẠI ĐÂY ---
-                HinhAnh = imagePath ?? "", // Nếu không có ảnh (null) thì lưu chuỗi rỗng ""
+                // --- SỬA LỖI TẠI ĐÂY: Gán chuỗi rỗng cho TraLoi ---
+                TraLoi = "",
 
                 NgayTao = DateTime.Now,
                 DaDuyet = true // Duyệt luôn để test

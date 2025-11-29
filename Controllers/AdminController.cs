@@ -235,6 +235,23 @@ namespace banthietbidientu.Controllers
             catch { return Json(new { success = false }); }
         }
 
+        [HttpPost]
+        public IActionResult MarkOneRead(int id)
+        {
+            try
+            {
+                var thongBao = _context.ThongBaos.Find(id);
+                if (thongBao != null)
+                {
+                    thongBao.DaDoc = true;
+                    _context.SaveChanges();
+                    return Json(new { success = true });
+                }
+            }
+            catch { }
+            return Json(new { success = false });
+        }
+
         // --- 5. QUẢN LÝ SẢN PHẨM ---
         public IActionResult QuanLySanPham() => View(_context.SanPhams.AsNoTracking().ToList());
 
