@@ -20,9 +20,9 @@
 
     @RenderSection("Styles", required: false)
     <style>
-        /* Style riêng cho Link Admin */
+        /* Style riêng cho Link Admin trong Dropdown */
         .admin-link a {
-            color: #dc3545 !important; /* Màu đỏ để nổi bật */
+            color: #dc3545 !important;
             font-weight: 700 !important;
         }
 
@@ -34,10 +34,10 @@
         body {
             margin: 0;
             font-family: 'Be Vietnam Pro', Arial, sans-serif;
-            background-color: #f8f9fa; /* Nền xám nhạt */
+            background-color: #f8f9fa;
             display: flex;
             flex-direction: column;
-            min-height: 100vh; /* Giúp footer luôn nằm dưới cùng */
+            min-height: 100vh;
         }
 
         /* --- Header Styles --- */
@@ -49,7 +49,6 @@
             background-color: #0d6efd;
         }
 
-        /* Dropdown phải cao hơn header một chút */
         .dropdown-menu {
             z-index: 1021 !important;
             border: none;
@@ -59,10 +58,10 @@
 
         .main-content {
             padding: 20px;
-            padding-top: 140px; /* Cách xa Header ra */
+            padding-top: 140px;
             position: relative;
-            z-index: 1; /* Đẩy nội dung xuống lớp thấp nhất */
-            flex: 1; /* Đẩy footer xuống dưới cùng */
+            z-index: 1;
+            flex: 1;
         }
 
         .btn-dropdown-custom {
@@ -151,30 +150,27 @@
 
         /* --- Responsive Styles --- */
         @@media (max-width: 991.98px) {
-            .header-top
+            .header-top {
+                flex-wrap: wrap;
+            }
 
-        {
-            flex-wrap: wrap;
-        }
+            .header-search-form {
+                order: 3;
+                width: 100%;
+                max-width: none;
+                margin-top: 0.5rem;
+            }
 
-        .header-search-form {
-            order: 3;
-            width: 100%;
-            max-width: none;
-            margin-top: 0.5rem;
-        }
-        /* Điều chỉnh padding top khi header 2 dòng */
-        .main-content {
-            padding-top: 190px;
-        }
+            .main-content {
+                padding-top: 190px;
+            }
 
-        .header-nav-list {
-            justify-content: flex-start;
-            gap: 1.5rem;
-            padding-left: 1.5rem;
-            padding-right: 1.5rem;
-        }
-
+            .header-nav-list {
+                justify-content: flex-start;
+                gap: 1.5rem;
+                padding-left: 1.5rem;
+                padding-right: 1.5rem;
+            }
         }
 
         /* --- FAB Menu Styles --- */
@@ -229,18 +225,17 @@
                 box-shadow: 0 4px 12px rgba(0,0,0,0.2);
             }
 
-        /* --- Leaflet Map Styles --- */
         .leaflet-control-attribution {
             display: none !important;
         }
 
-        /* --- [MỚI] Footer Modern Styles --- */
+        /* --- Footer Styles --- */
         .site-footer {
             background-color: #212529;
             color: #adb5bd;
             font-size: 0.9rem;
             padding-top: 3rem;
-            margin-top: auto; /* Đẩy footer xuống dưới */
+            margin-top: auto;
         }
 
             .site-footer h5 {
@@ -333,13 +328,6 @@
                     <span>Giỏ Hàng</span>
                 </a>
 
-                @if (User.IsInRole("Admin"))
-                {
-                    <a asp-controller="Admin" asp-action="Index" class="btn btn-danger fw-bold shadow-sm">
-                        <i class="bi bi-speedometer2"></i> VỀ TRANG ADMIN
-                    </a>
-                }
-
                 @if (User.Identity.IsAuthenticated)
                 {
                     var currentTier = MemberService.GetUserTier(User.Identity.Name);
@@ -360,21 +348,27 @@
                             <li class="px-3 py-2 text-center bg-light border-bottom">
                                 <div class="small text-muted">Hạng thành viên</div>
                                 <div class="fw-bold text-primary text-uppercase">@currentTier.Name</div>
-                                <div class="progress mt-2" style="height: 4px;">
-                                    @{
-                                        decimal maxLevel = 100000000;
-                                        var percent = (int)((currentTier.TotalSpent / maxLevel) * 100);
-                                        if (percent > 100) percent = 100;
-                                    }
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: @percent%"></div>
-                                </div>
-                                <small class="text-muted" style="font-size: 10px;">Chi tiêu: @currentTier.TotalSpent.ToString("#,##0") đ</small>
+
+                                @if (currentTier.CssClass != "tier-boss" && currentTier.CssClass != "tier-admin")
+                                {
+                                    <div class="progress mt-2" style="height: 4px;">
+                                        @{
+                                            decimal maxLevel = 100000000;
+                                            var percent = (int)((currentTier.TotalSpent / maxLevel) * 100);
+                                            if (percent > 100) percent = 100;
+                                        }
+                                        <div class="progress-bar bg-success" role="progressbar" style="width: @percent%"></div>
+                                    </div>
+                                    <small class="text-muted" style="font-size: 10px;">Chi tiêu: @currentTier.TotalSpent.ToString("#,##0") đ</small>
+                                }
                             </li>
-                            @if (User.IsInRole("Admin"))
+
+                            @if (User.IsInRole("Admin") || User.IsInRole("Boss"))
                             {
                                 <li><a class="dropdown-item text-danger fw-bold py-2" asp-controller="Admin" asp-action="Index"><i class="bi bi-speedometer2 me-2"></i> Trang quản trị</a></li>
                                 <li><hr class="dropdown-divider"></li>
                             }
+
                             <li><a class="dropdown-item py-2" asp-controller="Login" asp-action="Profile"><i class="bi bi-person-badge me-2"></i> Hồ sơ của tôi</a></li>
                             <li><a class="dropdown-item py-2" asp-controller="Login" asp-action="LichSuMuaHang"><i class="bi bi-bag-check me-2"></i> Lịch sử mua hàng</a></li>
                             <li><hr class="dropdown-divider"></li>
@@ -589,7 +583,6 @@
             { name: 'TP.HCM', lat: 10.7725, lng: 106.7045, address: '55 Nguyễn Huệ, Quận 1' }
         ];
 
-        // Kiểm tra L tồn tại trước khi dùng
         let storeLogoIcon, userIcon;
         if (typeof L !== 'undefined') {
             storeLogoIcon = L.icon({
