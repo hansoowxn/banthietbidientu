@@ -13,19 +13,9 @@
     string borderClass = "border-standard";
     string badgeClass = "badge-standard";
 
-    // --- [LOGIC MÀU SẮC ĐÃ SỬA] ---
-    if (tier.CssClass == "tier-boss") // Boss
-    {
-        bgClass = "bg-boss";
-        borderClass = "border-boss";
-        badgeClass = "badge-boss";
-    }
-    else if (tier.CssClass == "tier-admin") // Admin
-    {
-        bgClass = "bg-admin";
-        borderClass = "border-admin";
-        badgeClass = "badge-admin";
-    }
+    // Logic màu sắc
+    if (tier.CssClass == "tier-boss") { bgClass = "bg-boss"; borderClass = "border-boss"; badgeClass = "badge-boss"; }
+    else if (tier.CssClass == "tier-admin") { bgClass = "bg-admin"; borderClass = "border-admin"; badgeClass = "badge-admin"; }
     else if (tier.TotalSpent >= 100000000) { bgClass = "bg-diamond"; borderClass = "border-diamond"; badgeClass = "badge-diamond"; }
     else if (tier.TotalSpent >= 50000000) { bgClass = "bg-platinum"; borderClass = "border-platinum"; badgeClass = "badge-platinum"; }
     else if (tier.TotalSpent >= 20000000) { bgClass = "bg-gold"; borderClass = "border-gold"; badgeClass = "badge-gold"; }
@@ -61,13 +51,11 @@
         color: white;
     }
 
-    /* Admin: Xanh dương đậm */
     .bg-admin {
         background: radial-gradient(circle at center, #003366 0%, #000033 100%);
         color: white;
     }
 
-    /* Boss: Đỏ quyền lực */
     .bg-boss {
         background: radial-gradient(circle at center, #8B0000 0%, #330000 100%);
         color: white;
@@ -164,67 +152,6 @@
         border: 1px solid #ff6666;
         box-shadow: 0 0 10px rgba(204, 0, 0, 0.6);
     }
-
-    /* Digital Card */
-    .digital-card {
-        height: 180px;
-        border-radius: 16px;
-        padding: 20px;
-        position: relative;
-        overflow: hidden;
-        color: white;
-        display: flex;
-        flex-direction: column;
-        justify-content: space-between;
-        margin-bottom: 30px;
-        box-shadow: 0 10px 20px rgba(0,0,0,0.2);
-    }
-
-    .card-bg-silver {
-        background: linear-gradient(135deg, #bdc3c7, #2c3e50);
-    }
-
-    .card-bg-gold {
-        background: linear-gradient(135deg, #f1c40f, #b7950b);
-    }
-
-    .card-bg-platinum {
-        background: linear-gradient(135deg, #00bcd4, #006064);
-    }
-
-    .card-bg-diamond {
-        background: linear-gradient(135deg, #1a1a2e, #16213e);
-        border: 1px solid rgba(255,255,255,0.2);
-    }
-
-    .card-bg-admin {
-        background: linear-gradient(135deg, #0044cc, #002266);
-        border: 1px solid #6699ff;
-    }
-
-    .card-bg-boss {
-        background: linear-gradient(135deg, #8B0000, #330000);
-        border: 1px solid #ff3333;
-    }
-
-    .card-bg-standard {
-        background: linear-gradient(135deg, #6c757d, #343a40);
-    }
-
-    .card-chip {
-        width: 45px;
-        height: 30px;
-        background: linear-gradient(135deg, #ffd700, #d4af37);
-        border-radius: 5px;
-        margin-bottom: 10px;
-    }
-
-    .card-number {
-        font-family: 'Courier New', monospace;
-        font-size: 1.2rem;
-        letter-spacing: 2px;
-        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-    }
 </style>
 
 <div class="profile-page-wrapper @bgClass">
@@ -253,18 +180,6 @@
                             {
                                 <div class="mt-2 small text-muted">Chi tiêu: @tier.TotalSpent.ToString("#,##0") ₫</div>
                             }
-                        </div>
-
-                        <div class="digital-card @(tier.CssClass == "tier-boss" ? "card-bg-boss" : tier.CssClass == "tier-admin" ? "card-bg-admin" : tier.TotalSpent >= 100000000 ? "card-bg-diamond" : tier.TotalSpent >= 50000000 ? "card-bg-platinum" : tier.TotalSpent >= 20000000 ? "card-bg-gold" : tier.TotalSpent >= 10000000 ? "card-bg-silver" : "card-bg-standard")">
-                            <div class="d-flex justify-content-between">
-                                <div class="card-chip shadow-sm"></div>
-                                <div class="small fw-bold opacity-75">SMARTTECH MEMBER</div>
-                            </div>
-                            <div class="card-number">**** **** **** @(Math.Abs(User.Identity.Name.GetHashCode() % 10000).ToString("0000"))</div>
-                            <div class="d-flex justify-content-between small text-uppercase">
-                                <div>@Model.FullName</div>
-                                <div>@(tier.CssClass == "tier-boss" || tier.CssClass == "tier-admin" ? "LIFETIME" : "EXP: 12/30")</div>
-                            </div>
                         </div>
 
                         <h5 class="h6 text-uppercase text-primary fw-bold mb-3">Quyền lợi hiện tại</h5>
@@ -297,10 +212,37 @@
                                 <div class="col-4"><div class="p-3 border border-info bg-info bg-opacity-10 rounded-3 text-center h-100"><i class="bi bi-truck text-info fs-3 mb-2 d-block"></i><div class="fw-bold text-info">Free Ship</div><small class="text-muted">Toàn quốc</small></div></div>
                                 <div class="col-4"><div class="p-3 border border-info bg-info bg-opacity-10 rounded-3 text-center h-100"><i class="bi bi-headset text-info fs-3 mb-2 d-block"></i><div class="fw-bold text-info">Ưu Tiên</div><small class="text-muted">Hỗ trợ 24/7</small></div></div>
                             }
-                            @* --- VÀNG/BẠC/THƯỜNG (Chỉ hiện FreeShip) --- *@
+                            @* --- 🟡 VÀNG (> 20tr) --- *@
+                            else if (tier.TotalSpent >= 20000000)
+                            {
+                                <div class="col-12"><div class="p-3 border border-warning bg-warning bg-opacity-10 rounded-3 text-center h-100"><i class="bi bi-truck text-warning fs-3 mb-2 d-block"></i><div class="fw-bold text-warning">Free Ship</div><small class="text-muted">Dưới 300km</small></div></div>
+                            }
+                            @* --- ⚪ BẠC (> 10tr) --- *@
+                            else if (tier.TotalSpent >= 10000000)
+                            {
+                                <div class="col-12"><div class="p-3 border border-secondary bg-secondary bg-opacity-10 rounded-3 text-center h-100"><i class="bi bi-truck text-secondary fs-3 mb-2 d-block"></i><div class="fw-bold text-secondary">Free Ship</div><small class="text-muted">Dưới 15km</small></div></div>
+                            }
+                            @* --- THÀNH VIÊN MỚI --- *@
                             else
                             {
-                                <div class="col-12"><div class="p-3 border bg-light rounded-3 text-center"><i class="bi bi-truck text-muted fs-3 mb-2 d-block"></i><div class="fw-bold text-muted">Ưu đãi vận chuyển</div><small class="text-muted">Theo chính sách thành viên</small></div></div>
+                                <div class="col-12">
+                                    <div class="p-3 border bg-light rounded-3 text-center">
+                                        <i class="bi bi-truck text-muted fs-3 mb-2 d-block"></i>
+                                        <div class="fw-bold text-muted">Vận chuyển</div>
+                                        <small class="text-muted">Tính phí theo khoảng cách</small>
+
+                                        <div class="mt-3 border-top pt-2">
+                                            <div class="text-muted mb-1 small">Mua sắm thêm <strong>@((10000000 - tier.TotalSpent).ToString("#,##0"))₫</strong> để lên hạng Bạc (FreeShip Dưới 15km)</div>
+                                            <div class="progress mt-2" style="height: 6px;">
+                                                @{
+                                                    var percent = (int)((tier.TotalSpent / 10000000) * 100);
+                                                    if (percent > 100) percent = 100;
+                                                }
+                                                <div class="progress-bar bg-primary" role="progressbar" style="width: @percent%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                             }
                         </div>
 
