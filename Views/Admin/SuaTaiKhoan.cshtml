@@ -88,13 +88,29 @@
                                 </div>
                                 <span asp-validation-for="Email" class="text-danger small"></span>
                             </div>
+
                             <div class="col-md-12">
                                 <label asp-for="Role" class="form-label fw-semibold">Vai trò hệ thống</label>
-                                <select asp-for="Role" class="form-select">
-                                    <option value="User">Khách hàng (User)</option>
-                                    <option value="Admin">Quản trị viên (Admin)</option>
-                                    <option value="Boss">Chủ tịch (Boss)</option>
-                                </select>
+
+                                @if (Model.Role == "Boss")
+                                {
+                                    <select asp-for="Role" class="form-select bg-light" disabled>
+                                        <option value="Boss" selected>Chủ tịch (Boss)</option>
+                                    </select>
+                                    <input type="hidden" asp-for="Role" />
+                                    <div class="form-text text-danger small"><i class="bi bi-lock-fill"></i> Vai trò Boss không thể thay đổi tại đây.</div>
+                                }
+                                else
+                                {
+                                    <select asp-for="Role" class="form-select">
+                                        <option value="User">Khách hàng (User)</option>
+                                        <option value="Admin">Quản trị viên (Admin)</option>
+                                        @if (User.IsInRole("Boss"))
+                                        {
+                                            <option value="Boss">Chủ tịch (Boss)</option>
+                                        }
+                                    </select>
+                                }
                             </div>
                         </div>
 
@@ -163,7 +179,6 @@
 
                         <div class="d-flex justify-content-end gap-2 mt-5">
                             <a asp-action="QuanLyTaiKhoan" class="btn btn-light border px-4">Hủy bỏ</a>
-
                             <button type="button" onclick="submitEditAccount()" class="btn btn-primary px-4 fw-bold shadow-sm">
                                 <i class="bi bi-check-circle me-2"></i> Cập nhật
                             </button>
@@ -226,19 +241,16 @@
             var form = $("#adminEditUserForm");
             if (!form.valid()) return;
 
-            // Kiểm tra địa chỉ mới
             let p = $("#province option:selected").text();
             let d = $("#district option:selected").text();
             let w = $("#ward option:selected").text();
             let s = $("#specificAddress").val();
             let pVal = $("#province").val();
 
-            // Nếu có chọn địa chỉ mới -> Cập nhật input ẩn
             if (pVal && s) {
                 let fullAddress = `${s}, ${w}, ${d}, ${p}`;
                 $("#fullAddressInput").val(fullAddress);
             }
-            // Nếu không chọn mới -> Giữ nguyên giá trị cũ (đã load từ Model vào input ẩn)
 
             document.getElementById("adminEditUserForm").submit();
         }
