@@ -14,6 +14,7 @@
 }
 
 <link rel="stylesheet" href="~/css/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 
 <style>
     .card {
@@ -32,7 +33,7 @@
     }
 
     #map {
-        height: 300px;
+        height: 350px;
         width: 100%;
         border-radius: 8px;
         border: 1px solid #dee2e6;
@@ -42,6 +43,11 @@
 
     .delivery-option {
         transition: all 0.3s ease-in-out;
+    }
+
+    /* Ẩn bảng chỉ dẫn đường đi (Text) của Routing Machine cho gọn */
+    .leaflet-routing-container {
+        display: none !important;
     }
 </style>
 
@@ -129,9 +135,14 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold text-primary">Ghim vị trí</label>
+                            <label class="form-label fw-bold text-primary">
+                                <i class="bi bi-pin-map-fill me-1"></i>Vị trí trên bản đồ
+                                <span id="locatingStatus" class="badge bg-warning text-dark d-none ms-2">Đang tìm...</span>
+                            </label>
                             <div id="map"></div>
-                            <div class="small text-muted"><i class="bi bi-info-circle"></i> Hệ thống sẽ tự động tính phí ship dựa trên vị trí bạn chọn.</div>
+                            <div class="small text-muted fst-italic">
+                                <i class="bi bi-info-circle"></i> Kéo thả ghim đỏ để chỉnh vị trí chính xác nhất nếu cần.
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -140,7 +151,7 @@
                     <div class="card-header bg-info text-white"><h5 class="mb-0">Chọn cửa hàng gần bạn</h5></div>
                     <div class="card-body">
                         <label class="form-label fw-bold">Danh sách chi nhánh:</label>
-                        <select name="StoreId" class="form-select form-select-lg mb-3">
+                        <select name="StoreId" class="form-select form-select-lg mb-3" onchange="updateMapForStore(this.value)">
                             <option value="1">📍 Hà Nội: 120 Xuân Thủy, Cầu Giấy</option>
                             <option value="2">📍 Đà Nẵng: 78 Bạch Đằng, Hải Châu</option>
                             <option value="3">📍 TP.HCM: 55 Nguyễn Huệ, Quận 1</option>
@@ -207,6 +218,7 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/0.21.1/axios.min.js"></script>
 
     <script>
@@ -226,12 +238,14 @@
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
         var userMarker = L.marker([21.0362, 105.7829], {draggable: true}).addTo(map);
 
+        // Biến lưu đường vẽ (Routing Control)
+        var routeControl = null;
+
         userMarker.on('dragend', function (e) { var coord = e.target.getLatLng(); calculateShipping(coord.lat, coord.lng); });
         map.on('click', function(e) { userMarker.setLatLng(e.latlng); calculateShipping(e.latlng.lat, e.latlng.lng); });
 
         // --- API HÀNH CHÍNH VIỆT NAM ---
         var provinces = [];
-        // Load Tỉnh/Thành
         fetch('https://provinces.open-api.vn/api/?depth=1')
             .then(response => response.json())
             .then(data => {
@@ -248,20 +262,17 @@
         function loadDistricts() {
             let provinceCode = document.getElementById('province').value;
             let districtSelect = document.getElementById('district');
-            districtSelect.length = 1; // Reset
-            document.getElementById('ward').length = 1; // Reset Ward
-
+            districtSelect.length = 1; document.getElementById('ward').length = 1;
             if(provinceCode) {
                 fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`)
                 .then(response => response.json())
                 .then(data => {
                     data.districts.forEach(d => {
                         let option = document.createElement('option');
-                        option.value = d.code;
-                        option.text = d.name;
+                        option.value = d.code; option.text = d.name;
                         districtSelect.add(option);
                     });
-                    autoLocateOnMap(); // Thử tìm vị trí theo Tỉnh
+                    autoLocateOnMap();
                 });
             }
         }
@@ -270,58 +281,84 @@
             let districtCode = document.getElementById('district').value;
             let wardSelect = document.getElementById('ward');
             wardSelect.length = 1;
-
             if(districtCode) {
                 fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`)
                 .then(response => response.json())
                 .then(data => {
                     data.wards.forEach(w => {
                         let option = document.createElement('option');
-                        option.value = w.name; // Lưu tên phường để dễ search
-                        option.text = w.name;
+                        option.value = w.name; option.text = w.name;
                         wardSelect.add(option);
                     });
-                    autoLocateOnMap(); // Tìm vị trí theo Huyện
+                    autoLocateOnMap();
                 });
             }
         }
 
-        // --- AUTO LOCATE (TỰ ĐỘNG TÌM TRÊN MAP) ---
+        // --- [QUAN TRỌNG] HÀM TÌM ĐỊA CHỈ THÔNG MINH (Fallback) ---
         function autoLocateOnMap() {
-            let p = document.getElementById('province').options[document.getElementById('province').selectedIndex].text;
-            let d = document.getElementById('district').options[document.getElementById('district').selectedIndex].text;
+            let p = document.getElementById('province').options[document.getElementById('province').selectedIndex]?.text;
+            let d = document.getElementById('district').options[document.getElementById('district').selectedIndex]?.text;
             let w = document.getElementById('ward').value;
             let street = document.getElementById('houseNumber').value;
 
-            if(p == "Chọn Tỉnh/Thành") return;
+            if (!p || p == "Chọn Tỉnh/Thành") return;
 
-            // Tạo chuỗi địa chỉ để search
-            let addressQuery = "";
-            if(street) addressQuery += street + ", ";
-            if(w) addressQuery += w + ", ";
-            if(d != "Chọn Quận/Huyện") addressQuery += d + ", ";
-            addressQuery += p + ", Vietnam";
+            // Tạo danh sách các cấp độ tìm kiếm từ chi tiết -> khái quát
+            let queries = [];
 
-            // Gọi Nominatim API (OpenStreetMap Search)
-            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(addressQuery)}&limit=1`)
+            // 1. Tìm đầy đủ nhất
+            if (street && w && d) queries.push(`${street}, ${w}, ${d}, ${p}, Vietnam`);
+
+            // 2. Tìm cấp Phường/Xã
+            if (w && d) queries.push(`${w}, ${d}, ${p}, Vietnam`);
+
+            // 3. Tìm cấp Quận/Huyện
+            if (d && d != "Chọn Quận/Huyện") queries.push(`${d}, ${p}, Vietnam`);
+
+            // 4. Tìm cấp Tỉnh (Cuối cùng)
+            queries.push(`${p}, Vietnam`);
+
+            document.getElementById('locatingStatus').classList.remove('d-none'); // Hiện badge "Đang tìm..."
+
+            searchLocationRecursive(queries, 0);
+        }
+
+        // Hàm đệ quy thử tìm từng cấp độ địa chỉ
+        function searchLocationRecursive(queries, index) {
+            if (index >= queries.length) {
+                document.getElementById('locatingStatus').classList.add('d-none');
+                return; // Không tìm thấy gì cả
+            }
+
+            let query = queries[index];
+            // Loại bỏ các từ khóa hành chính để dễ tìm hơn
+            query = query.replace(/^(Tỉnh|Thành phố|Huyện|Quận|Thị xã|Phường|Xã|Thị trấn)\s+/gi, '');
+
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=1`)
             .then(res => res.json())
             .then(data => {
                 if(data && data.length > 0) {
+                    // TÌM THẤY!
                     let lat = parseFloat(data[0].lat);
                     let lon = parseFloat(data[0].lon);
 
-                    // Di chuyển Map và Marker
                     map.setView([lat, lon], 15);
                     userMarker.setLatLng([lat, lon]);
-
-                    // Tính ship ngay lập tức
                     calculateShipping(lat, lon);
+
+                    document.getElementById('locatingStatus').classList.add('d-none');
+                } else {
+                    // KHÔNG THẤY -> Thử cấp độ tiếp theo (Lùi bước)
+                    searchLocationRecursive(queries, index + 1);
                 }
             })
-            .catch(err => console.log("Không tìm thấy địa chỉ trên bản đồ"));
+            .catch(() => {
+                searchLocationRecursive(queries, index + 1);
+            });
         }
 
-        // --- LOGIC TÍNH SHIP (Giữ nguyên) ---
+        // --- HÀM TÍNH SHIP & VẼ ĐƯỜNG (ROUTING) ---
         function calculateShipping(lat, lng) {
             currentLat = lat; currentLng = lng;
             let minDistance = Infinity; let nearestShop = null;
@@ -330,6 +367,24 @@
                 let dist = getDistance(lat, lng, shop.lat, shop.lng);
                 if (dist < minDistance) { minDistance = dist; nearestShop = shop; }
             });
+
+            // --- [MỚI] VẼ ĐƯỜNG ĐI ---
+            if (map && nearestShop) {
+                if (routeControl) { map.removeControl(routeControl); } // Xóa đường cũ
+                routeControl = L.Routing.control({
+                    waypoints: [
+                        L.latLng(nearestShop.lat, nearestShop.lng),
+                        L.latLng(lat, lng)
+                    ],
+                    lineOptions: { styles: [{color: '#0d6efd', opacity: 0.7, weight: 5}] },
+                    createMarker: function() { return null; }, // Không tạo thêm marker rác
+                    addWaypoints: false,
+                    draggableWaypoints: false,
+                    fitSelectedRoutes: false, // Không tự zoom
+                    show: false // Ẩn bảng chỉ dẫn text
+                }).addTo(map);
+            }
+            // ------------------------
 
             let km = Math.round(minDistance * 10) / 10;
             let fee = 0;
@@ -364,6 +419,7 @@
                 document.getElementById('storeSection').classList.remove('d-none');
                 document.getElementById('deliveryTypeInput').value = 'Store';
                 updateTotalDisplay(0);
+                if(routeControl) map.removeControl(routeControl); // Xóa đường khi chọn nhận tại quán
             } else {
                 document.getElementById('shippingSection').classList.remove('d-none');
                 document.getElementById('storeSection').classList.add('d-none');
@@ -372,7 +428,14 @@
             }
         }
 
-        // Gộp dữ liệu trước khi Submit
+        // Khi người dùng đổi kho (trong mục Nhận tại cửa hàng), map sẽ zoom tới đó
+        function updateMapForStore(storeId) {
+            let shop = shops.find(s => s.id == storeId);
+            if(shop && map) {
+                map.setView([shop.lat, shop.lng], 15);
+            }
+        }
+
         function submitOrder() {
             let p = document.getElementById('province').options[document.getElementById('province').selectedIndex]?.text;
             let d = document.getElementById('district').options[document.getElementById('district').selectedIndex]?.text;
@@ -385,7 +448,6 @@
                     alert("Vui lòng chọn đầy đủ địa chỉ giao hàng!");
                     return;
                 }
-                // Gán dữ liệu vào input ẩn để gửi về Controller
                 document.getElementById('finalTinhThanh').value = p;
                 document.getElementById('finalDiaChi').value = `${street}, ${w}, ${d}`;
             }
