@@ -2,16 +2,13 @@
 
 @{
     ViewData["Title"] = "Thanh toán - Electronic Store";
-    // Tính tổng tiền hàng (Subtotal)
     decimal subtotal = Model.GioHangs.Sum(item => item.Price * item.Quantity);
 
-    // Lấy thông tin Hạng thành viên & % Giảm giá từ Controller
     var tier = ViewBag.Tier as banthietbidientu.Services.MemberTier;
     decimal totalSpent = tier?.TotalSpent ?? 0;
     string rankName = tier?.Name ?? "Thành Viên";
-    int phanTramGiam = tier?.DiscountPercent ?? 0; // Lấy trực tiếp % từ Service
+    int phanTramGiam = tier?.DiscountPercent ?? 0;
 
-    // Tính toán số tiền giảm để hiển thị
     decimal soTienGiam = (subtotal * phanTramGiam) / 100;
     decimal tongThanhToan = subtotal - soTienGiam;
 }
@@ -65,35 +62,27 @@
         <input type="hidden" id="latInput" name="Latitude" />
         <input type="hidden" id="lngInput" name="Longitude" />
         <input type="hidden" name="TongTien" value="@tongThanhToan" />
-
         <input type="hidden" id="deliveryTypeInput" name="DeliveryType" value="Ship" />
 
         <div class="row g-4">
             <div class="col-lg-7">
-
                 <div class="card shadow-sm mb-4">
                     <div class="card-body p-2">
                         <div class="btn-group w-100" role="group">
                             <input type="radio" class="btn-check" name="deliveryOptionBtn" id="btnShip" autocomplete="off" checked onclick="toggleDelivery('ship')">
-                            <label class="btn btn-outline-primary fw-bold py-2" for="btnShip">
-                                <i class="bi bi-truck me-2"></i>Giao hàng tận nơi
-                            </label>
+                            <label class="btn btn-outline-primary fw-bold py-2" for="btnShip"><i class="bi bi-truck me-2"></i>Giao hàng tận nơi</label>
 
                             <input type="radio" class="btn-check" name="deliveryOptionBtn" id="btnStore" autocomplete="off" onclick="toggleDelivery('store')">
-                            <label class="btn btn-outline-primary fw-bold py-2" for="btnStore">
-                                <i class="bi bi-shop me-2"></i>Nhận tại cửa hàng
-                            </label>
+                            <label class="btn btn-outline-primary fw-bold py-2" for="btnStore"><i class="bi bi-shop me-2"></i>Nhận tại cửa hàng</label>
                         </div>
                     </div>
                 </div>
 
                 <div id="shippingSection" class="card shadow-sm mb-4">
-                    <div class="card-header bg-primary text-white">
-                        <h5 class="mb-0">Thông tin người nhận</h5>
-                    </div>
+                    <div class="card-header bg-primary text-white"><h5 class="mb-0">Thông tin người nhận</h5></div>
                     <div class="card-body">
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Họ và tên người nhận</label>
+                            <label class="form-label fw-bold">Họ và tên</label>
                             <div class="input-group">
                                 <input type="text" class="form-control" name="NguoiNhan" value="@Model.TaiKhoan.FullName" required>
                                 <span class="input-group-text bg-warning text-dark">@rankName</span>
@@ -102,36 +91,104 @@
 
                         <div class="mb-3">
                             <label class="form-label fw-bold">Số điện thoại <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" name="SoDienThoai" value="@Model.TaiKhoan.PhoneNumber" placeholder="Nhập số điện thoại liên hệ..." required>
+                            <input type="text" class="form-control" name="SoDienThoai" value="@Model.TaiKhoan.PhoneNumber" placeholder="Nhập số điện thoại..." required>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-bold">Email</label>
-                            <input type="text" class="form-control bg-light" value="@Model.TaiKhoan.Email" readonly>
+                            <label class="form-label fw-bold">Tỉnh / Thành phố <span class="text-danger">*</span></label>
+                            <select asp-for="TinhThanh" class="form-select" required onchange="updateRouting(this.value)">
+                                <option value="">-- Chọn Tỉnh/Thành phố --</option>
+
+                                <optgroup label="Miền Bắc (Kho Hà Nội)">
+                                    <option value="Hà Nội">Hà Nội</option>
+                                    <option value="Hải Phòng">Hải Phòng</option>
+                                    <option value="Quảng Ninh">Quảng Ninh</option>
+                                    <option value="Bắc Ninh">Bắc Ninh</option>
+                                    <option value="Hà Nam">Hà Nam</option>
+                                    <option value="Hải Dương">Hải Dương</option>
+                                    <option value="Hưng Yên">Hưng Yên</option>
+                                    <option value="Nam Định">Nam Định</option>
+                                    <option value="Ninh Bình">Ninh Bình</option>
+                                    <option value="Thái Bình">Thái Bình</option>
+                                    <option value="Vĩnh Phúc">Vĩnh Phúc</option>
+                                    <option value="Phú Thọ">Phú Thọ</option>
+                                    <option value="Bắc Giang">Bắc Giang</option>
+                                    <option value="Thái Nguyên">Thái Nguyên</option>
+                                    <option value="Cao Bằng">Cao Bằng</option>
+                                    <option value="Bắc Kạn">Bắc Kạn</option>
+                                    <option value="Lạng Sơn">Lạng Sơn</option>
+                                    <option value="Tuyên Quang">Tuyên Quang</option>
+                                    <option value="Hà Giang">Hà Giang</option>
+                                    <option value="Yên Bái">Yên Bái</option>
+                                    <option value="Lào Cai">Lào Cai</option>
+                                    <option value="Điện Biên">Điện Biên</option>
+                                    <option value="Lai Châu">Lai Châu</option>
+                                    <option value="Sơn La">Sơn La</option>
+                                    <option value="Hòa Bình">Hòa Bình</option>
+                                </optgroup>
+
+                                <optgroup label="Miền Trung (Kho Đà Nẵng)">
+                                    <option value="Đà Nẵng">Đà Nẵng</option>
+                                    <option value="Thừa Thiên Huế">Thừa Thiên Huế</option>
+                                    <option value="Quảng Nam">Quảng Nam</option>
+                                    <option value="Quảng Ngãi">Quảng Ngãi</option>
+                                    <option value="Bình Định">Bình Định</option>
+                                    <option value="Phú Yên">Phú Yên</option>
+                                    <option value="Khánh Hòa">Khánh Hòa</option>
+                                    <option value="Quảng Bình">Quảng Bình</option>
+                                    <option value="Quảng Trị">Quảng Trị</option>
+                                    <option value="Nghệ An">Nghệ An</option>
+                                    <option value="Hà Tĩnh">Hà Tĩnh</option>
+                                    <option value="Thanh Hóa">Thanh Hóa</option>
+                                    <option value="Ninh Thuận">Ninh Thuận</option>
+                                    <option value="Bình Thuận">Bình Thuận</option>
+                                    <option value="Kon Tum">Kon Tum</option>
+                                    <option value="Gia Lai">Gia Lai</option>
+                                    <option value="Đắk Lắk">Đắk Lắk</option>
+                                    <option value="Đắk Nông">Đắk Nông</option>
+                                    <option value="Lâm Đồng">Lâm Đồng</option>
+                                </optgroup>
+
+                                <optgroup label="Miền Nam (Kho TP.HCM)">
+                                    <option value="Hồ Chí Minh">TP. Hồ Chí Minh</option>
+                                    <option value="Bà Rịa - Vũng Tàu">Bà Rịa - Vũng Tàu</option>
+                                    <option value="Bình Dương">Bình Dương</option>
+                                    <option value="Bình Phước">Bình Phước</option>
+                                    <option value="Đồng Nai">Đồng Nai</option>
+                                    <option value="Tây Ninh">Tây Ninh</option>
+                                    <option value="An Giang">An Giang</option>
+                                    <option value="Bạc Liêu">Bạc Liêu</option>
+                                    <option value="Bến Tre">Bến Tre</option>
+                                    <option value="Cà Mau">Cà Mau</option>
+                                    <option value="Cần Thơ">Cần Thơ</option>
+                                    <option value="Đồng Tháp">Đồng Tháp</option>
+                                    <option value="Hậu Giang">Hậu Giang</option>
+                                    <option value="Kiên Giang">Kiên Giang</option>
+                                    <option value="Long An">Long An</option>
+                                    <option value="Sóc Trăng">Sóc Trăng</option>
+                                    <option value="Tiền Giang">Tiền Giang</option>
+                                    <option value="Trà Vinh">Trà Vinh</option>
+                                    <option value="Vĩnh Long">Vĩnh Long</option>
+                                </optgroup>
+                            </select>
                         </div>
 
-                        <hr />
-
                         <div class="mb-3">
-                            <label class="form-label fw-bold text-primary">
-                                <i class="bi bi-geo-alt-fill me-1"></i>Chọn vị trí trên bản đồ
-                            </label>
-                            <div id="map"></div>
-                            <div class="small text-muted mb-2">
-                                <i class="bi bi-info-circle"></i> Phí ship được tính tự động dựa trên khoảng cách.
-                            </div>
-
-                            <label for="deliveryAddress" class="form-label fw-bold">Địa chỉ cụ thể</label>
+                            <label class="form-label fw-bold">Địa chỉ cụ thể</label>
                             <textarea class="form-control" id="deliveryAddress" name="DiaChi" rows="2"
-                                      placeholder="Số nhà, tên đường...">@(Model.TaiKhoan.Address)</textarea>
+                                      placeholder="Số nhà, tên đường, phường/xã...">@(Model.TaiKhoan.Address)</textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-bold text-primary"><i class="bi bi-geo-alt-fill me-1"></i>Ghim vị trí (để Shipper dễ tìm)</label>
+                            <div id="map"></div>
+                            <div class="small text-muted"><i class="bi bi-info-circle"></i> Phí ship được tính tự động từ kho gần nhất.</div>
                         </div>
                     </div>
                 </div>
 
                 <div id="storeSection" class="card shadow-sm mb-4 d-none">
-                    <div class="card-header bg-info text-white">
-                        <h5 class="mb-0">Chọn cửa hàng gần bạn</h5>
-                    </div>
+                    <div class="card-header bg-info text-white"><h5 class="mb-0">Chọn cửa hàng gần bạn</h5></div>
                     <div class="card-body">
                         <label class="form-label fw-bold">Danh sách chi nhánh:</label>
                         <select name="StoreId" class="form-select form-select-lg mb-3">
@@ -139,21 +196,15 @@
                             <option value="2">📍 Đà Nẵng: 78 Bạch Đằng, Hải Châu</option>
                             <option value="3">📍 TP.HCM: 55 Nguyễn Huệ, Quận 1</option>
                         </select>
-
                         <div class="alert alert-primary d-flex align-items-center" role="alert">
                             <i class="bi bi-check-circle-fill fs-4 me-3"></i>
-                            <div>
-                                <strong>Miễn phí vận chuyển!</strong><br>
-                                Bạn sẽ đến cửa hàng để nhận máy. Vui lòng mang theo mã đơn hàng.
-                            </div>
+                            <div><strong>Miễn phí vận chuyển!</strong><br>Bạn sẽ đến cửa hàng để nhận máy. Vui lòng mang theo mã đơn hàng.</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="card shadow-sm mb-4">
-                    <div class="card-header bg-secondary text-white">
-                        <h6 class="mb-0">Sản phẩm trong giỏ (@Model.GioHangs.Count)</h6>
-                    </div>
+                    <div class="card-header bg-secondary text-white"><h6 class="mb-0">Sản phẩm trong giỏ (@Model.GioHangs.Count)</h6></div>
                     <div class="card-body p-0">
                         <table class="table table-hover mb-0">
                             <tbody>
@@ -161,10 +212,7 @@
                                 {
                                     <tr>
                                         <td class="ps-3"><img src="@(item.Image ?? "/image/logo.png")" class="rounded border" style="width: 50px;"></td>
-                                        <td>
-                                            <div class="fw-bold small">@item.Name</div>
-                                            <div class="text-muted small">x @item.Quantity</div>
-                                        </td>
+                                        <td><div class="fw-bold small">@item.Name</div><div class="text-muted small">x @item.Quantity</div></td>
                                         <td class="text-end pe-3 small fw-bold">@((item.Price * item.Quantity).ToString("#,##0")) ₫</td>
                                     </tr>
                                 }
@@ -176,66 +224,29 @@
 
             <div class="col-lg-5">
                 <div class="card shadow-sm sticky-top" style="top: 20px;">
-                    <div class="card-header bg-success text-white">
-                        <h4 class="mb-0">Thanh toán</h4>
-                    </div>
+                    <div class="card-header bg-success text-white"><h4 class="mb-0">Thanh toán</h4></div>
                     <div class="card-body">
                         <h5 class="fw-bold mb-3 border-bottom pb-2">Chi tiết thanh toán</h5>
-
-                        <div class="d-flex justify-content-between mb-2">
-                            <span class="text-muted">Tiền hàng:</span>
-                            <span class="fw-bold">@subtotal.ToString("#,##0").Replace(",", ".") ₫</span>
-                        </div>
+                        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tiền hàng:</span><span class="fw-bold">@subtotal.ToString("#,##0").Replace(",", ".") ₫</span></div>
 
                         @if (phanTramGiam > 0)
                         {
-                            <div class="d-flex justify-content-between mb-2 text-danger">
-                                <span><i class="bi bi-ticket-perforated-fill me-1"></i>Ưu đãi @rankName (@phanTramGiam%):</span>
-                                <span class="fw-bold">- @soTienGiam.ToString("#,##0").Replace(",", ".") ₫</span>
-                            </div>
+                            <div class="d-flex justify-content-between mb-2 text-danger"><span><i class="bi bi-ticket-perforated-fill me-1"></i>Ưu đãi @rankName (@phanTramGiam%):</span><span class="fw-bold">- @soTienGiam.ToString("#,##0").Replace(",", ".") ₫</span></div>
                         }
 
-                        <div class="d-flex justify-content-between mb-2 text-success">
-                            <span><i class="bi bi-truck"></i> Phí vận chuyển:</span>
-                            <span id="shippingFeeDisplay">0 ₫</span>
-                        </div>
-
-                        <div class="mb-3 small text-muted text-end fst-italic" id="warehouseDisplay">
-                            (Đang xác định vị trí...)
-                        </div>
-
-                        <div class="d-flex justify-content-between border-top pt-3 mb-4">
-                            <span class="h5 fw-bold">Tổng cộng:</span>
-                            <span class="h4 fw-bold text-danger" id="totalDisplay">
-                                @tongThanhToan.ToString("#,##0").Replace(",", ".") ₫
-                            </span>
-                        </div>
+                        <div class="d-flex justify-content-between mb-2 text-success"><span><i class="bi bi-truck"></i> Phí vận chuyển:</span><span id="shippingFeeDisplay">0 ₫</span></div>
+                        <div class="mb-3 small text-muted text-end fst-italic" id="warehouseDisplay">(Đang xác định vị trí...)</div>
+                        <div class="d-flex justify-content-between border-top pt-3 mb-4"><span class="h5 fw-bold">Tổng cộng:</span><span class="h4 fw-bold text-danger" id="totalDisplay">@tongThanhToan.ToString("#,##0").Replace(",", ".") ₫</span></div>
 
                         <div class="mb-4">
                             <label class="form-label fw-bold">Hình thức thanh toán</label>
-
-                            <div class="form-check mb-2 p-3 border rounded">
-                                <input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="COD" checked>
-                                <label class="form-check-label fw-bold" for="cod">
-                                    <i class="bi bi-cash-stack me-2 text-success"></i>Thanh toán khi nhận hàng (COD)
-                                </label>
-                            </div>
-
-                            <div class="form-check mb-2 p-3 border rounded bg-light">
-                                <input class="form-check-input" type="radio" name="paymentMethod" id="vnpay" value="VNPAY">
-                                <label class="form-check-label fw-bold text-primary" for="vnpay">
-                                    <img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Icon-VNPAY-QR.png" style="height: 20px; margin-right: 5px;"> VNPAY - Quét mã QR
-                                </label>
-                            </div>
+                            <div class="form-check mb-2 p-3 border rounded"><input class="form-check-input" type="radio" name="paymentMethod" id="cod" value="COD" checked><label class="form-check-label fw-bold" for="cod"><i class="bi bi-cash-stack me-2 text-success"></i>Thanh toán khi nhận hàng (COD)</label></div>
+                            <div class="form-check mb-2 p-3 border rounded bg-light"><input class="form-check-input" type="radio" name="paymentMethod" id="vnpay" value="VNPAY"><label class="form-check-label fw-bold text-primary" for="vnpay"><img src="https://cdn.haitrieu.com/wp-content/uploads/2022/10/Icon-VNPAY-QR.png" style="height: 20px; margin-right: 5px;"> VNPAY - Quét mã QR</label></div>
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success btn-lg fw-bold shadow-sm">
-                                <i class="bi bi-check-circle me-2"></i> Đặt Hàng Ngay
-                            </button>
-                            <a asp-action="Index" asp-controller="GioHang" class="btn btn-outline-secondary btn-sm">
-                                Quay lại giỏ hàng
-                            </a>
+                            <button type="submit" class="btn btn-success btn-lg fw-bold shadow-sm"><i class="bi bi-check-circle me-2"></i> Đặt Hàng Ngay</button>
+                            <a asp-action="Index" asp-controller="GioHang" class="btn btn-outline-secondary btn-sm">Quay lại giỏ hàng</a>
                         </div>
                     </div>
                 </div>
@@ -249,149 +260,99 @@
     <script src="~/js/leaflet.js"></script>
 
     <script>
-        // --- KHAI BÁO DỮ LIỆU ---
+        // --- DANH SÁCH KHO (ĐỂ TÍNH SHIP) ---
         const shops = [
-            { id: 1, name: '120 Xuân Thủy, Cầu Giấy, Hà Nội', lat: 21.0357, lng: 105.7981 },
-            { id: 2, name: '78 Bạch Đằng, Hải Châu, Đà Nẵng', lat: 16.0691, lng: 108.2238 },
-            { id: 3, name: '55 Nguyễn Huệ, Quận 1, TP.HCM', lat: 10.7725, lng: 106.7045 }
+            { id: 1, name: 'Kho Hà Nội', lat: 21.0362, lng: 105.7829 },
+            { id: 2, name: 'Kho Đà Nẵng', lat: 16.0718, lng: 108.2236 },
+            { id: 3, name: 'Kho TP.HCM', lat: 10.7744, lng: 106.7035 }
         ];
 
         const subtotal = @(subtotal.ToString("0", System.Globalization.CultureInfo.InvariantCulture));
-        const totalSpent = @(totalSpent.ToString("0", System.Globalization.CultureInfo.InvariantCulture));
-        const shippingRate = 5000; // 5k/km
-
-        // [QUAN TRỌNG] Lấy % giảm giá trực tiếp từ Server (đã tính đúng 50% cho Admin)
-        // Chia 100 để đổi ra số thập phân (VD: 50% -> 0.5)
         let discountPercent = @(phanTramGiam) / 100.0;
+        const shippingRate = 5000;
+        let freeShipDistance = (discountPercent >= 0.25) ? 99999 : (@totalSpent >= 100000000 ? 99999 : (@totalSpent >= 50000000 ? 99999 : (@totalSpent >= 20000000 ? 300 : (@totalSpent >= 10000000 ? 15 : 0))));
 
-        let freeShipDistance = 0;
+        let currentLat = 21.0362, currentLng = 105.7829;
 
-        // Logic FreeShip (Giữ lại để tính ship, nhưng Discount Percent thì dùng biến trên)
-        // Nếu là Admin (discount 50%) -> Auto FreeShip
-        if (discountPercent >= 0.5) {
-            console.log("=> Hạng: TỐI THƯỢNG (ADMIN)");
-            freeShipDistance = 99999;
-        }
-        else if (totalSpent >= 100000000) { freeShipDistance = 99999; } // Kim Cương
-        else if (totalSpent >= 50000000) { freeShipDistance = 99999; } // Bạch Kim
-        else if (totalSpent >= 20000000) { freeShipDistance = 300; } // Vàng
-        else if (totalSpent >= 10000000) { freeShipDistance = 15; } // Bạc
-
-        // Biến toàn cục lưu phí ship hiện tại
-        let currentShippingFee = 0;
-        let currentLat = 16.047165, currentLng = 108.219955; // Mặc định ĐN
-
-        // --- HÀM CHUYỂN ĐỔI GIAO HÀNG / NHẬN TẠI QUÁN ---
         function toggleDelivery(type) {
             const shipSection = document.getElementById('shippingSection');
             const storeSection = document.getElementById('storeSection');
             const typeInput = document.getElementById('deliveryTypeInput');
 
             if (type === 'store') {
-                shipSection.classList.add('d-none');
-                storeSection.classList.remove('d-none');
-                typeInput.value = 'Store';
-                updateTotalDisplay(0);
-                document.getElementById('warehouseDisplay').innerText = "(Nhận tại cửa hàng)";
-                document.getElementById('shippingFeeDisplay').innerHTML = '<span class="badge bg-primary">Miễn phí</span>';
+                shipSection.classList.add('d-none'); storeSection.classList.remove('d-none');
+                typeInput.value = 'Store'; updateTotalDisplay(0);
             } else {
-                shipSection.classList.remove('d-none');
-                storeSection.classList.add('d-none');
-                typeInput.value = 'Ship';
-                calculateShipping(currentLat, currentLng);
+                shipSection.classList.remove('d-none'); storeSection.classList.add('d-none');
+                typeInput.value = 'Ship'; calculateShipping(currentLat, currentLng);
             }
         }
 
-        // --- HÀM TÍNH SHIP ---
-        function calculateShipping(lat, lng) {
-            currentLat = lat;
-            currentLng = lng;
+        function updateRouting(tinh) {
+            // Logic JS chỉ để hiển thị gợi ý, logic chính vẫn nằm ở Controller C# để bảo mật
+            // Ở đây ta giả lập chọn kho gần nhất để tính ship
+            let targetShop = shops[0]; // Mặc định HN
+            if(["Đà Nẵng", "Huế", "Quảng Nam", "Quảng Ngãi", "Bình Định", "Phú Yên", "Khánh Hòa", "Quảng Bình", "Quảng Trị", "Nghệ An", "Hà Tĩnh", "Thanh Hóa", "Ninh Thuận", "Bình Thuận", "Kon Tum", "Gia Lai", "Đắk Lắk", "Đắk Nông", "Lâm Đồng"].includes(tinh)) {
+                targetShop = shops[1]; // Đà Nẵng
+            } else if (["Hồ Chí Minh", "Cần Thơ", "Bình Dương", "Đồng Nai", "Bà Rịa - Vũng Tàu", "Long An", "Tiền Giang", "Bến Tre", "Trà Vinh", "Vĩnh Long", "Đồng Tháp", "An Giang", "Kiên Giang", "Hậu Giang", "Sóc Trăng", "Bạc Liêu", "Cà Mau", "Tây Ninh", "Bình Phước"].includes(tinh)) {
+                targetShop = shops[2]; // HCM
+            }
 
-            let minDistance = Infinity;
-            let nearestShop = null;
+            // Di chuyển map về kho đó
+            if(map) {
+                map.setView([targetShop.lat, targetShop.lng], 10);
+                calculateShipping(targetShop.lat, targetShop.lng); // Tạm tính từ kho đến... kho (để reset)
+            }
+        }
+
+        function calculateShipping(lat, lng) {
+            currentLat = lat; currentLng = lng;
+            let minDistance = Infinity; let nearestShop = null;
 
             shops.forEach(shop => {
                 let dist = getDistance(lat, lng, shop.lat, shop.lng);
-                if (dist < minDistance) {
-                    minDistance = dist;
-                    nearestShop = shop;
-                }
+                if (dist < minDistance) { minDistance = dist; nearestShop = shop; }
             });
 
             let km = Math.round(minDistance * 10) / 10;
             let fee = 0;
-
             if (km > freeShipDistance) {
                 let chargeableKm = (freeShipDistance > 0) ? (km - freeShipDistance) : km;
                 if(freeShipDistance === 0 && km <= 5) chargeableKm = 0;
-                else if(chargeableKm < 0) chargeableKm = 0;
                 fee = Math.round(chargeableKm * shippingRate);
             }
 
             document.getElementById('warehouseDisplay').innerHTML = `Vận chuyển từ: <strong>${nearestShop.name}</strong> (${km} km)`;
-
-            if (fee === 0) {
-                document.getElementById('shippingFeeDisplay').innerHTML = '<span class="badge bg-success">Miễn phí</span>';
-            } else {
-                document.getElementById('shippingFeeDisplay').innerText = fee.toLocaleString('vi-VN') + ' ₫';
-            }
-
+            document.getElementById('shippingFeeDisplay').innerText = fee === 0 ? 'Miễn phí' : fee.toLocaleString('vi-VN') + ' ₫';
             updateTotalDisplay(fee);
-            document.getElementById('latInput').value = lat;
-            document.getElementById('lngInput').value = lng;
+            document.getElementById('latInput').value = lat; document.getElementById('lngInput').value = lng;
         }
 
-        // --- HÀM CẬP NHẬT TỔNG TIỀN ---
         function updateTotalDisplay(shipFee) {
-            currentShippingFee = shipFee;
-
-            // Tính giảm giá (Dựa trên % đã lấy từ server)
             let discountAmount = Math.round(subtotal * discountPercent);
-
-            // Tổng tiền = Tiền hàng - Giảm giá + Ship
             let total = subtotal - discountAmount + shipFee;
-
-            // Cập nhật giao diện
             document.getElementById('totalDisplay').innerText = total.toLocaleString('vi-VN') + ' ₫';
         }
 
-        // Các hàm hỗ trợ Map
         function getDistance(lat1, lon1, lat2, lon2) {
-            var R = 6371;
-            var dLat = deg2rad(lat2 - lat1);
-            var dLon = deg2rad(lon2 - lon1);
-            var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
-                    Math.sin(dLon/2) * Math.sin(dLon/2);
-            var c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
+            var R = 6371; var dLat = deg2rad(lat2 - lat1); var dLon = deg2rad(lon2 - lon1);
+            var a = Math.sin(dLat/2) * Math.sin(dLat/2) + Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * Math.sin(dLon/2) * Math.sin(dLon/2);
+            return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         }
         function deg2rad(deg) { return deg * (Math.PI/180); }
 
-        // Khởi tạo Map
-        var map = L.map('map').setView([16.047165, 108.219955], 5);
+        var map = L.map('map').setView([21.0362, 105.7829], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-        var userMarker = L.marker([16.047165, 108.219955], {draggable: true}).addTo(map);
+        var userMarker = L.marker([21.0362, 105.7829], {draggable: true}).addTo(map);
 
-        userMarker.on('dragend', function (e) {
-            var coord = e.target.getLatLng();
-            calculateShipping(coord.lat, coord.lng);
-        });
-        map.on('click', function(e) {
-            userMarker.setLatLng(e.latlng);
-            calculateShipping(e.latlng.lat, e.latlng.lng);
-        });
+        userMarker.on('dragend', function (e) { var coord = e.target.getLatLng(); calculateShipping(coord.lat, coord.lng); });
+        map.on('click', function(e) { userMarker.setLatLng(e.latlng); calculateShipping(e.latlng.lat, e.latlng.lng); });
 
         if (navigator.geolocation) {
             navigator.geolocation.getCurrentPosition(position => {
-                const lat = position.coords.latitude;
-                const lng = position.coords.longitude;
-                map.setView([lat, lng], 13);
-                userMarker.setLatLng([lat, lng]);
-                calculateShipping(lat, lng);
+                const lat = position.coords.latitude; const lng = position.coords.longitude;
+                map.setView([lat, lng], 13); userMarker.setLatLng([lat, lng]); calculateShipping(lat, lng);
             });
-        } else {
-            calculateShipping(16.047165, 108.219955);
         }
     </script>
 }

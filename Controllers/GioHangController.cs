@@ -124,7 +124,6 @@ namespace banthietbidientu.Controllers
             return !string.IsNullOrEmpty(referer) ? Redirect(referer) : RedirectToAction("Index", "Home");
         }
 
-        // Action hỗ trợ nút thêm nhanh (GET) - Đã bỏ async theo fix trước đó
         public IActionResult ThemVaoGio(int id, int quantity = 1)
         {
             return Add(id, quantity);
@@ -145,7 +144,7 @@ namespace banthietbidientu.Controllers
 
         public IActionResult XoaKhoiGio(int id) => Remove(id);
 
-        // --- 6. CẬP NHẬT SỐ LƯỢNG (UPDATE) ---
+        // --- 6. CẬP NHẬT SỐ LƯỢNG ---
         public IActionResult Update(int id, int quantity)
         {
             var cart = GetCart();
@@ -218,12 +217,36 @@ namespace banthietbidientu.Controllers
             var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == User.Identity.Name);
             if (user == null) return RedirectToAction("DangNhap", "Login");
 
-            // --- [MỚI] TÍNH TOÁN GIẢM GIÁ ---
+            // --- 1. TÍNH TOÁN GIẢM GIÁ ---
             decimal tongTienHang = cart.Sum(x => x.Total);
             var tier = _memberService.GetUserTier(user.Username);
             decimal giamGia = (tongTienHang * tier.DiscountPercent) / 100;
             decimal tongTienSauGiam = tongTienHang - giamGia;
-            // ---------------------------------
+
+            // --- 2. XÁC ĐỊNH STORE ID & ĐỊA CHỈ ---
+            int? storeId = null;
+
+            if (model.DeliveryType == "Store" && model.StoreId.HasValue)
+            {
+                // Khách tự chọn đến cửa hàng lấy
+                storeId = model.StoreId.Value;
+            }
+            else
+            {
+                // Khách chọn Ship -> Định tuyến theo Tỉnh Thành
+                string tinh = (model.TinhThanh ?? "").Trim();
+
+                string[] mienBac = { "Hà Nội", "Hải Phòng", "Quảng Ninh", "Bắc Ninh", "Hải Dương", "Hưng Yên", "Nam Định", "Thái Bình", "Vĩnh Phúc", "Phú Thọ", "Bắc Giang", "Thái Nguyên", "Cao Bằng", "Bắc Kạn", "Lạng Sơn", "Tuyên Quang", "Hà Giang", "Yên Bái", "Lào Cai", "Điện Biên", "Lai Châu", "Sơn La", "Hòa Bình", "Hà Nam", "Ninh Bình" };
+                string[] mienTrung = { "Đà Nẵng", "Huế", "Thừa Thiên Huế", "Quảng Nam", "Quảng Ngãi", "Bình Định", "Phú Yên", "Khánh Hòa", "Quảng Bình", "Quảng Trị", "Nghệ An", "Hà Tĩnh", "Thanh Hóa", "Ninh Thuận", "Bình Thuận", "Kon Tum", "Gia Lai", "Đắk Lắk", "Đắk Nông", "Lâm Đồng" };
+
+                if (mienTrung.Contains(tinh)) storeId = 2; // Kho Đà Nẵng
+                else if (mienBac.Contains(tinh)) storeId = 1; // Kho Hà Nội
+                else storeId = 3; // Kho HCM (Miền Nam)
+
+                // Gộp địa chỉ đầy đủ
+                model.DiaChi = $"{model.DiaChi}, {model.TinhThanh}";
+            }
+            // -------------------------------------
 
             var tempOrder = new DonHang
             {
@@ -235,7 +258,8 @@ namespace banthietbidientu.Controllers
                 SDT = model.SoDienThoai ?? user.PhoneNumber ?? string.Empty,
                 DiaChi = model.DiaChi ?? user.Address ?? string.Empty,
                 PhiShip = 0, // Mặc định FreeShip
-                TongTien = tongTienSauGiam // LƯU GIÁ ĐÃ GIẢM
+                TongTien = tongTienSauGiam, // Lưu giá đã giảm
+                StoreId = storeId // Lưu StoreId
             };
 
             // A. THANH TOÁN VNPAY
@@ -245,7 +269,6 @@ namespace banthietbidientu.Controllers
                 vnpay.AddRequestData("vnp_Version", "2.1.0");
                 vnpay.AddRequestData("vnp_Command", "pay");
                 vnpay.AddRequestData("vnp_TmnCode", _configuration["VnPay:TmnCode"]);
-                // VNPAY yêu cầu số tiền * 100
                 vnpay.AddRequestData("vnp_Amount", ((long)tempOrder.TongTien * 100).ToString());
                 vnpay.AddRequestData("vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss"));
                 vnpay.AddRequestData("vnp_CurrCode", "VND");

@@ -22,6 +22,7 @@ namespace banthietbidientu.Models
         // --- [QUAN TRỌNG] Các trường mới bắt buộc phải có ---
         public int? StoreId { get; set; }
         public string DeliveryType { get; set; }
+        public string TinhThanh { get; set; }
     }
 
     public class CartItem
