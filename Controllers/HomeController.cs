@@ -3,8 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using banthietbidientu.Data;
 using banthietbidientu.Models;
-using Microsoft.AspNetCore.Hosting; // Thêm dòng này để dùng IWebHostEnvironment
-using System.IO; // Thêm dòng này để dùng Path, Directory, FileStream
+using Microsoft.AspNetCore.Hosting;
+using System.IO;
+using System;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.Authorization;
 
 namespace banthietbidientu.Controllers
 {
@@ -140,9 +143,11 @@ namespace banthietbidientu.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         public IActionResult ThuMuaMayCu()
         {
             var model = new YeuCauThuMuaViewModel();
+            // Lấy ID tài khoản đã đăng nhập
             if (User.Identity.IsAuthenticated)
             {
                 var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
@@ -160,11 +165,12 @@ namespace banthietbidientu.Controllers
         }
 
         [HttpPost]
+        [Authorize]
         public async Task<IActionResult> GuiYeuCauThuMua(YeuCauThuMuaViewModel model)
         {
             if (ModelState.IsValid)
             {
-                // 1. Xử lý upload ảnh (Giữ nguyên)
+                // 1. Xử lý upload ảnh
                 string imagePath = "";
                 if (model.HinhAnhMay != null)
                 {
@@ -181,36 +187,40 @@ namespace banthietbidientu.Controllers
                     imagePath = "/uploads/thumua/" + uniqueFileName;
                 }
 
-                // 2. Lấy ID tài khoản nếu đã đăng nhập (MỚI)
+                // 2. Lấy ID tài khoản
                 int? taiKhoanId = null;
-                if (User.Identity.IsAuthenticated)
-                {
-                    var username = User.Identity.Name;
-                    var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == username);
-                    if (user != null) taiKhoanId = user.Id;
-                }
+                var username = User.Identity.Name;
+                var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == username);
+                if (user != null) taiKhoanId = user.Id;
 
-                // 3. Lưu vào bảng YeuCauThuMua
+
+                // 3. Lưu vào bảng YeuCauThuMua (Lần 1: Lấy Id)
                 var yeuCau = new YeuCauThuMua
                 {
-                    TaiKhoanId = taiKhoanId, // <-- Lưu liên kết tài khoản
+                    TaiKhoanId = taiKhoanId,
                     TenMay = model.TenMay,
                     TinhTrang = model.TinhTrang,
                     SoDienThoai = model.SoDienThoai,
                     GhiChu = model.GhiChu ?? "",
                     HinhAnh = imagePath,
                     TrangThai = 0,
-                    NgayTao = DateTime.Now
+                    NgayTao = DateTime.Now,
+                    MaYeuCau = "_TEMP_" // [FIX] Sử dụng giá trị tạm thời để tránh lỗi NOT NULL
                 };
 
                 _context.YeuCauThuMuas.Add(yeuCau);
-                await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync(); // 1st Save (Id is assigned)
 
-                // 4. Tạo thông báo (Giữ nguyên)
+                // [MỚI] 3b. Tạo Mã Yêu Cầu (YM000000)
+                yeuCau.MaYeuCau = $"YM{yeuCau.Id:D6}"; // Ghi đè giá trị tạm thời bằng mã chính xác
+                // Không cần _context.YeuCauThuMuas.Update(yeuCau) vì Entity Framework đang theo dõi đối tượng
+                await _context.SaveChangesAsync(); // 2nd Save (Update MaYeuCau)
+
+                // 4. Tạo thông báo
                 var thongBao = new ThongBao
                 {
                     TieuDe = "Yêu cầu Thu cũ mới",
-                    NoiDung = $"Khách {model.SoDienThoai} muốn bán {model.TenMay}",
+                    NoiDung = $"Yêu cầu {yeuCau.MaYeuCau} của khách {user.FullName ?? user.Username}",
                     NgayTao = DateTime.Now,
                     DaDoc = false,
                     LoaiThongBao = 2,
@@ -221,7 +231,7 @@ namespace banthietbidientu.Controllers
                 _context.ThongBaos.Add(thongBao);
                 await _context.SaveChangesAsync();
 
-                TempData["Success"] = "Đã gửi yêu cầu thành công! Nhân viên sẽ liên hệ định giá trong 15 phút.";
+                TempData["Success"] = $"Đã gửi yêu cầu {yeuCau.MaYeuCau} thành công! Nhân viên sẽ liên hệ định giá trong 15 phút.";
                 return RedirectToAction("ThuMuaMayCu");
             }
 

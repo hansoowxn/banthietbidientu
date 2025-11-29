@@ -1,4 +1,6 @@
-﻿using System;
+﻿// hansoowxn/banthietbidientu/banthietbidientu-d71060d65eba5cf3c37443f90adfef16af5d09f1/Models/YeuCauThuMua.cs
+
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
@@ -10,12 +12,17 @@ namespace banthietbidientu.Models
         [Key]
         public int Id { get; set; }
 
-        // --- CỘT MỚI: LIÊN KẾT VỚI TÀI KHOẢN ---
-        public int? TaiKhoanId { get; set; } // Cho phép null (vì khách vãng lai cũng gửi được)
+        // --- [MỚI] MÃ ĐƠN THU MUA (VD: YM000001) ---
+        [StringLength(20)]
+        public string MaYeuCau { get; set; }
+        // ---------------------------------------------
+
+        // --- CỘT LIÊN KẾT VỚI TÀI KHOẢN ĐÃ ĐĂNG NHẬP ---
+        public int? TaiKhoanId { get; set; } // Cho phép null nếu bạn chưa áp dụng [Authorize]
 
         [ForeignKey("TaiKhoanId")]
         public virtual TaiKhoan TaiKhoan { get; set; }
-        // ---------------------------------------
+        // ------------------------------------------------
 
         public string TenMay { get; set; }
         public string TinhTrang { get; set; }

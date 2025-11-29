@@ -614,6 +614,7 @@ namespace banthietbidientu.Controllers
         public IActionResult QuanLyThuMua()
         {
             var listYeuCau = _context.YeuCauThuMuas
+                .Include(y => y.TaiKhoan)
                 .OrderByDescending(y => y.NgayTao)
                 .ToList();
             return View(listYeuCau);
@@ -625,18 +626,27 @@ namespace banthietbidientu.Controllers
             var yeuCau = _context.YeuCauThuMuas.Find(id);
             if (yeuCau != null)
             {
+                // [CẬP NHẬT] Kiểm tra trạng thái cuối cùng
                 if (yeuCau.TrangThai == 2 || yeuCau.TrangThai == -1)
                 {
                     TempData["Error"] = "Yêu cầu này đã hoàn tất hoặc đã hủy, không thể thay đổi trạng thái nữa!";
                     return RedirectToAction("QuanLyThuMua");
                 }
 
-                yeuCau.TrangThai = trangThai;
-
-                if (!string.IsNullOrEmpty(ghiChuAdmin))
+                if (trangThai == 2 || trangThai == -1)
+                {
+                    if (!string.IsNullOrEmpty(ghiChuAdmin))
+                    {
+                        yeuCau.GhiChu = ghiChuAdmin;
+                    }
+                }
+                else if (trangThai == 1 && string.IsNullOrEmpty(yeuCau.GhiChu) && !string.IsNullOrEmpty(ghiChuAdmin))
                 {
                     yeuCau.GhiChu = ghiChuAdmin;
                 }
+
+                yeuCau.TrangThai = trangThai;
+
 
                 _context.SaveChanges();
                 TempData["Success"] = "Đã cập nhật trạng thái yêu cầu.";

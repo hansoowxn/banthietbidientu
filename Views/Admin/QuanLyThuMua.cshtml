@@ -8,12 +8,32 @@
 <style>
     /* --- ĐỊNH NGHĨA HIỆU ỨNG HIGHLIGHT MẠNH MẼ (FLASH) --- */
     @@keyframes flash-animation {
-        0% { background-color: #ff4757; color: white; }   /* Đỏ rực (Bắt đầu) */
-        25% { background-color: #ff6b81; color: white; }  /* Hồng đậm */
-        50% { background-color: #ffa502; color: black; }  /* Cam vàng */
-        75% { background-color: #fff200; color: black; }  /* Vàng chanh */
-        100% { background-color: transparent; color: inherit; }
+        0% {
+            background-color: #ff4757;
+            color: white;
+        }
+        /* Đỏ rực (Bắt đầu) */
+        25% {
+            background-color: #ff6b81;
+            color: white;
+        }
+        /* Hồng đậm */
+        50% {
+            background-color: #ffa502;
+            color: black;
+        }
+        /* Cam vàng */
+        75% {
+            background-color: #fff200;
+            color: black;
+        }
+        /* Vàng chanh */
+        100% {
+            background-color: transparent;
+            color: inherit;
+        }
     }
+
     {
         background-color: #ff4757;
         color: white;
@@ -38,6 +58,7 @@
         background-color: transparent;
         color: inherit;
     }
+
     {
         background-color: #ff4757;
         color: white;
@@ -95,7 +116,8 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light text-secondary">
                         <tr>
-                            <th class="ps-4">Hình ảnh</th>
+                            <th class="ps-4">Mã Đơn</th>
+                            <th>Hình ảnh</th>
                             <th>Thông tin máy</th>
                             <th>Khách hàng</th>
                             <th>Trạng thái</th>
@@ -106,8 +128,12 @@
                     <tbody>
                         @foreach (var item in Model)
                         {
-                            <tr id="row-@item.Id" class="data-row">
+                            bool isFinalState = item.TrangThai == 2 || item.TrangThai == -1; // [MỚI] Biến kiểm tra trạng thái cuối
+                            <tr id="row-@item.Id" class="data-row @(isFinalState ? "text-muted" : "")">
                                 <td class="ps-4">
+                                    <span class="fw-bold text-dark">@item.MaYeuCau</span>
+                                </td>
+                                <td>
                                     @if (!string.IsNullOrEmpty(item.HinhAnh))
                                     {
                                         <a href="@item.HinhAnh" target="_blank">
@@ -125,7 +151,11 @@
                                     <div class="small text-secondary fst-italic">@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</div>
                                 </td>
                                 <td>
-                                    <div class="fw-bold"><i class="bi bi-telephone me-1"></i>@item.SoDienThoai</div>
+                                    @{
+                                        string roleText = item.TaiKhoan?.Role == "Admin" ? "Quản trị viên" : (item.TaiKhoan?.Role == "User" ? "Thành viên" : "Không rõ");
+                                    }
+                                    <div class="fw-bold">@item.TaiKhoan?.FullName</div> <div class="small text-muted"><i class="bi bi-telephone me-1"></i>@item.SoDienThoai</div>
+                                    <div class="small text-primary fw-semibold">Hạng: @roleText</div>
                                 </td>
                                 <td>
                                     @if (item.TrangThai == 0)
@@ -149,10 +179,11 @@
                                     <small class="text-muted">@item.GhiChu</small>
                                 </td>
                                 <td class="text-end pe-4">
-                                    <button class="btn btn-sm btn-outline-primary"
+
+                                    <button class="btn btn-sm @(isFinalState ? "btn-outline-secondary" : "btn-outline-primary")"
                                             data-bs-toggle="modal"
                                             data-bs-target="#modal-@item.Id">
-                                        <i class="bi bi-pencil-square"></i> Xử lý
+                                        <i class="bi @(isFinalState ? "bi-eye" : "bi-pencil-square")"></i> @(isFinalState ? "Xem chi tiết" : "Xử lý")
                                     </button>
 
                                     <div class="modal fade" id="modal-@item.Id" tabindex="-1">
@@ -160,30 +191,36 @@
                                             <form asp-action="CapNhatThuMua" method="post">
                                                 <div class="modal-content">
                                                     <div class="modal-header">
-                                                        <h5 class="modal-title fw-bold">Xử lý yêu cầu #@item.Id</h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        <h5 class="modal-title fw-bold">Xử lý yêu cầu #@item.MaYeuCau</h5> <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <div class="modal-body text-start">
                                                         <input type="hidden" name="id" value="@item.Id" />
 
                                                         <div class="mb-3">
                                                             <label class="form-label fw-bold">Trạng thái:</label>
-                                                            <select name="trangThai" class="form-select">
+                                                            <select name="trangThai" class="form-select" @(isFinalState ? "disabled" : "")>
                                                                 <option value="0" selected="@(item.TrangThai == 0)">Chờ xử lý</option>
                                                                 <option value="1" selected="@(item.TrangThai == 1)">Đã liên hệ & Định giá</option>
                                                                 <option value="2" selected="@(item.TrangThai == 2)">Hoàn thành (Đã thu)</option>
                                                                 <option value="-1" selected="@(item.TrangThai == -1)">Hủy yêu cầu</option>
                                                             </select>
+                                                            @if (isFinalState)
+                                                            {
+                                                                <div class="form-text text-danger fw-bold">Đơn đã ở trạng thái cuối cùng, không thể thay đổi trạng thái nữa.</div>
+                                                            }
                                                         </div>
 
                                                         <div class="mb-3">
                                                             <label class="form-label fw-bold">Ghi chú (Giá chốt / Lý do hủy):</label>
-                                                            <textarea name="ghiChuAdmin" class="form-control" rows="3">@item.GhiChu</textarea>
+                                                            <textarea name="ghiChuAdmin" class="form-control" rows="3" @(isFinalState ? "readonly" : "")>@item.GhiChu</textarea>
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer">
                                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                                                        <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                                                        @if (!isFinalState) // [CẬP NHẬT] Chỉ hiển thị nút Lưu khi không phải trạng thái cuối
+                                                        {
+                                                            <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
+                                                        }
                                                     </div>
                                                 </div>
                                             </form>
