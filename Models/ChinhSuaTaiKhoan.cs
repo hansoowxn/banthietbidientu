@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
 
 namespace banthietbidientu.Models
 {
@@ -20,7 +21,12 @@ namespace banthietbidientu.Models
 
         [Required(ErrorMessage = "Email là bắt buộc")]
         [EmailAddress(ErrorMessage = "Định dạng email không hợp lệ")]
-        [StringLength(100, ErrorMessage = "Email không được vượt quá 100 ký tự")]
         public string Email { get; set; }
+
+        // [MỚI] Thêm số điện thoại
+        [Required(ErrorMessage = "Số điện thoại là bắt buộc")]
+        [Phone(ErrorMessage = "Số điện thoại không hợp lệ")]
+        [StringLength(15, ErrorMessage = "Số điện thoại không quá 15 ký tự")]
+        public string PhoneNumber { get; set; }
     }
 }

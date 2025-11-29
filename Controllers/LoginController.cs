@@ -169,7 +169,8 @@ namespace banthietbidientu.Controllers
                     DateOfBirth = user.DateOfBirth ?? DateTime.Now,
                     Address = user.Address,
                     Gender = user.Gender,
-                    Email = user.Email
+                    Email = user.Email,
+                    PhoneNumber = user.PhoneNumber // [MỚI] Lấy SĐT hiện tại
                 };
                 return View(model);
             }
@@ -192,6 +193,7 @@ namespace banthietbidientu.Controllers
 
                 if (ModelState.IsValid)
                 {
+                    // Kiểm tra email trùng (trừ chính mình)
                     if (_context.TaiKhoans.Any(u => u.Id != userId && u.Email == model.Email))
                     {
                         ModelState.AddModelError("Email", "Email đã tồn tại với tài khoản khác.");
@@ -203,6 +205,7 @@ namespace banthietbidientu.Controllers
                     user.Address = model.Address;
                     user.Gender = model.Gender;
                     user.Email = model.Email;
+                    user.PhoneNumber = model.PhoneNumber; // [MỚI] Lưu SĐT mới
 
                     try
                     {

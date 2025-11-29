@@ -39,32 +39,38 @@
                         </div>
 
                         <div class="mb-3">
+                            <label asp-for="PhoneNumber" class="form-label fw-bold">Số điện thoại</label>
+                            <input asp-for="PhoneNumber" class="form-control" required pattern="[0-9]{10,15}" title="Số điện thoại phải là số" />
+                            <span asp-validation-for="PhoneNumber" class="text-danger"></span>
+                        </div>
+
+                        <div class="mb-3">
                             <label class="form-label fw-bold">Địa chỉ</label>
 
                             <div class="row g-2 mb-2">
                                 <div class="col-md-4">
-                                    <select class="form-select" id="province" required>
+                                    <select class="form-select" id="province">
                                         <option value="">Chọn Tỉnh/TP</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <select class="form-select" id="district" disabled required>
+                                    <select class="form-select" id="district" disabled>
                                         <option value="">Chọn Quận/Huyện</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
-                                    <select class="form-select" id="ward" disabled required>
+                                    <select class="form-select" id="ward" disabled>
                                         <option value="">Chọn Phường/Xã</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <input type="text" class="form-control" id="specificAddress" placeholder="Số nhà, tên đường cụ thể..." required>
-
+                            <input type="text" class="form-control" id="specificAddress" placeholder="Số nhà, tên đường cụ thể...">
                             <input type="hidden" asp-for="Address" id="fullAddressInput" />
 
                             <div class="form-text text-muted fst-italic">
                                 Địa chỉ hiện tại: <span class="text-dark fw-bold">@(Model.Address ?? "Chưa cập nhật")</span>
+                                <br>(Chọn lại ở trên nếu muốn thay đổi)
                             </div>
                         </div>
 
@@ -78,7 +84,7 @@
                         </div>
 
                         <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary fw-bold py-2">Lưu thay đổi</button>
+                            <button type="button" onclick="submitProfile()" class="btn btn-primary fw-bold py-2">Lưu thay đổi</button>
                             <a asp-action="Profile" class="btn btn-outline-secondary">Quay lại</a>
                         </div>
                     </form>
@@ -92,22 +98,24 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
         const host = "https://provinces.open-api.vn/api/";
+        var callAPI = (api) => { return $.ajax({ url: api, method: 'GET' }); }
 
-        var callAPI = (api) => {
-            return $.ajax({ url: api, method: 'GET' });
+        var renderData = (array, select) => {
+            let row = ' <option value="">Chọn ' + (select == "province" ? "Tỉnh/TP" : (select == "district" ? "Quận/Huyện" : "Phường/Xã")) + '</option>';
+            array.forEach(element => {
+                row += `<option value="${element.code}">${element.name}</option>`;
+            });
+            document.querySelector("#" + select).innerHTML = row;
         }
 
-        // Load Tỉnh/TP
-        callAPI(host + "?depth=1").done((data) => {
-            renderData(data, "province");
-        });
+        // Load Tỉnh
+        callAPI(host + "?depth=1").done((data) => { renderData(data, "province"); });
 
-        // Chọn Tỉnh -> Load Quận/Huyện
+        // Chọn Tỉnh -> Huyện
         $("#province").change(() => {
             let code = $("#province").val();
             $("#district").html('<option value="">Chọn Quận/Huyện</option>').prop("disabled", true);
             $("#ward").html('<option value="">Chọn Phường/Xã</option>').prop("disabled", true);
-
             if(code) {
                 callAPI(host + "p/" + code + "?depth=2").done((data) => {
                     renderData(data.districts, "district");
@@ -116,11 +124,10 @@
             }
         });
 
-        // Chọn Quận/Huyện -> Load Phường/Xã
+        // Chọn Huyện -> Xã
         $("#district").change(() => {
             let code = $("#district").val();
             $("#ward").html('<option value="">Chọn Phường/Xã</option>').prop("disabled", true);
-
             if(code) {
                 callAPI(host + "d/" + code + "?depth=2").done((data) => {
                     renderData(data.wards, "ward");
@@ -129,26 +136,25 @@
             }
         });
 
-        var renderData = (array, select) => {
-            let row = ' <option value="">Chọn ' + (select == "province" ? "Tỉnh/TP" : (select == "district" ? "Quận/Huyện" : "Phường/Xã")) + '</option>';
-            array.forEach(element => {
-                row += `<option value="${element.code}" data-name="${element.name}">${element.name}</option>`;
-            });
-            document.querySelector("#" + select).innerHTML = row;
-        }
+        // Hàm Submit an toàn (Fix lỗi mất dữ liệu)
+        function submitProfile() {
+            let p = $("#province option:selected").text();
+            let d = $("#district option:selected").text();
+            let w = $("#ward option:selected").text();
+            let s = $("#specificAddress").val();
 
-        // Gộp địa chỉ trước khi Submit
-        $("#profileForm").submit(function() {
-            let province = $("#province option:selected").data("name");
-            let district = $("#district option:selected").data("name");
-            let ward = $("#ward option:selected").data("name");
-            let specific = $("#specificAddress").val();
+            let pVal = $("#province").val();
 
-            if (province && district && ward && specific) {
-                let fullAddress = `${specific}, ${ward}, ${district}, ${province}`;
+            // Nếu có chọn địa chỉ mới -> Cập nhật vào input ẩn
+            if (pVal && s) {
+                let fullAddress = `${s}, ${w}, ${d}, ${p}`;
                 $("#fullAddressInput").val(fullAddress);
             }
-        });
+            // Nếu không chọn mới, giữ nguyên Address cũ (đã có sẵn trong Model)
+
+            // Submit form
+            document.getElementById("profileForm").submit();
+        }
     </script>
     @{
         await Html.RenderPartialAsync("_ValidationScriptsPartial");
