@@ -36,7 +36,7 @@ namespace banthietbidientu.Data
                 .Property(g => g.UserId)
                 .IsRequired(false);
 
-            // --- CẬP NHẬT DỮ LIỆU MẪU (Đã bổ sung Description và MoTa) ---
+            // --- GIỮ NGUYÊN DỮ LIỆU SẢN PHẨM MẪU CỦA BẠN ---
             modelBuilder.Entity<SanPham>().HasData(
                 new SanPham
                 {
@@ -184,35 +184,72 @@ namespace banthietbidientu.Data
                 }
             );
 
-            // Seeding dữ liệu mẫu cho TaiKhoan
+            // --- [CẬP NHẬT] SEED DATA TÀI KHOẢN (BOSS + ADMIN CHI NHÁNH) ---
             modelBuilder.Entity<TaiKhoan>().HasData(
-                 new TaiKhoan
-                 {
-                     Id = 1,
-                     Username = "admin",
-                     Password = "password",
-                     Role = "Admin",
-                     FullName = "Quản Trị Viên",
-                     DateOfBirth = new DateTime(1990, 1, 1),
-                     Address = "123 Đường Admin, TP.HCM",
-                     Gender = "Male",
-                     Email = "admin@example.com",
-                     PhoneNumber = "0901234567"
-                 },
-                 new TaiKhoan
-                 {
-                     Id = 2,
-                     Username = "user",
-                     Password = "password",
-                     Role = "User",
-                     FullName = "Nguyễn Văn A",
-                     DateOfBirth = new DateTime(1995, 5, 15),
-                     Address = "456 Đường User, Hà Nội",
-                     Gender = "Male",
-                     Email = "user@example.com",
-                     PhoneNumber = "0909876543"
-                 }
-             );
+                // 1. BOSS TỔNG
+                new TaiKhoan
+                {
+                    Id = 1,
+                    Username = "boss",
+                    Password = "123", // Mật khẩu mẫu
+                    Role = "Boss",
+                    StoreId = null, // Boss không thuộc chi nhánh nào, quản lý ALL
+                    FullName = "Chủ Tịch (CEO)",
+                    Email = "boss@smarttech.com",
+                    PhoneNumber = "0999999999",
+                    Address = "Trụ sở chính - Sky Tower",
+                    Gender = "Nam",
+                    DateOfBirth = new DateTime(1980, 1, 1)
+                },
+
+                // 2. ADMIN HÀ NỘI (StoreId = 1)
+                new TaiKhoan
+                {
+                    Id = 2,
+                    Username = "admin_hn",
+                    Password = "123",
+                    Role = "Admin",
+                    StoreId = 1, // Mã 1: Hà Nội
+                    FullName = "Quản Lý Hà Nội",
+                    Email = "admin.hn@smarttech.com",
+                    PhoneNumber = "0988111222",
+                    Address = "120 Xuân Thủy, Cầu Giấy, HN",
+                    Gender = "Nam",
+                    DateOfBirth = new DateTime(1990, 1, 1)
+                },
+
+                // 3. ADMIN ĐÀ NẴNG (StoreId = 2)
+                new TaiKhoan
+                {
+                    Id = 3,
+                    Username = "admin_dn",
+                    Password = "123",
+                    Role = "Admin",
+                    StoreId = 2, // Mã 2: Đà Nẵng
+                    FullName = "Quản Lý Đà Nẵng",
+                    Email = "admin.dn@smarttech.com",
+                    PhoneNumber = "0988333444",
+                    Address = "78 Bạch Đằng, Hải Châu, ĐN",
+                    Gender = "Nữ",
+                    DateOfBirth = new DateTime(1992, 2, 2)
+                },
+
+                // 4. ADMIN SÀI GÒN (StoreId = 3)
+                new TaiKhoan
+                {
+                    Id = 4,
+                    Username = "admin_sg",
+                    Password = "123",
+                    Role = "Admin",
+                    StoreId = 3, // Mã 3: TP.HCM
+                    FullName = "Quản Lý Sài Gòn",
+                    Email = "admin.sg@smarttech.com",
+                    PhoneNumber = "0988555666",
+                    Address = "55 Nguyễn Huệ, Quận 1, TP.HCM",
+                    Gender = "Nam",
+                    DateOfBirth = new DateTime(1995, 3, 3)
+                }
+            );
         }
     }
 }

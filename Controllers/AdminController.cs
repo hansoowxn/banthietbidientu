@@ -7,10 +7,12 @@ using banthietbidientu.Models;
 using System.Collections.Generic;
 using System;
 using System.Text;
+using System.Threading.Tasks; // Đừng quên namespace này cho Async
 
 namespace banthietbidientu.Controllers
 {
-    [Authorize(Roles = "Admin")]
+    // [QUAN TRỌNG] Cho phép cả "Admin" và "Boss" truy cập
+    [Authorize(Roles = "Admin,Boss")]
     public class AdminController : Controller
     {
         private readonly ApplicationDbContext _context;
@@ -23,6 +25,10 @@ namespace banthietbidientu.Controllers
         // --- 1. DASHBOARD ---
         public IActionResult Index()
         {
+            // [LOGIC PHÂN QUYỀN SAU NÀY]
+            // Nếu là Admin chi nhánh -> Chỉ hiện số liệu của StoreId tương ứng
+            // Nếu là Boss -> Hiện tất cả (Giữ nguyên logic hiện tại là đang hiện tất cả)
+
             var tongDoanhThu = _context.DonHangs.Where(d => d.TrangThai == 3).Sum(x => x.TongTien);
             var donHangMoi = _context.DonHangs.Count(x => x.NgayDat.Value.Date == DateTime.Today);
             var tongKhachHang = _context.TaiKhoans.Count(x => x.Role == "User");
@@ -319,7 +325,7 @@ namespace banthietbidientu.Controllers
             {
                 sp.Name = model.Name;
                 sp.Price = model.Price;
-                sp.GiaNhap = model.GiaNhap; // Cập nhật cả giá nhập nếu sửa full
+                sp.GiaNhap = model.GiaNhap;
                 sp.Category = model.Category;
                 sp.ImageUrl = model.ImageUrl;
                 sp.SoLuong = slHaNoi + slDaNang + slHCM;
@@ -330,12 +336,10 @@ namespace banthietbidientu.Controllers
             return RedirectToAction("QuanLySanPham");
         }
 
-        // --- [MỚI] API CẬP NHẬT GIÁ NHẬP NHANH ---
-        [HttpPost]
+        // --- API CẬP NHẬT GIÁ NHẬP NHANH (ASYNC) ---
         [HttpPost]
         public async Task<IActionResult> CapNhatGiaNhapNhanh(int id, decimal giaNhap)
         {
-            // Dùng FindAsync thay vì Find
             var sp = await _context.SanPhams.FindAsync(id);
 
             if (sp != null)
@@ -343,8 +347,6 @@ namespace banthietbidientu.Controllers
                 if (giaNhap < 0) return Json(new { success = false, message = "Giá nhập không được âm" });
 
                 sp.GiaNhap = giaNhap;
-
-                // Dùng SaveChangesAsync thay vì SaveChanges
                 await _context.SaveChangesAsync();
 
                 return Json(new { success = true });
@@ -401,7 +403,7 @@ namespace banthietbidientu.Controllers
                 .OrderByDescending(d => d.NgayDat)
                 .ToList();
 
-            var sb = new System.Text.StringBuilder();
+            var sb = new StringBuilder();
             sb.AppendLine("Mã đơn hàng,Ngày đặt,Khách hàng,Số điện thoại,Địa chỉ giao hàng,Tổng tiền,Trạng thái");
 
             foreach (var item in orders)
@@ -422,10 +424,7 @@ namespace banthietbidientu.Controllers
                 sb.AppendLine($"{item.MaDon},{ngayDatStr},{item.NguoiNhan},{item.SDT},\"{diaChiSafe}\",{item.TongTien},{trangThaiText}");
             }
 
-            var fileContent = System.Text.Encoding.UTF8.GetPreamble()
-                .Concat(System.Text.Encoding.UTF8.GetBytes(sb.ToString()))
-                .ToArray();
-
+            var fileContent = Encoding.UTF8.GetPreamble().Concat(Encoding.UTF8.GetBytes(sb.ToString())).ToArray();
             return File(fileContent, "text/csv", $"BaoCaoDonHang_{DateTime.Now:yyyyMMdd_HHmmss}.csv");
         }
 
@@ -444,23 +443,8 @@ namespace banthietbidientu.Controllers
             string zoneCode = "HN-CG-01";
 
             string addr = (order.DiaChi ?? "").ToLower();
-            string[] mienTrung = {
-                "đà nẵng", "thừa thiên huế", "huế", "quảng nam", "quảng ngãi", "bình định",
-                "phú yên", "khánh hòa", "quảng bình", "quảng trị", "nghệ an", "hà tĩnh", "thanh hóa",
-                "ninh thuận", "bình thuận", "kon tum", "gia lai", "đắk lắk", "đắc lắc", "đắk nông", "lâm đồng", "đà lạt",
-                "da nang", "hue", "quang nam", "quang ngai", "binh dinh", "phu yen", "khanh hoa",
-                "quang binh", "quang tri", "nghe an", "ha tinh", "thanh hoa",
-                "ninh thuan", "binh thuan", "kon tum", "gia lai", "dak lak", "dak nong", "lam dong", "da lat"
-            };
-
-            string[] mienNam = {
-                "hồ chí minh", "tp.hcm", "hcm", "sài gòn", "bình dương", "đồng nai", "bà rịa", "vũng tàu",
-                "long an", "tiền giang", "bến tre", "trà vinh", "vĩnh long", "đồng tháp", "an giang",
-                "kiên giang", "cần thơ", "hậu giang", "sóc trăng", "bạc liêu", "cà mau", "tây ninh", "bình phước",
-                "ho chi minh", "sai gon", "binh duong", "dong nai", "ba ria", "vung tau",
-                "long an", "tien giang", "ben tre", "tra vinh", "vinh long", "dong thap", "an giang",
-                "kien giang", "can tho", "hau giang", "soc trang", "bac lieu", "ca mau", "tay ninh", "binh phuoc"
-            };
+            string[] mienTrung = { "đà nẵng", "huế", "quảng nam", "quảng ngãi", "bình định", "phú yên", "khánh hòa", "quảng bình", "quảng trị", "nghệ an", "hà tĩnh", "thanh hóa" };
+            string[] mienNam = { "hồ chí minh", "tp.hcm", "hcm", "sài gòn", "bình dương", "đồng nai", "bà rịa", "vũng tàu", "long an", "tiền giang", "cần thơ" };
 
             if (mienNam.Any(k => addr.Contains(k))) { shopAddress = "55 Nguyễn Huệ, Quận 1, TP.HCM"; zoneCode = "SG-Q1-03"; }
             else if (mienTrung.Any(k => addr.Contains(k))) { shopAddress = "78 Bạch Đằng, Hải Châu, Đà Nẵng"; zoneCode = "DN-HC-02"; }

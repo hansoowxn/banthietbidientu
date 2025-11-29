@@ -1,15 +1,20 @@
-﻿@{
+﻿@model banthietbidientu.Models.ThanhToanViewModel
+
+@{
     ViewData["Title"] = "Thanh toán - Electronic Store";
     // Tính tổng tiền hàng (Subtotal)
     decimal subtotal = Model.GioHangs.Sum(item => item.Price * item.Quantity);
 
-    // Lấy thông tin Hạng thành viên
+    // Lấy thông tin Hạng thành viên & % Giảm giá từ Controller
     var tier = ViewBag.Tier as banthietbidientu.Services.MemberTier;
     decimal totalSpent = tier?.TotalSpent ?? 0;
     string rankName = tier?.Name ?? "Thành Viên";
-}
+    int phanTramGiam = tier?.DiscountPercent ?? 0; // Lấy trực tiếp % từ Service
 
-@model banthietbidientu.Models.ThanhToanViewModel
+    // Tính toán số tiền giảm để hiển thị
+    decimal soTienGiam = (subtotal * phanTramGiam) / 100;
+    decimal tongThanhToan = subtotal - soTienGiam;
+}
 
 <link rel="stylesheet" href="~/css/leaflet.css" />
 
@@ -37,7 +42,7 @@
         margin-bottom: 15px;
         z-index: 1;
     }
-    /* Hiệu ứng chuyển đổi mượt mà */
+
     .delivery-option {
         transition: all 0.3s ease-in-out;
     }
@@ -59,6 +64,7 @@
         @Html.AntiForgeryToken()
         <input type="hidden" id="latInput" name="Latitude" />
         <input type="hidden" id="lngInput" name="Longitude" />
+        <input type="hidden" name="TongTien" value="@tongThanhToan" />
 
         <input type="hidden" id="deliveryTypeInput" name="DeliveryType" value="Ship" />
 
@@ -181,10 +187,13 @@
                             <span class="fw-bold">@subtotal.ToString("#,##0").Replace(",", ".") ₫</span>
                         </div>
 
-                        <div class="d-flex justify-content-between mb-2 text-danger" id="discountRow" style="display:none;">
-                            <span><i class="bi bi-ticket-perforated-fill me-1"></i>Ưu đãi @rankName:</span>
-                            <span class="fw-bold" id="discountDisplay">- 0 ₫</span>
-                        </div>
+                        @if (phanTramGiam > 0)
+                        {
+                            <div class="d-flex justify-content-between mb-2 text-danger">
+                                <span><i class="bi bi-ticket-perforated-fill me-1"></i>Ưu đãi @rankName (@phanTramGiam%):</span>
+                                <span class="fw-bold">- @soTienGiam.ToString("#,##0").Replace(",", ".") ₫</span>
+                            </div>
+                        }
 
                         <div class="d-flex justify-content-between mb-2 text-success">
                             <span><i class="bi bi-truck"></i> Phí vận chuyển:</span>
@@ -198,7 +207,7 @@
                         <div class="d-flex justify-content-between border-top pt-3 mb-4">
                             <span class="h5 fw-bold">Tổng cộng:</span>
                             <span class="h4 fw-bold text-danger" id="totalDisplay">
-                                @subtotal.ToString("#,##0").Replace(",", ".") ₫
+                                @tongThanhToan.ToString("#,##0").Replace(",", ".") ₫
                             </span>
                         </div>
 
@@ -251,17 +260,20 @@
         const totalSpent = @(totalSpent.ToString("0", System.Globalization.CultureInfo.InvariantCulture));
         const shippingRate = 5000; // 5k/km
 
-        // Logic Hạng thành viên
-        let discountPercent = 0;
+        // [QUAN TRỌNG] Lấy % giảm giá trực tiếp từ Server (đã tính đúng 50% cho Admin)
+        // Chia 100 để đổi ra số thập phân (VD: 50% -> 0.5)
+        let discountPercent = @(phanTramGiam) / 100.0;
+
         let freeShipDistance = 0;
 
-        if (totalSpent >= 20000000000000000) {
+        // Logic FreeShip (Giữ lại để tính ship, nhưng Discount Percent thì dùng biến trên)
+        // Nếu là Admin (discount 50%) -> Auto FreeShip
+        if (discountPercent >= 0.5) {
             console.log("=> Hạng: TỐI THƯỢNG (ADMIN)");
-            discountPercent = 0.50;
             freeShipDistance = 99999;
         }
-        else if (totalSpent >= 100000000) { discountPercent = 0.10; freeShipDistance = 99999; } // Kim Cương
-        else if (totalSpent >= 50000000) { discountPercent = 0.05; freeShipDistance = 99999; } // Bạch Kim
+        else if (totalSpent >= 100000000) { freeShipDistance = 99999; } // Kim Cương
+        else if (totalSpent >= 50000000) { freeShipDistance = 99999; } // Bạch Kim
         else if (totalSpent >= 20000000) { freeShipDistance = 300; } // Vàng
         else if (totalSpent >= 10000000) { freeShipDistance = 15; } // Bạc
 
@@ -290,7 +302,7 @@
             }
         }
 
-        // --- HÀM TÍNH SHIP (LOGIC CŨ) ---
+        // --- HÀM TÍNH SHIP ---
         function calculateShipping(lat, lng) {
             currentLat = lat;
             currentLng = lng;
@@ -332,18 +344,18 @@
         // --- HÀM CẬP NHẬT TỔNG TIỀN ---
         function updateTotalDisplay(shipFee) {
             currentShippingFee = shipFee;
+
+            // Tính giảm giá (Dựa trên % đã lấy từ server)
             let discountAmount = Math.round(subtotal * discountPercent);
 
-            if (discountAmount > 0) {
-                document.getElementById('discountRow').style.display = 'flex';
-                document.getElementById('discountDisplay').innerText = '- ' + discountAmount.toLocaleString('vi-VN') + ' ₫';
-            }
-
+            // Tổng tiền = Tiền hàng - Giảm giá + Ship
             let total = subtotal - discountAmount + shipFee;
+
+            // Cập nhật giao diện
             document.getElementById('totalDisplay').innerText = total.toLocaleString('vi-VN') + ' ₫';
         }
 
-        // Các hàm hỗ trợ Map (Giữ nguyên)
+        // Các hàm hỗ trợ Map
         function getDistance(lat1, lon1, lat2, lon2) {
             var R = 6371;
             var dLat = deg2rad(lat2 - lat1);

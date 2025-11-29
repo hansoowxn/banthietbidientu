@@ -9,28 +9,28 @@
 }
 
 <style>
-    /* --- HIỆU ỨNG HIGHLIGHT MẠNH MẼ (FLASH) --- */
+    /* --- HIỆU ỨNG HIGHLIGHT --- */
     @@keyframes flash-animation {
         0% {
             background-color: #ff4757;
             color: white;
         }
-        /* Đỏ rực */
+
         25% {
             background-color: #ff6b81;
             color: white;
         }
-        /* Hồng đậm */
+
         50% {
             background-color: #ffa502;
             color: black;
         }
-        /* Cam vàng */
+
         75% {
             background-color: #fff200;
             color: black;
         }
-        /* Vàng chanh */
+
         100% {
             background-color: transparent;
             color: inherit;
@@ -41,7 +41,6 @@
         animation: flash-animation 6s ease-out forwards;
     }
 
-        /* Text trong link và badge cũng đổi màu theo cho dễ đọc */
         .row-highlight a, .row-highlight .badge {
             color: inherit !important;
             border-color: currentColor !important;
@@ -73,20 +72,16 @@
                         {
                             <tr id="row-@item.MaDon" class="data-row">
                                 <td class="ps-4 fw-bold text-primary">#@item.MaDon</td>
-
                                 <td>
                                     <div class="fw-bold text-dark">@item.TenKhachHang</div>
                                     <div class="small text-muted">@item.SanPhams.Count sản phẩm</div>
                                 </td>
-
                                 <td class="text-muted small">
                                     @(item.NgayDat.HasValue ? item.NgayDat.Value.ToString("dd/MM/yyyy HH:mm") : "")
                                 </td>
-
                                 <td class="fw-bold text-danger">
                                     @item.TongTien.ToString("#,##0") đ
                                 </td>
-
                                 <td>
                                     @if (item.TrangThai == "Hoàn thành")
                                     {
@@ -105,11 +100,8 @@
                                         <span class="badge bg-warning bg-opacity-10 text-warning px-3 py-2 rounded-pill">@item.TrangThai</span>
                                     }
                                 </td>
-
                                 <td>
-                                    <select class="form-select form-select-sm border-0 bg-light fw-bold text-secondary shadow-none"
-                                            style="width: 130px; cursor: pointer;"
-                                            onchange="updateStatus('@item.MaDon', this.value)">
+                                    <select class="form-select form-select-sm border-0 bg-light fw-bold text-secondary shadow-none" style="width: 130px; cursor: pointer;" onchange="updateStatus('@item.MaDon', this.value)">
                                         <option value="Chờ xử lý" selected="@(item.TrangThai == "Chờ xử lý")">Chờ xử lý</option>
                                         <option value="Đã xác nhận" selected="@(item.TrangThai == "Đã xác nhận")">Đã xác nhận</option>
                                         <option value="Đang giao" selected="@(item.TrangThai == "Đang giao")">Đang giao</option>
@@ -117,21 +109,9 @@
                                         <option value="Đã hủy" selected="@(item.TrangThai == "Đã hủy")">Hủy đơn</option>
                                     </select>
                                 </td>
-
                                 <td class="text-end pe-4">
-                                    <a href="@Url.Action("InHoaDon", "Admin", new { orderId = item.MaDon })"
-                                       target="_blank"
-                                       class="btn btn-sm btn-outline-secondary"
-                                       title="In hóa đơn">
-                                        <i class="bi bi-printer"></i>
-                                    </a>
-
-                                    <button class="btn btn-sm btn-outline-primary ms-1"
-                                            type="button"
-                                            data-bs-toggle="collapse"
-                                            data-bs-target="#detail-@item.MaDon">
-                                        <i class="bi bi-chevron-down"></i>
-                                    </button>
+                                    <a href="@Url.Action("InHoaDon", "Admin", new { orderId = item.MaDon })" target="_blank" class="btn btn-sm btn-outline-secondary" title="In hóa đơn"><i class="bi bi-printer"></i></a>
+                                    <button class="btn btn-sm btn-outline-primary ms-1" type="button" data-bs-toggle="collapse" data-bs-target="#detail-@item.MaDon"><i class="bi bi-chevron-down"></i></button>
                                 </td>
                             </tr>
 
@@ -140,9 +120,14 @@
                                     <div class="row">
                                         <div class="col-md-8">
                                             <h6 class="fw-bold text-primary mb-3">Danh sách sản phẩm</h6>
-                                            <ul class="list-group">
+                                            <ul class="list-group mb-3">
+                                                @{
+                                                    decimal tongHang = 0;
+                                                }
                                                 @foreach (var sp in item.SanPhams)
                                                 {
+                                                    decimal thanhtien = (sp.Gia ?? 0) * sp.SoLuong;
+                                                    tongHang += thanhtien;
                                                     <li class="list-group-item d-flex justify-content-between align-items-center bg-transparent">
                                                         <div class="d-flex align-items-center">
                                                             <img src="@(sp.HinhAnh ?? "/image/logo.png")" class="rounded border me-3" style="width: 40px; height: 40px; object-fit: cover;">
@@ -155,6 +140,29 @@
                                                     </li>
                                                 }
                                             </ul>
+
+                                            @{
+                                                decimal discount = tongHang - item.TongTien;
+                                            }
+                                            <div class="text-end border-top pt-2">
+                                                <div class="d-inline-block text-start" style="min-width: 200px;">
+                                                    <div class="d-flex justify-content-between mb-1">
+                                                        <small class="text-muted">Tổng tiền hàng:</small>
+                                                        <span class="fw-bold">@tongHang.ToString("#,##0") đ</span>
+                                                    </div>
+                                                    @if (discount > 0)
+                                                    {
+                                                        <div class="d-flex justify-content-between mb-1 text-success">
+                                                            <small>Giảm giá hạng:</small>
+                                                            <span class="fw-bold">-@discount.ToString("#,##0") đ</span>
+                                                        </div>
+                                                    }
+                                                    <div class="d-flex justify-content-between border-top pt-1">
+                                                        <strong class="text-dark">Thực thu:</strong>
+                                                        <strong class="text-danger">@item.TongTien.ToString("#,##0") đ</strong>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div class="col-md-4 border-start">
                                             <h6 class="fw-bold text-secondary mb-3">Thông tin giao hàng</h6>
@@ -199,55 +207,34 @@
 
 @section Scripts {
     <script>
-        // 1. Script Highlight (Tiêu điểm - Hiệu ứng mới)
         document.addEventListener("DOMContentLoaded", function () {
             const params = new URLSearchParams(window.location.search);
             const highlightId = params.get('highlightId');
-
             if (highlightId) {
                 const row = document.getElementById('row-' + highlightId);
                 if (row) {
                     row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-                    // Thêm class highlight mới
                     row.classList.add('row-highlight');
-
-                    // Mở luôn phần chi tiết nếu cần
                     const detailBtn = row.querySelector('[data-bs-toggle="collapse"]');
                     if(detailBtn) detailBtn.click();
-
-                    // Xóa class sau 6s
-                    setTimeout(() => {
-                        row.classList.remove('row-highlight');
-                    }, 6000);
+                    setTimeout(() => { row.classList.remove('row-highlight'); }, 6000);
                 }
             }
         });
 
-        // 2. Script Cập nhật trạng thái (AJAX)
         function updateStatus(orderId, newStatus) {
             if(!confirm('Bạn có chắc muốn đổi trạng thái đơn ' + orderId + ' sang: ' + newStatus + '?')) return;
-
             fetch('/Admin/CapNhatTrangThai', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                },
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                 body: `orderId=${orderId}&status=${newStatus}`
             })
             .then(res => res.json())
             .then(data => {
-                if (data.success) {
-                    alert('Cập nhật thành công!');
-                    location.reload();
-                } else {
-                    alert('Lỗi: ' + data.message);
-                }
+                if (data.success) { alert('Cập nhật thành công!'); location.reload(); }
+                else { alert('Lỗi: ' + data.message); }
             })
-            .catch(err => {
-                console.error(err);
-                alert('Lỗi kết nối server!');
-            });
+            .catch(err => { console.error(err); alert('Lỗi kết nối server!'); });
         }
     </script>
 }

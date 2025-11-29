@@ -14,13 +14,14 @@
         background: #fff;
         overflow: hidden;
     }
-    .order-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-        border-color: #0d6efd;
-    }
 
-    /* CSS Badge Trạng thái - SÁNG & ĐẬM ĐÀ */
+        .order-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            border-color: #0d6efd;
+        }
+
+    /* CSS Badge Trạng thái */
     .status-badge {
         font-size: 0.85rem;
         padding: 6px 12px;
@@ -32,11 +33,30 @@
     }
 
     /* Màu sắc trạng thái */
-    .badge-success { background-color: #28a745; color: white; } /* Hoàn thành: Xanh lá đậm */
-    .badge-primary { background-color: #0d6efd; color: white; } /* Đang giao: Xanh dương */
-    .badge-info { background-color: #0dcaf0; color: #000; }     /* Đã xác nhận: Xanh ngọc */
-    .badge-warning { background-color: #ffc107; color: #000; }  /* Chờ xử lý: Vàng tươi */
-    .badge-danger { background-color: #dc3545; color: white; }  /* Đã hủy: Đỏ */
+    .badge-success {
+        background-color: #28a745;
+        color: white;
+    }
+
+    .badge-primary {
+        background-color: #0d6efd;
+        color: white;
+    }
+
+    .badge-info {
+        background-color: #0dcaf0;
+        color: #000;
+    }
+
+    .badge-warning {
+        background-color: #ffc107;
+        color: #000;
+    }
+
+    .badge-danger {
+        background-color: #dc3545;
+        color: white;
+    }
 
     .product-img {
         width: 70px;
@@ -68,39 +88,22 @@
             {
                 foreach (var donHang in Model)
                 {
-                    // --- LOGIC MÀU SẮC MỚI (Rõ ràng hơn) ---
+                    // --- LOGIC MÀU SẮC TRẠNG THÁI ---
                     string badgeClass = "badge-secondary";
                     string iconClass = "bi-question-circle";
 
-                    if (donHang.TrangThai == "Chờ xử lý")
-                    {
-                        badgeClass = "badge-warning";
-                        iconClass = "bi-hourglass-split";
-                    }
-                    else if (donHang.TrangThai == "Đã xác nhận")
-                    {
-                        badgeClass = "badge-info";
-                        iconClass = "bi-clipboard-check";
-                    }
-                    else if (donHang.TrangThai == "Đang giao")
-                    {
-                        badgeClass = "badge-primary";
-                        iconClass = "bi-truck";
-                    }
-                    else if (donHang.TrangThai == "Hoàn thành")
-                    {
-                        badgeClass = "badge-success";
-                        iconClass = "bi-check-circle-fill";
-                    }
-                    else if (donHang.TrangThai == "Đã hủy")
-                    {
-                        badgeClass = "badge-danger";
-                        iconClass = "bi-x-circle-fill";
-                    }
-                    // ------------------------------------------
+                    if (donHang.TrangThai == "Chờ xử lý") { badgeClass = "badge-warning"; iconClass = "bi-hourglass-split"; }
+                    else if (donHang.TrangThai == "Đã xác nhận") { badgeClass = "badge-info"; iconClass = "bi-clipboard-check"; }
+                    else if (donHang.TrangThai == "Đang giao") { badgeClass = "badge-primary"; iconClass = "bi-truck"; }
+                    else if (donHang.TrangThai == "Hoàn thành") { badgeClass = "badge-success"; iconClass = "bi-check-circle-fill"; }
+                    else if (donHang.TrangThai == "Đã hủy") { badgeClass = "badge-danger"; iconClass = "bi-x-circle-fill"; }
+
+                    // --- [MỚI] TÍNH TOÁN GIẢM GIÁ ---
+                    decimal tongTienHang = donHang.SanPhams.Sum(sp => (sp.Gia ?? 0) * sp.SoLuong);
+                    decimal soTienGiam = tongTienHang - donHang.TongTien; // Tiền hàng - Tiền thực trả
+                    // --------------------------------
 
                     <div class="order-card mb-4">
-                        <!-- Header Card -->
                         <div class="d-flex justify-content-between align-items-center p-3 border-bottom bg-light bg-opacity-25">
                             <div>
                                 <span class="fw-bold text-dark me-2">#@donHang.MaDon</span>
@@ -111,7 +114,6 @@
                             </span>
                         </div>
 
-                        <!-- Body Card: Danh sách sản phẩm -->
                         <div class="p-3">
                             @if (donHang.SanPhams != null)
                             {
@@ -133,11 +135,28 @@
                             }
                         </div>
 
-                        <!-- Footer Card: Tổng tiền & Nút -->
                         <div class="p-3 bg-light border-top d-flex justify-content-between align-items-center">
                             <div>
-                                <span class="text-muted small">Tổng tiền:</span>
-                                <span class="fs-5 fw-bold text-danger ms-2">@donHang.TongTien.ToString("#,##0") đ</span>
+                                @if (soTienGiam > 0)
+                                {
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="text-muted small me-2">Tiền hàng:</span>
+                                        <span class="text-decoration-line-through text-muted small">@tongTienHang.ToString("#,##0") đ</span>
+                                    </div>
+                                    <div class="d-flex align-items-center mb-1">
+                                        <span class="text-success small fw-bold me-2"><i class="bi bi-gift-fill"></i> Ưu đãi hạng:</span>
+                                        <span class="text-success fw-bold small">-@soTienGiam.ToString("#,##0") đ</span>
+                                    </div>
+                                    <div class="border-top pt-1 mt-1">
+                                        <span class="text-dark small fw-bold">Tổng thanh toán:</span>
+                                        <span class="fs-5 fw-bold text-danger ms-2">@donHang.TongTien.ToString("#,##0") đ</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Tổng tiền:</span>
+                                    <span class="fs-5 fw-bold text-danger ms-2">@donHang.TongTien.ToString("#,##0") đ</span>
+                                }
                             </div>
 
                             <a asp-action="ChiTietDonHang" asp-controller="Login" asp-route-id="@donHang.MaDon"

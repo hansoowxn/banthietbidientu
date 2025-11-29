@@ -71,14 +71,13 @@ namespace banthietbidientu.Controllers
             return View(cart);
         }
 
-        // --- 4. THÊM VÀO GIỎ (GIỮ NGUYÊN LOGIC BIẾN THỂ CŨ) ---
+        // --- 4. THÊM VÀO GIỎ ---
         [HttpPost]
         public IActionResult Add(int id, int quantity = 1, string? capacity = null, string? color = null)
         {
             var product = _context.SanPhams.FirstOrDefault(p => p.Id == id);
             if (product == null) return NotFound();
 
-            // Xử lý tên biến thể và giá (Logic cũ của bạn)
             decimal finalPrice = product.Price;
             string variantName = product.Name;
 
@@ -100,7 +99,6 @@ namespace banthietbidientu.Controllers
             }
 
             var cart = GetCart();
-            // Tìm xem sản phẩm đã có trong giỏ chưa (so sánh ID và Tên biến thể)
             var item = cart.FirstOrDefault(x => x.Id == id && x.Name == variantName);
 
             if (item != null)
@@ -122,13 +120,12 @@ namespace banthietbidientu.Controllers
             SaveCart(cart);
             TempData["Success"] = $"Đã thêm: {variantName}";
 
-            // Quay lại trang trước đó hoặc trang chủ
             string referer = Request.Headers["Referer"].ToString();
             return !string.IsNullOrEmpty(referer) ? Redirect(referer) : RedirectToAction("Index", "Home");
         }
 
-        // Action hỗ trợ nút thêm nhanh (GET)
-        public async Task<IActionResult> ThemVaoGio(int id, int quantity = 1)
+        // Action hỗ trợ nút thêm nhanh (GET) - Đã bỏ async theo fix trước đó
+        public IActionResult ThemVaoGio(int id, int quantity = 1)
         {
             return Add(id, quantity);
         }
@@ -159,7 +156,6 @@ namespace banthietbidientu.Controllers
                 var product = _context.SanPhams.Find(id);
                 if (product != null)
                 {
-                    // Nếu số lượng mua lớn hơn tồn kho
                     if (quantity > product.SoLuong)
                     {
                         TempData["Error"] = $"Kho chỉ còn {product.SoLuong} sản phẩm!";
@@ -205,7 +201,7 @@ namespace banthietbidientu.Controllers
                 TaiKhoan = user,
                 TongTien = cart.Sum(x => x.Total),
                 NguoiNhan = user.FullName,
-                SoDienThoai = user.PhoneNumber, // Tự động điền SĐT
+                SoDienThoai = user.PhoneNumber,
                 DiaChi = user.Address
             };
 
@@ -222,17 +218,24 @@ namespace banthietbidientu.Controllers
             var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == User.Identity.Name);
             if (user == null) return RedirectToAction("DangNhap", "Login");
 
+            // --- [MỚI] TÍNH TOÁN GIẢM GIÁ ---
+            decimal tongTienHang = cart.Sum(x => x.Total);
+            var tier = _memberService.GetUserTier(user.Username);
+            decimal giamGia = (tongTienHang * tier.DiscountPercent) / 100;
+            decimal tongTienSauGiam = tongTienHang - giamGia;
+            // ---------------------------------
+
             var tempOrder = new DonHang
             {
                 MaDon = "DH" + DateTime.Now.ToString("yyyyMMddHHmmss"),
                 TaiKhoanId = user.Id,
                 NgayDat = DateTime.Now,
-                TrangThai = 0, // Chờ xử lý
+                TrangThai = 0,
                 NguoiNhan = model.NguoiNhan ?? user.FullName ?? string.Empty,
                 SDT = model.SoDienThoai ?? user.PhoneNumber ?? string.Empty,
                 DiaChi = model.DiaChi ?? user.Address ?? string.Empty,
-                PhiShip = 0,
-                TongTien = cart.Sum(x => x.Total)
+                PhiShip = 0, // Mặc định FreeShip
+                TongTien = tongTienSauGiam // LƯU GIÁ ĐÃ GIẢM
             };
 
             // A. THANH TOÁN VNPAY
@@ -242,6 +245,7 @@ namespace banthietbidientu.Controllers
                 vnpay.AddRequestData("vnp_Version", "2.1.0");
                 vnpay.AddRequestData("vnp_Command", "pay");
                 vnpay.AddRequestData("vnp_TmnCode", _configuration["VnPay:TmnCode"]);
+                // VNPAY yêu cầu số tiền * 100
                 vnpay.AddRequestData("vnp_Amount", ((long)tempOrder.TongTien * 100).ToString());
                 vnpay.AddRequestData("vnp_CreateDate", DateTime.Now.ToString("yyyyMMddHHmmss"));
                 vnpay.AddRequestData("vnp_CurrCode", "VND");
@@ -249,14 +253,11 @@ namespace banthietbidientu.Controllers
                 vnpay.AddRequestData("vnp_Locale", "vn");
                 vnpay.AddRequestData("vnp_OrderInfo", "Thanh toan don hang " + tempOrder.MaDon);
                 vnpay.AddRequestData("vnp_OrderType", "other");
-
-                // URL Callback khi thanh toán xong
                 vnpay.AddRequestData("vnp_ReturnUrl", Url.Action("PaymentCallback", "GioHang", null, Request.Scheme));
                 vnpay.AddRequestData("vnp_TxnRef", tempOrder.MaDon);
 
                 string paymentUrl = vnpay.CreateRequestUrl(_configuration["VnPay:BaseUrl"], _configuration["VnPay:HashSecret"]);
 
-                // Lưu tạm vào Session
                 HttpContext.Session.SetString("PendingOrder", JsonConvert.SerializeObject(tempOrder));
                 return Redirect(paymentUrl);
             }
@@ -264,7 +265,7 @@ namespace banthietbidientu.Controllers
             else
             {
                 await ProcessOrderSuccess(tempOrder, cart, "COD");
-                return View("PaymentSuccess"); // Hiện Popup SweetAlert2
+                return View("PaymentSuccess");
             }
         }
 
@@ -301,12 +302,12 @@ namespace banthietbidientu.Controllers
                         {
                             var order = JsonConvert.DeserializeObject<DonHang>(pendingOrderJson);
                             var cart = GetCart();
-                            order.TrangThai = 1; // Đã xác nhận (đã trả tiền)
+                            order.TrangThai = 1;
 
                             await ProcessOrderSuccess(order, cart, "VNPAY");
                             HttpContext.Session.Remove("PendingOrder");
 
-                            return View("PaymentSuccess"); // Hiện Popup SweetAlert2
+                            return View("PaymentSuccess");
                         }
                     }
                     else
@@ -320,12 +321,11 @@ namespace banthietbidientu.Controllers
             return RedirectToAction("Index");
         }
 
-        // --- 10. HÀM XỬ LÝ CHUNG (LƯU DB + THÔNG BÁO) ---
+        // --- 10. HÀM XỬ LÝ CHUNG ---
         private async Task<IActionResult> ProcessOrderSuccess(DonHang order, List<CartItem> cart, string method)
         {
             _context.DonHangs.Add(order);
 
-            // 1. Tạo thông báo Highlight (ĐÃ THÊM MỚI)
             var thongBao = new ThongBao
             {
                 TieuDe = "Đơn hàng mới #" + order.MaDon,
@@ -340,10 +340,8 @@ namespace banthietbidientu.Controllers
 
             await _context.SaveChangesAsync();
 
-            // 2. Lưu chi tiết đơn hàng (CÓ LƯU GIÁ GỐC)
             foreach (var item in cart)
             {
-                // Lấy thông tin sản phẩm để lấy giá nhập (GiaVon)
                 var sanPham = await _context.SanPhams.FindAsync(item.Id);
 
                 var chiTiet = new ChiTietDonHang
@@ -352,14 +350,13 @@ namespace banthietbidientu.Controllers
                     SanPhamId = item.Id,
                     SoLuong = item.Quantity,
                     Gia = item.Price,
-                    // Lưu giá vốn tại thời điểm bán (Quan trọng để tính lãi)
                     GiaGoc = sanPham != null ? sanPham.GiaNhap : 0
                 };
                 _context.ChiTietDonHangs.Add(chiTiet);
 
                 if (sanPham != null)
                 {
-                    sanPham.SoLuong -= item.Quantity; // Trừ kho
+                    sanPham.SoLuong -= item.Quantity;
                 }
             }
             await _context.SaveChangesAsync();
@@ -367,7 +364,6 @@ namespace banthietbidientu.Controllers
             HttpContext.Session.Remove("GioHang");
             HttpContext.Session.Remove("Cart");
 
-            // Không cần return Redirect ở đây nữa vì hàm XacNhanThanhToan đã điều hướng rồi
             return Ok();
         }
     }

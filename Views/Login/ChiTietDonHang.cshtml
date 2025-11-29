@@ -3,130 +3,47 @@
 @{
     ViewData["Title"] = "Chi tiết đơn hàng #" + Model.MaDon;
     Layout = "~/Views/Shared/_Layout.cshtml";
-
-    // --- LOGIC TÍNH TOÁN THANH TIMELINE ---
-    // Status: 0 (Chờ xử lý), 1 (Đã xác nhận), 2 (Đang giao), 3 (Hoàn thành), -1 (Hủy)
+    
     int status = Model.TrangThai;
     string width = "0%";
     string statusBadgeClass = "bg-warning text-dark";
     string statusText = "Chờ xử lý";
-
     if (status == 0) { width = "12%"; }
     else if (status == 1) { width = "37%"; statusBadgeClass = "bg-info text-white"; statusText = "Đã xác nhận"; }
     else if (status == 2) { width = "62%"; statusBadgeClass = "bg-primary"; statusText = "Đang giao hàng"; }
     else if (status == 3) { width = "100%"; statusBadgeClass = "bg-success"; statusText = "Hoàn thành"; }
     else if (status == -1) { width = "0%"; statusBadgeClass = "bg-danger"; statusText = "Đã hủy"; }
+
+    // --- [MỚI] TÍNH TOÁN ---
+    decimal tongTienHang = Model.ChiTietDonHangs.Sum(x => (x.Gia ?? 0) * x.SoLuong);
+    decimal soTienGiam = tongTienHang - Model.TongTien;
 }
 
 <style>
-    /* --- CSS CHO TIMELINE --- */
-    .tracking-track {
-        position: relative;
-        background-color: #e9ecef;
-        height: 8px;
-        display: flex;
-        margin-bottom: 50px;
-        margin-top: 40px;
-        border-radius: 10px;
-    }
-
-    .tracking-step {
-        flex: 1;
-        width: 25%;
-        margin-top: -16px;
-        text-align: center;
-        position: relative;
-    }
-
-        .tracking-step::before {
-            height: 36px;
-            width: 36px;
-            line-height: 32px;
-            border: 4px solid #fff;
-            display: block;
-            margin: 0 auto 10px auto;
-            border-radius: 50%;
-            background-color: #e9ecef;
-            content: '';
-            z-index: 2;
-            position: relative;
-            transition: all 0.3s;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-
-        .tracking-step.active::before {
-            background-color: #0d6efd;
-            border-color: #0d6efd;
-        }
-
-    .tracking-track .bar-fill {
-        position: absolute;
-        height: 100%;
-        background-color: #0d6efd;
-        top: 0;
-        left: 0;
-        z-index: 1;
-        transition: width 0.8s ease-in-out;
-        border-radius: 10px;
-    }
-
-    .tracking-text {
-        font-weight: 600;
-        color: #adb5bd;
-        font-size: 0.85rem;
-        display: block;
-        transition: color 0.3s;
-    }
-
-    .tracking-step.active .tracking-text {
-        color: #0d6efd;
-    }
-
-    .step-icon {
-        position: absolute;
-        top: 7px;
-        left: 50%;
-        transform: translateX(-50%);
-        color: #adb5bd;
-        font-size: 16px;
-        z-index: 3;
-        transition: color 0.3s;
-    }
-
-    .tracking-step.active .step-icon {
-        color: #fff;
-    }
-
-    /* Custom Card */
-    .detail-card {
-        border: none;
-        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05);
-        border-radius: 1rem;
-    }
+    .tracking-track { position: relative; background-color: #e9ecef; height: 8px; display: flex; margin-bottom: 50px; margin-top: 40px; border-radius: 10px; }
+    .tracking-step { flex: 1; width: 25%; margin-top: -16px; text-align: center; position: relative; }
+    .tracking-step::before { height: 36px; width: 36px; line-height: 32px; border: 4px solid #fff; display: block; margin: 0 auto 10px auto; border-radius: 50%; background-color: #e9ecef; content: ''; z-index: 2; position: relative; transition: all 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .tracking-step.active::before { background-color: #0d6efd; border-color: #0d6efd; }
+    .tracking-track .bar-fill { position: absolute; height: 100%; background-color: #0d6efd; top: 0; left: 0; z-index: 1; transition: width 0.8s ease-in-out; border-radius: 10px; }
+    .tracking-text { font-weight: 600; color: #adb5bd; font-size: 0.85rem; display: block; transition: color 0.3s; }
+    .tracking-step.active .tracking-text { color: #0d6efd; }
+    .step-icon { position: absolute; top: 7px; left: 50%; transform: translateX(-50%); color: #adb5bd; font-size: 16px; z-index: 3; transition: color 0.3s; }
+    .tracking-step.active .step-icon { color: #fff; }
+    .detail-card { border: none; box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.05); border-radius: 1rem; }
 </style>
 
 <div class="container my-5" style="min-height: 80vh;">
 
-    @if (TempData["Success"] != null)
-    {
-        <div class="alert alert-success mb-3">@TempData["Success"]</div>
-    }
-    @if (TempData["Error"] != null)
-    {
-        <div class="alert alert-danger mb-3">@TempData["Error"]</div>
-    }
+    @if (TempData["Success"] != null) { <div class="alert alert-success mb-3">@TempData["Success"]</div> }
+    @if (TempData["Error"] != null) { <div class="alert alert-danger mb-3">@TempData["Error"]</div> }
 
     <div class="d-flex align-items-center mb-4">
-        <a asp-action="LichSuMuaHang" asp-controller="Login" class="btn btn-outline-secondary btn-sm me-3 rounded-circle" style="width: 32px; height: 32px; padding: 0; line-height: 30px;">
-            <i class="bi bi-arrow-left"></i>
-        </a>
+        <a asp-action="LichSuMuaHang" asp-controller="Login" class="btn btn-outline-secondary btn-sm me-3 rounded-circle" style="width: 32px; height: 32px; padding: 0; line-height: 30px;"><i class="bi bi-arrow-left"></i></a>
         <div>
             <h4 class="fw-bold mb-0">Chi tiết đơn hàng #@Model.MaDon</h4>
             <span class="text-muted small">Ngày đặt: @(Model.NgayDat.HasValue ? Model.NgayDat.Value.ToString("HH:mm dd/MM/yyyy") : "N/A")</span>
         </div>
-        <div class="ms-auto">
-            <span class="badge @statusBadgeClass fs-6 px-3 py-2 rounded-pill">@statusText</span>
-        </div>
+        <div class="ms-auto"><span class="badge @statusBadgeClass fs-6 px-3 py-2 rounded-pill">@statusText</span></div>
     </div>
 
     <div class="card detail-card mb-4 overflow-hidden">
@@ -134,9 +51,7 @@
             @if (status == -1)
             {
                 <div class="text-center py-4">
-                    <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;">
-                        <i class="bi bi-x-lg fs-1"></i>
-                    </div>
+                    <div class="bg-danger bg-opacity-10 text-danger rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 80px; height: 80px;"><i class="bi bi-x-lg fs-1"></i></div>
                     <h4 class="text-danger fw-bold">Đơn hàng đã bị hủy</h4>
                     <p class="text-muted">Rất tiếc, đơn hàng này đã bị hủy. Vui lòng đặt lại hoặc liên hệ CSKH.</p>
                 </div>
@@ -146,42 +61,15 @@
                 <div class="px-2 px-md-4">
                     <div class="tracking-track">
                         <div class="bar-fill" style="width: @width;"></div>
-
-                        <div class="tracking-step @(status >= 0 ? "active" : "")">
-                            <i class="bi bi-clipboard-data step-icon"></i>
-                            <span class="tracking-text">Đặt hàng</span>
-                        </div>
-
-                        <div class="tracking-step @(status >= 1 ? "active" : "")">
-                            <i class="bi bi-box-seam step-icon"></i>
-                            <span class="tracking-text">Đã xác nhận</span>
-                        </div>
-
-                        <div class="tracking-step @(status >= 2 ? "active" : "")">
-                            <i class="bi bi-truck step-icon"></i>
-                            <span class="tracking-text">Đang giao</span>
-                        </div>
-
-                        <div class="tracking-step @(status >= 3 ? "active" : "")">
-                            <i class="bi bi-house-door-fill step-icon"></i>
-                            <span class="tracking-text">Đã giao</span>
-                        </div>
+                        <div class="tracking-step @(status >= 0 ? "active" : "")"><i class="bi bi-clipboard-data step-icon"></i><span class="tracking-text">Đặt hàng</span></div>
+                        <div class="tracking-step @(status >= 1 ? "active" : "")"><i class="bi bi-box-seam step-icon"></i><span class="tracking-text">Đã xác nhận</span></div>
+                        <div class="tracking-step @(status >= 2 ? "active" : "")"><i class="bi bi-truck step-icon"></i><span class="tracking-text">Đang giao</span></div>
+                        <div class="tracking-step @(status >= 3 ? "active" : "")"><i class="bi bi-house-door-fill step-icon"></i><span class="tracking-text">Đã giao</span></div>
                     </div>
                 </div>
-
                 <div class="text-center mt-4">
-                    @if (status == 2)
-                    {
-                        <p class="text-primary fw-medium mb-0">
-                            <i class="bi bi-info-circle me-1"></i> Shipper đang trên đường giao đến bạn. Vui lòng chú ý điện thoại!
-                        </p>
-                    }
-                    else if (status == 3)
-                    {
-                        <p class="text-success fw-medium mb-0">
-                            <i class="bi bi-check-all me-1"></i> Đơn hàng đã giao thành công. Cảm ơn bạn đã tin tưởng SmartTech!
-                        </p>
-                    }
+                    @if (status == 2) { <p class="text-primary fw-medium mb-0"><i class="bi bi-info-circle me-1"></i> Shipper đang trên đường giao đến bạn. Vui lòng chú ý điện thoại!</p> }
+                    else if (status == 3) { <p class="text-success fw-medium mb-0"><i class="bi bi-check-all me-1"></i> Đơn hàng đã giao thành công. Cảm ơn bạn đã tin tưởng SmartTech!</p> }
                 </div>
             }
         </div>
@@ -190,63 +78,41 @@
     <div class="row g-4">
         <div class="col-lg-8">
             <div class="card detail-card h-100">
-                <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold m-0 text-uppercase text-secondary"><i class="bi bi-geo-alt me-2"></i>Thông tin nhận hàng</h6>
-                </div>
+                <div class="card-header bg-white py-3"><h6 class="fw-bold m-0 text-uppercase text-secondary"><i class="bi bi-geo-alt me-2"></i>Thông tin nhận hàng</h6></div>
                 <div class="card-body">
-                    <div class="d-flex mb-3">
-                        <div class="me-3 text-muted"><i class="bi bi-person fs-5"></i></div>
-                        <div>
-                            <span class="d-block fw-bold text-dark">@Model.NguoiNhan</span>
-                            <span class="text-muted small">Người nhận</span>
-                        </div>
-                    </div>
-                    <div class="d-flex mb-3">
-                        <div class="me-3 text-muted"><i class="bi bi-telephone fs-5"></i></div>
-                        <div>
-                            <span class="d-block fw-bold text-dark">@Model.SDT</span>
-                            <span class="text-muted small">Số điện thoại</span>
-                        </div>
-                    </div>
-                    <div class="d-flex">
-                        <div class="me-3 text-muted"><i class="bi bi-map fs-5"></i></div>
-                        <div>
-                            <span class="d-block fw-bold text-dark">@Model.DiaChi</span>
-                            <span class="text-muted small">Địa chỉ giao hàng</span>
-                        </div>
-                    </div>
+                    <div class="d-flex mb-3"><div class="me-3 text-muted"><i class="bi bi-person fs-5"></i></div><div><span class="d-block fw-bold text-dark">@Model.NguoiNhan</span><span class="text-muted small">Người nhận</span></div></div>
+                    <div class="d-flex mb-3"><div class="me-3 text-muted"><i class="bi bi-telephone fs-5"></i></div><div><span class="d-block fw-bold text-dark">@Model.SDT</span><span class="text-muted small">Số điện thoại</span></div></div>
+                    <div class="d-flex"><div class="me-3 text-muted"><i class="bi bi-map fs-5"></i></div><div><span class="d-block fw-bold text-dark">@Model.DiaChi</span><span class="text-muted small">Địa chỉ giao hàng</span></div></div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-4">
             <div class="card detail-card h-100">
-                <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold m-0 text-uppercase text-secondary"><i class="bi bi-receipt me-2"></i>Thanh toán</h6>
-                </div>
+                <div class="card-header bg-white py-3"><h6 class="fw-bold m-0 text-uppercase text-secondary"><i class="bi bi-receipt me-2"></i>Thanh toán</h6></div>
                 <div class="card-body">
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Phương thức</span>
-                        <span class="fw-bold text-dark">COD (Tiền mặt)</span>
-                    </div>
-                    <div class="d-flex justify-content-between mb-2">
-                        <span class="text-muted">Trạng thái</span>
-                        @if (status == 3)
-                        {
-                            <span class="badge bg-success bg-opacity-10 text-success">Đã thanh toán</span>
-                        }
-                        else
-                        {
-                            <span class="badge bg-warning bg-opacity-10 text-warning">Chưa thanh toán</span>
-                        }
-                    </div>
+                    <div class="d-flex justify-content-between mb-2"><span class="text-muted">Phương thức</span><span class="fw-bold text-dark">COD (Tiền mặt)</span></div>
+                    <div class="d-flex justify-content-between mb-2"><span class="text-muted">Trạng thái</span>@if (status == 3) { <span class="badge bg-success bg-opacity-10 text-success">Đã thanh toán</span> } else { <span class="badge bg-warning bg-opacity-10 text-warning">Chưa thanh toán</span> }</div>
                     <hr>
+                    
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted">Tổng tiền hàng</span>
+                        <span class="fw-bold">@tongTienHang.ToString("#,##0") đ</span>
+                    </div>
+                    @if (soTienGiam > 0)
+                    {
+                        <div class="d-flex justify-content-between mb-2 text-success">
+                            <span><i class="bi bi-gift-fill me-1"></i>Giảm giá hạng</span>
+                            <span class="fw-bold">-@soTienGiam.ToString("#,##0") đ</span>
+                        </div>
+                    }
                     <div class="d-flex justify-content-between mb-2">
                         <span class="text-muted">Phí vận chuyển</span>
-                        <span class="fw-bold">@Model.PhiShip.GetValueOrDefault().ToString("#,##0") đ</span>
+                        <span class="fw-bold text-success">Miễn phí</span>
                     </div>
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <span class="fw-bold text-uppercase">Tổng cộng</span>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-3 border-top pt-3">
+                        <span class="fw-bold text-uppercase">Thành tiền</span>
                         <span class="fs-4 fw-bold text-primary">@Model.TongTien.ToString("#,##0") đ</span>
                     </div>
                 </div>
@@ -255,9 +121,7 @@
 
         <div class="col-12">
             <div class="card detail-card">
-                <div class="card-header bg-white py-3">
-                    <h6 class="fw-bold m-0 text-uppercase text-secondary"><i class="bi bi-bag me-2"></i>Sản phẩm đã mua</h6>
-                </div>
+                <div class="card-header bg-white py-3"><h6 class="fw-bold m-0 text-uppercase text-secondary"><i class="bi bi-bag me-2"></i>Sản phẩm đã mua</h6></div>
                 <div class="table-responsive">
                     <table class="table table-borderless align-middle mb-0">
                         <thead class="bg-light">
@@ -276,39 +140,28 @@
                                     <tr class="border-bottom">
                                         <td class="ps-4 py-3">
                                             <div class="d-flex align-items-center">
-                                                <img src="@(item.SanPham?.ImageUrl ?? "/images/default.png")"
-                                                     class="rounded border"
-                                                     style="width: 60px; height: 60px; object-fit: cover;">
-                                                <div class="ms-3">
-                                                    <h6 class="fw-bold text-dark mb-1">@(item.SanPham?.Name ?? "Sản phẩm")</h6>
-                                                </div>
+                                                <img src="@(item.SanPham?.ImageUrl ?? "/images/default.png")" class="rounded border" style="width: 60px; height: 60px; object-fit: cover;">
+                                                <div class="ms-3"><h6 class="fw-bold text-dark mb-1">@(item.SanPham?.Name ?? "Sản phẩm")</h6></div>
                                             </div>
                                         </td>
                                         <td class="text-center">@item.Gia.GetValueOrDefault().ToString("#,##0") đ</td>
                                         <td class="text-center">x @item.SoLuong</td>
-                                        <td class="text-end pe-4 fw-bold text-primary">
-                                            @((item.Gia.GetValueOrDefault() * item.SoLuong).ToString("#,##0")) đ
-                                        </td>
+                                        <td class="text-end pe-4 fw-bold text-primary">@((item.Gia.GetValueOrDefault() * item.SoLuong).ToString("#,##0") ) đ</td>
                                     </tr>
                                 }
                             }
                         </tbody>
                     </table>
                 </div>
-
-                <!-- CHỈ CÒN NÚT HỦY ĐƠN HÀNG -->
                 <div class="card-footer bg-white py-3 text-end">
-                    @if (status == 0 || status == 1) // Chỉ cho hủy khi Chờ xử lý hoặc Đã xác nhận
+                    @if (status == 0 || status == 1) 
                     {
                         <form asp-action="HuyDonHang" asp-controller="Login" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không? Hành động này không thể hoàn tác.');" style="display:inline;">
                             <input type="hidden" name="maDon" value="@Model.MaDon" />
-                            <button type="submit" class="btn btn-outline-danger fw-bold">
-                                <i class="bi bi-x-circle me-1"></i> Hủy đơn hàng
-                            </button>
+                            <button type="submit" class="btn btn-outline-danger fw-bold"><i class="bi bi-x-circle me-1"></i> Hủy đơn hàng</button>
                         </form>
                     }
                 </div>
-
             </div>
         </div>
     </div>

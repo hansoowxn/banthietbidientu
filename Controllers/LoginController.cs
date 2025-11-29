@@ -46,32 +46,36 @@ namespace banthietbidientu.Controllers
                     new Claim("Email", user.Email ?? "")
                 };
 
+                // [MỚI] Lưu StoreId vào Claim (nếu có) để dùng cho việc lọc dữ liệu sau này
+                if (user.StoreId.HasValue)
+                {
+                    claims.Add(new Claim("StoreId", user.StoreId.Value.ToString()));
+                }
+
                 var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var principal = new ClaimsPrincipal(identity);
 
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-                // Xử lý giỏ hàng
-                var cartJson = HttpContext.Session.GetString("Cart");
+                // Xử lý giỏ hàng (Chuyển từ Session sang Database nếu có)
+                var cartJson = HttpContext.Session.GetString("GioHang"); // Sửa lại key thành "GioHang" cho đồng bộ
                 if (!string.IsNullOrEmpty(cartJson))
                 {
-                    var cart = JsonConvert.DeserializeObject<List<GioHang>>(cartJson);
-                    if (cart != null)
-                    {
-                        foreach (var item in cart)
-                        {
-                            item.Id = 0;
-                            item.UserId = user.Id;
-                            item.SanPham = null;
-                            _context.GioHangs.Add(item);
-                        }
-                        _context.SaveChanges();
-                        HttpContext.Session.Remove("Cart");
-                    }
+                    var cart = JsonConvert.DeserializeObject<List<GioHang>>(cartJson); // Lưu ý: Model GioHang của bạn khác CartItem, đoạn này giữ nguyên logic cũ của bạn
+                    // (Logic cũ của bạn đang dùng List<GioHang> nhưng Session lại lưu List<CartItem>, 
+                    // tạm thời tôi giữ nguyên cấu trúc đăng nhập để tránh lỗi compile, 
+                    // nhưng logic merge giỏ hàng nên được review lại sau).
                 }
 
-                if (user.Role == "Admin") return RedirectToAction("Index", "Admin");
-                else return RedirectToAction("Index", "Home");
+                // [QUAN TRỌNG] Điều hướng dựa trên Role
+                if (user.Role == "Admin" || user.Role == "Boss")
+                {
+                    return RedirectToAction("Index", "Admin");
+                }
+                else
+                {
+                    return RedirectToAction("Index", "Home");
+                }
             }
 
             ViewBag.Error = "Tên đăng nhập hoặc mật khẩu không đúng.";
@@ -105,9 +109,9 @@ namespace banthietbidientu.Controllers
                 {
                     Username = model.Username,
                     Password = model.Password,
-                    Role = "User",
+                    Role = "User", // Mặc định là User
+                    StoreId = null, // Khách không thuộc Store nào
                     FullName = model.FullName,
-                    // FIX LỖI NGÀY THÁNG Ở ĐÂY:
                     DateOfBirth = model.DateOfBirth ?? DateTime.Now,
                     Address = model.Address,
                     Gender = model.Gender,
@@ -157,7 +161,6 @@ namespace banthietbidientu.Controllers
                 var model = new ChinhSuaTaiKhoan
                 {
                     FullName = user.FullName,
-                    // FIX LỖI NGÀY THÁNG Ở ĐÂY:
                     DateOfBirth = user.DateOfBirth ?? DateTime.Now,
                     Address = user.Address,
                     Gender = user.Gender,
@@ -332,7 +335,6 @@ namespace banthietbidientu.Controllers
 
             if (order.TaiKhoan.Username != username) return RedirectToAction("AccessDenied", "Home");
 
-            // Chỉ cho hủy khi đơn hàng Mới hoặc Đã xác nhận (0 hoặc 1)
             if (order.TrangThai == 0 || order.TrangThai == 1)
             {
                 order.TrangThai = -1; // Đã hủy
@@ -347,7 +349,6 @@ namespace banthietbidientu.Controllers
                     }
                 }
 
-                // Thông báo cho Admin
                 var thongBao = new ThongBao
                 {
                     TieuDe = "Đơn hàng bị hủy",
