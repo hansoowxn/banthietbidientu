@@ -91,6 +91,11 @@ namespace banthietbidientu.Controllers
         [HttpPost]
         public IActionResult DangKy(TaiKhoan model)
         {
+
+            ModelState.Remove("DonHangs");
+            ModelState.Remove("DanhGias");
+            ModelState.Remove("YeuCauThuMuas");
+
             if (ModelState.IsValid)
             {
                 if (_context.TaiKhoans.Any(u => u.Username == model.Username))
