@@ -6,8 +6,9 @@
 
     // Tạo Avatar từ tên
     string firstLetter = !string.IsNullOrEmpty(Model.FullName) ? Model.FullName.Substring(0, 1).ToUpper() : "U";
-    string avatarColor = "bg-primary"; // Mặc định màu xanh
-    if (Model.Role == "Admin") { avatarColor = "bg-danger"; } // Admin màu đỏ
+    string avatarColor = "bg-primary";
+    if (Model.Role == "Admin") { avatarColor = "bg-danger"; }
+    else if (Model.Role == "Boss") { avatarColor = "bg-dark"; }
 }
 
 <div class="container-fluid py-4">
@@ -35,10 +36,16 @@
                         <h4 class="fw-bold text-dark mb-1">@Model.FullName</h4>
                         <p class="text-muted mb-3">@Model.Username</p>
 
-                        @if (Model.Role == "Admin")
+                        @if (Model.Role == "Boss")
+                        {
+                            <span class="badge bg-dark bg-opacity-10 text-dark px-3 py-2 rounded-pill">
+                                <i class="bi bi-crown-fill me-1"></i> BOSS (Chủ tịch)
+                            </span>
+                        }
+                        else if (Model.Role == "Admin")
                         {
                             <span class="badge bg-danger bg-opacity-10 text-danger px-3 py-2 rounded-pill">
-                                <i class="bi bi-shield-lock-fill me-1"></i> Quản trị viên
+                                <i class="bi bi-shield-lock-fill me-1"></i> Quản lý
                             </span>
                         }
                         else
@@ -52,8 +59,8 @@
 
                         <div class="text-start small text-muted">
                             <p class="mb-2"><i class="bi bi-envelope-fill me-2"></i> @Model.Email</p>
+                            <p class="mb-2"><i class="bi bi-telephone-fill me-2"></i> @(Model.PhoneNumber ?? "---")</p>
                             <p class="mb-2"><i class="bi bi-geo-alt-fill me-2"></i> @(Model.Address ?? "Chưa cập nhật địa chỉ")</p>
-
                             <p class="mb-0"><i class="bi bi-calendar-event-fill me-2"></i> Ngày sinh: @(Model.DateOfBirth.HasValue ? Model.DateOfBirth.Value.ToString("dd/MM/yyyy") : "---")</p>
                         </div>
                     </div>
@@ -72,7 +79,6 @@
                             <div class="col-md-6">
                                 <label asp-for="Username" class="form-label fw-semibold">Tên đăng nhập</label>
                                 <input asp-for="Username" class="form-control bg-light" readonly />
-                                <span asp-validation-for="Username" class="text-danger small"></span>
                             </div>
                             <div class="col-md-6">
                                 <label asp-for="Email" class="form-label fw-semibold">Email</label>
@@ -87,6 +93,7 @@
                                 <select asp-for="Role" class="form-select">
                                     <option value="User">Khách hàng (User)</option>
                                     <option value="Admin">Quản trị viên (Admin)</option>
+                                    <option value="Boss">Chủ tịch (Boss)</option>
                                 </select>
                             </div>
                         </div>
@@ -95,18 +102,21 @@
 
                         <h6 class="text-uppercase text-muted small fw-bold mb-3 mt-4"><i class="bi bi-person-lines-fill me-1"></i> Thông tin cá nhân</h6>
                         <div class="row g-3">
-                            <div class="col-md-12">
+                            <div class="col-md-6">
                                 <label asp-for="FullName" class="form-label fw-semibold">Họ và tên</label>
-                                <input asp-for="FullName" class="form-control" placeholder="Nhập họ tên đầy đủ" />
+                                <input asp-for="FullName" class="form-control" placeholder="Nhập họ tên đầy đủ" required />
                                 <span asp-validation-for="FullName" class="text-danger small"></span>
                             </div>
 
                             <div class="col-md-6">
+                                <label asp-for="PhoneNumber" class="form-label fw-semibold">Số điện thoại</label>
+                                <input asp-for="PhoneNumber" class="form-control" placeholder="09xxxxxxxx" required pattern="[0-9]{10}" />
+                                <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+                            </div>
+
+                            <div class="col-md-6">
                                 <label asp-for="DateOfBirth" class="form-label fw-semibold">Ngày sinh</label>
-
-                                <input asp-for="DateOfBirth" type="date" class="form-control"
-                                       value="@(Model.DateOfBirth.HasValue ? Model.DateOfBirth.Value.ToString("yyyy-MM-dd") : "")" />
-
+                                <input asp-for="DateOfBirth" type="date" class="form-control" value="@(Model.DateOfBirth.HasValue ? Model.DateOfBirth.Value.ToString("yyyy-MM-dd") : "")" />
                                 <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
                             </div>
 
@@ -122,70 +132,75 @@
 
                             <div class="col-md-12">
                                 <label class="form-label fw-semibold">Địa chỉ</label>
-
                                 <div class="row g-2 mb-2">
                                     <div class="col-md-4">
-                                        <select class="form-select" id="province" required>
+                                        <select class="form-select" id="province">
                                             <option value="">Chọn Tỉnh/TP</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <select class="form-select" id="district" disabled required>
+                                        <select class="form-select" id="district" disabled>
                                             <option value="">Chọn Quận/Huyện</option>
                                         </select>
                                     </div>
                                     <div class="col-md-4">
-                                        <select class="form-select" id="ward" disabled required>
+                                        <select class="form-select" id="ward" disabled>
                                             <option value="">Chọn Phường/Xã</option>
                                         </select>
                                     </div>
                                 </div>
-
-                                <input type="text" class="form-control" id="specificAddress" placeholder="Số nhà, tên đường cụ thể..." required>
+                                <input type="text" class="form-control" id="specificAddress" placeholder="Số nhà, tên đường cụ thể...">
 
                                 <input type="hidden" asp-for="Address" id="fullAddressInput" />
                                 <span asp-validation-for="Address" class="text-danger small"></span>
 
                                 <div class="form-text text-muted fst-italic mt-2">
-                                    Địa chỉ hiện tại trong DB: <span class="text-dark fw-bold">@(Model.Address ?? "Chưa có")</span>
+                                    Địa chỉ hiện tại: <span class="text-dark fw-bold">@(Model.Address ?? "Chưa cập nhật")</span>
+                                    <br>(Chọn lại ở trên nếu muốn thay đổi)
                                 </div>
                             </div>
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 mt-5">
                             <a asp-action="QuanLyTaiKhoan" class="btn btn-light border px-4">Hủy bỏ</a>
-                            <button type="submit" class="btn btn-primary px-4 fw-bold shadow-sm">
-                                <i class="bi bi-check-circle me-2"></i>Cập nhật
+
+                            <button type="button" onclick="submitEditAccount()" class="btn btn-primary px-4 fw-bold shadow-sm">
+                                <i class="bi bi-check-circle me-2"></i> Cập nhật
                             </button>
                         </div>
-
                     </div>
                 </div>
             </div>
         </div>
+        @Html.AntiForgeryToken()
     </form>
 </div>
 
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
 
     <script>
         const host = "https://provinces.open-api.vn/api/";
-        var callAPI = (api) => {
-            return $.ajax({ url: api, method: 'GET' });
+        var callAPI = (api) => { return $.ajax({ url: api, method: 'GET' }); }
+
+        var renderData = (array, select) => {
+            let row = ' <option value="">Chọn ' + (select == "province" ? "Tỉnh/TP" : (select == "district" ? "Quận/Huyện" : "Phường/Xã")) + '</option>';
+            array.forEach(element => {
+                row += `<option value="${element.code}">${element.name}</option>`;
+            });
+            document.querySelector("#" + select).innerHTML = row;
         }
 
-        // Load danh sách Tỉnh/TP khi trang chạy
-        callAPI(host + "?depth=1").done((data) => {
-            renderData(data, "province");
-        });
+        // 1. Load Tỉnh
+        callAPI(host + "?depth=1").done((data) => { renderData(data, "province"); });
 
-        // Sự kiện chọn Tỉnh
+        // 2. Chọn Tỉnh -> Huyện
         $("#province").change(() => {
             let code = $("#province").val();
             $("#district").html('<option value="">Chọn Quận/Huyện</option>').prop("disabled", true);
             $("#ward").html('<option value="">Chọn Phường/Xã</option>').prop("disabled", true);
-
             if(code) {
                 callAPI(host + "p/" + code + "?depth=2").done((data) => {
                     renderData(data.districts, "district");
@@ -194,11 +209,10 @@
             }
         });
 
-        // Sự kiện chọn Huyện
+        // 3. Chọn Huyện -> Xã
         $("#district").change(() => {
             let code = $("#district").val();
             $("#ward").html('<option value="">Chọn Phường/Xã</option>').prop("disabled", true);
-
             if(code) {
                 callAPI(host + "d/" + code + "?depth=2").done((data) => {
                     renderData(data.wards, "ward");
@@ -207,31 +221,26 @@
             }
         });
 
-        var renderData = (array, select) => {
-            let row = ' <option value="">Chọn ' + (select == "province" ? "Tỉnh/TP" : (select == "district" ? "Quận/Huyện" : "Phường/Xã")) + '</option>';
-            array.forEach(element => {
-                row += `<option value="${element.code}" data-name="${element.name}">${element.name}</option>`;
-            });
-            document.querySelector("#" + select).innerHTML = row;
-        }
+        // 4. SUBMIT AN TOÀN
+        function submitEditAccount() {
+            var form = $("#adminEditUserForm");
+            if (!form.valid()) return;
 
-        // Xử lý trước khi Submit Form
-        $("#adminEditUserForm").submit(function() {
-            let province = $("#province option:selected").data("name");
-            let district = $("#district option:selected").data("name");
-            let ward = $("#ward option:selected").data("name");
-            let specific = $("#specificAddress").val();
+            // Kiểm tra địa chỉ mới
+            let p = $("#province option:selected").text();
+            let d = $("#district option:selected").text();
+            let w = $("#ward option:selected").text();
+            let s = $("#specificAddress").val();
+            let pVal = $("#province").val();
 
-            // Nếu admin đã chọn lại địa chỉ mới thì gộp chuỗi
-            if (province && district && ward && specific) {
-                let fullAddress = `${specific}, ${ward}, ${district}, ${province}`;
+            // Nếu có chọn địa chỉ mới -> Cập nhật input ẩn
+            if (pVal && s) {
+                let fullAddress = `${s}, ${w}, ${d}, ${p}`;
                 $("#fullAddressInput").val(fullAddress);
             }
-            // Nếu không chọn gì cả (giữ nguyên) thì input ẩn Address vẫn giữ giá trị cũ từ Model
-        });
-    </script>
+            // Nếu không chọn mới -> Giữ nguyên giá trị cũ (đã load từ Model vào input ẩn)
 
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
+            document.getElementById("adminEditUserForm").submit();
+        }
+    </script>
 }
