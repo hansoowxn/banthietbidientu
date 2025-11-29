@@ -40,8 +40,8 @@ namespace banthietbidientu.Models
         public string PhoneNumber { get; set; }
 
         // Relationship
-        public ICollection<DonHang> DonHangs { get; set; }
-        public ICollection<DanhGia> DanhGias { get; set; }
-        public ICollection<YeuCauThuMua> YeuCauThuMuas { get; set; }
+        public virtual ICollection<DonHang>? DonHangs { get; set; }
+        public virtual ICollection<DanhGia>? DanhGias { get; set; }
+        public virtual ICollection<YeuCauThuMua>? YeuCauThuMuas { get; set; }
     }
 }
