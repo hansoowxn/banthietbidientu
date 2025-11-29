@@ -139,7 +139,7 @@ namespace banthietbidientu.Controllers
         [HttpGet]
         public IActionResult NhapHang()
         {
-                ViewBag.SanPhams = _context.SanPhams.ToList();
+            ViewBag.SanPhams = _context.SanPhams.ToList();
             return View();
         }
 
@@ -149,21 +149,17 @@ namespace banthietbidientu.Controllers
             var sanPham = _context.SanPhams.Find(sanPhamId);
             if (sanPham == null) return NotFound();
 
-            // --- 1. TÍNH GIÁ VỐN BÌNH QUÂN GIA QUYỀN (Moving Average) ---
             decimal tongGiaTriCu = sanPham.SoLuong * sanPham.GiaNhap;
             decimal tongGiaTriNhap = soLuong * giaNhap;
             int tongSoLuongMoi = sanPham.SoLuong + soLuong;
 
             if (tongSoLuongMoi > 0)
             {
-                // Cập nhật giá nhập mới cho sản phẩm
                 sanPham.GiaNhap = (tongGiaTriCu + tongGiaTriNhap) / tongSoLuongMoi;
             }
 
-            // Cập nhật số lượng tồn kho
             sanPham.SoLuong += soLuong;
 
-            // --- 2. LƯU PHIẾU NHẬP ---
             var phieuNhap = new PhieuNhap
             {
                 NgayNhap = DateTime.Now,
@@ -183,15 +179,13 @@ namespace banthietbidientu.Controllers
             };
 
             _context.ChiTietPhieuNhaps.Add(chiTiet);
-
-            // Lưu tất cả thay đổi (bao gồm giá nhập mới của sản phẩm)
             _context.SaveChanges();
 
             TempData["Success"] = $"Đã nhập kho {soLuong} {sanPham.Name}. Giá vốn mới: {sanPham.GiaNhap:N0}đ";
             return RedirectToAction("QuanLyNhapHang");
         }
 
-        // --- 4. API THÔNG BÁO (ĐÃ UPDATE CHO HIGHLIGHT) ---
+        // --- 4. API THÔNG BÁO ---
         [HttpGet]
         public IActionResult GetThongBao()
         {
@@ -207,7 +201,6 @@ namespace banthietbidientu.Controllers
                         ngayTao = x.NgayTao,
                         daDoc = x.DaDoc,
                         loaiThongBao = x.LoaiThongBao,
-                        // Thêm 2 trường này để frontend điều hướng
                         redirectId = x.RedirectId,
                         redirectAction = x.RedirectAction
                     })
@@ -250,6 +243,12 @@ namespace banthietbidientu.Controllers
             }
             catch { }
             return Json(new { success = false });
+        }
+
+        public IActionResult QuanLyThongBao()
+        {
+            var list = _context.ThongBaos.OrderByDescending(x => x.NgayTao).ToList();
+            return View(list);
         }
 
         // --- 5. QUẢN LÝ SẢN PHẨM ---
@@ -320,6 +319,7 @@ namespace banthietbidientu.Controllers
             {
                 sp.Name = model.Name;
                 sp.Price = model.Price;
+                sp.GiaNhap = model.GiaNhap; // Cập nhật cả giá nhập nếu sửa full
                 sp.Category = model.Category;
                 sp.ImageUrl = model.ImageUrl;
                 sp.SoLuong = slHaNoi + slDaNang + slHCM;
@@ -328,6 +328,22 @@ namespace banthietbidientu.Controllers
                 _context.SaveChanges();
             }
             return RedirectToAction("QuanLySanPham");
+        }
+
+        // --- [MỚI] API CẬP NHẬT GIÁ NHẬP NHANH ---
+        [HttpPost]
+        public IActionResult CapNhatGiaNhapNhanh(int id, decimal giaNhap)
+        {
+            var sp = _context.SanPhams.Find(id);
+            if (sp != null)
+            {
+                if (giaNhap < 0) return Json(new { success = false, message = "Giá nhập không được âm" });
+
+                sp.GiaNhap = giaNhap;
+                _context.SaveChanges();
+                return Json(new { success = true });
+            }
+            return Json(new { success = false, message = "Không tìm thấy sản phẩm" });
         }
 
         [HttpPost]
@@ -469,13 +485,11 @@ namespace banthietbidientu.Controllers
         // --- 7. BÁO CÁO THỐNG KÊ ---
         public IActionResult BaoCao()
         {
-            // 1. Số liệu tổng quan
             var tongDoanhThu = _context.DonHangs.Where(d => d.TrangThai == 3).Sum(d => d.TongTien);
             var tongDonHang = _context.DonHangs.Count();
             var sanPhamSapHet = _context.SanPhams.Count(s => s.SoLuong < 5);
             var tongSanPhamDaBan = _context.ChiTietDonHangs.Where(ct => ct.DonHang.TrangThai == 3).Sum(ct => ct.SoLuong);
 
-            // 2. Biểu đồ 7 ngày
             var labelsNgay = new List<string>();
             var valuesDoanhThu = new List<decimal>();
             for (int i = 6; i >= 0; i--)
@@ -488,7 +502,6 @@ namespace banthietbidientu.Controllers
                 valuesDoanhThu.Add(revenue);
             }
 
-            // 3. Top sản phẩm bán chạy (theo số lượng)
             var topProducts = _context.ChiTietDonHangs
                 .Where(ct => ct.DonHang.TrangThai == 3)
                 .GroupBy(ct => ct.SanPham.Name)
@@ -497,7 +510,6 @@ namespace banthietbidientu.Controllers
                 .Take(5)
                 .ToList();
 
-            // 4. Top khách hàng
             var topUsers = _context.DonHangs
                 .Where(d => d.TrangThai == 3 && d.TaiKhoanId != null)
                 .GroupBy(d => d.TaiKhoan)
@@ -513,8 +525,6 @@ namespace banthietbidientu.Controllers
                 .Take(5)
                 .ToList();
 
-            // 5. --- TÍNH TOÁN LỢI NHUẬN CHI TIẾT TỪNG SẢN PHẨM ---
-            // Chỉ lấy các đơn hàng đã Hoàn thành (TrangThai == 3)
             var baoCaoLoiNhuan = _context.ChiTietDonHangs
                 .Include(ct => ct.SanPham)
                 .Where(ct => ct.DonHang.TrangThai == 3)
@@ -524,17 +534,11 @@ namespace banthietbidientu.Controllers
                     TenSanPham = g.Key.Name,
                     HinhAnh = g.Key.ImageUrl,
                     SoLuongBan = g.Sum(x => x.SoLuong),
-
-                    // Doanh thu = Tổng (Giá bán * Số lượng)
                     DoanhThu = g.Sum(x => (x.Gia ?? 0) * x.SoLuong),
-
-                    // Giá vốn = Tổng (Giá gốc lúc bán * Số lượng)
                     GiaVon = g.Sum(x => x.GiaGoc * x.SoLuong),
-
-                    // Lợi nhuận = Doanh thu - Giá vốn
                     LoiNhuan = g.Sum(x => ((x.Gia ?? 0) - x.GiaGoc) * x.SoLuong)
                 })
-                .OrderByDescending(x => x.LoiNhuan) // Sắp xếp theo lợi nhuận cao nhất
+                .OrderByDescending(x => x.LoiNhuan)
                 .ToList();
 
             var model = new BaoCaoViewModel
@@ -548,7 +552,7 @@ namespace banthietbidientu.Controllers
                 TopSanPhamTen = topProducts.Select(p => p.Name).ToList(),
                 TopSanPhamSoLuong = topProducts.Select(p => p.Count).ToList(),
                 TopKhachHangs = topUsers,
-                BaoCaoLoiNhuan = baoCaoLoiNhuan // Gán dữ liệu vào ViewModel
+                BaoCaoLoiNhuan = baoCaoLoiNhuan
             };
 
             return View(model);
@@ -626,7 +630,6 @@ namespace banthietbidientu.Controllers
             var yeuCau = _context.YeuCauThuMuas.Find(id);
             if (yeuCau != null)
             {
-                // [CẬP NHẬT] Kiểm tra trạng thái cuối cùng
                 if (yeuCau.TrangThai == 2 || yeuCau.TrangThai == -1)
                 {
                     TempData["Error"] = "Yêu cầu này đã hoàn tất hoặc đã hủy, không thể thay đổi trạng thái nữa!";

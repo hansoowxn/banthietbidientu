@@ -1,13 +1,44 @@
 ﻿@model IEnumerable<banthietbidientu.Models.DanhGia>
 
 @{
-    ViewData["Title"] = "Quản lý đánh giá";
+    ViewData["Title"] = "Quản lý Đánh giá & Bình luận";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 }
 
+<style>
+    /* --- HIỆU ỨNG HIGHLIGHT --- */
+    @@keyframes flash-animation {
+        0% {
+            background-color: #ffc107;
+        }
+        /* Vàng đậm */
+        50% {
+            background-color: #fff3cd;
+        }
+        /* Vàng nhạt */
+        100% {
+            background-color: transparent;
+        }
+    }
+
+    .row-highlight {
+        animation: flash-animation 5s ease-out forwards;
+    }
+
+        .row-highlight > td {
+            background-color: #fff3cd !important;
+            transition: background-color 2s ease-out;
+        }
+
+    .star-rating {
+        color: #ffc107;
+        font-size: 0.9rem;
+    }
+</style>
+
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold text-primary"><i class="bi bi-star-half me-2"></i>Quản lý Đánh giá & Bình luận</h2>
+        <h2 class="fw-bold text-primary"><i class="bi bi-star-half me-2"></i>Quản lý Đánh giá</h2>
     </div>
 
     @if (TempData["Success"] != null)
@@ -24,10 +55,10 @@
                 <table class="table table-hover align-middle mb-0">
                     <thead class="bg-light text-secondary">
                         <tr>
-                            <th class="ps-4 py-3">Sản phẩm</th>
+                            <th class="ps-4">Sản phẩm</th>
                             <th>Khách hàng</th>
-                            <th>Đánh giá</th>
-                            <th style="width: 30%;">Nội dung</th>
+                            <th style="width: 120px;">Đánh giá</th>
+                            <th>Nội dung</th>
                             <th>Trạng thái</th>
                             <th class="text-end pe-4">Hành động</th>
                         </tr>
@@ -35,58 +66,65 @@
                     <tbody>
                         @foreach (var item in Model)
                         {
-                            <tr>
+                            <tr id="row-@item.Id" class="data-row">
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center">
-                                        <img src="@(item.SanPham?.ImageUrl ?? "/image/logo.png")"
-                                             class="rounded border me-3"
-                                             style="width: 40px; height: 40px; object-fit: cover;"
-                                             onerror="this.src='/image/logo.png'">
-                                        <div>
-                                            <div class="fw-bold text-dark">@(item.SanPham?.Name ?? "SP đã xóa")</div>
-                                            <div class="small text-muted">ID: #@item.SanPhamId</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>
-                                    <div class="fw-bold">@(item.TaiKhoan?.FullName ?? "Ẩn danh")</div>
-                                    <div class="small text-muted">@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</div>
-                                </td>
-                                <td>
-                                    <div class="text-warning small">
-                                        @for (int i = 1; i <= 5; i++)
+                                        @if (item.SanPham != null)
                                         {
-                                            <i class="bi @(i <= item.Sao ? "bi-star-fill" : "bi-star")"></i>
+                                            <img src="@item.SanPham.ImageUrl" class="rounded border me-2" style="width: 45px; height: 45px; object-fit: cover;">
+                                            <div>
+                                                <div class="fw-bold text-dark small">@item.SanPham.Name</div>
+                                                <div class="text-muted" style="font-size: 0.75rem;">ID: #@item.SanPhamId</div>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-danger">Sản phẩm đã xóa</span>
                                         }
                                     </div>
                                 </td>
                                 <td>
-                                    <p class="mb-1 text-break">@item.NoiDung</p>
-                                    @if (!string.IsNullOrEmpty(item.HinhAnh))
-                                    {
-                                        <a href="@item.HinhAnh" target="_blank">
-                                            <img src="@item.HinhAnh" class="rounded border mt-1" style="height: 50px; cursor: zoom-in;" alt="Ảnh review">
-                                        </a>
-                                    }
-
+                                    <div class="fw-bold text-dark">@(item.TaiKhoan?.FullName ?? "Khách ẩn danh")</div>
+                                    <div class="small text-muted">@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</div>
+                                </td>
+                                <td>
+                                    <div class="star-rating">
+                                        @for (int i = 1; i <= 5; i++)
+                                        {
+                                            if (i <= item.Sao)
+                                            {
+                                                <i class="bi bi-star-fill"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="bi bi-star text-secondary opacity-25"></i>
+                                            }
+                                        }
+                                    </div>
+                                </td>
+                                <td style="max-width: 300px;">
+                                    <div class="text-break">@item.NoiDung</div>
                                     @if (!string.IsNullOrEmpty(item.TraLoi))
                                     {
-                                        <div class="mt-2 p-2 bg-light rounded border-start border-4 border-primary small">
-                                            <strong class="text-primary"><i class="bi bi-arrow-return-right"></i> Shop trả lời:</strong>
-                                            <span class="text-muted fst-italic">@item.TraLoi</span>
+                                        <div class="mt-2 p-2 bg-light rounded border-start border-3 border-primary">
+                                            <small class="d-block fw-bold text-primary">Admin trả lời:</small>
+                                            <small class="text-secondary">@item.TraLoi</small>
                                         </div>
                                     }
                                 </td>
                                 <td>
-                                    <div class="form-check form-switch">
-                                        <input class="form-check-input toggle-status" type="checkbox"
-                                               data-id="@item.Id"
-                                               style="cursor: pointer;"
-                                        @(item.DaDuyet ? "checked" : "")>
-                                        <label class="form-check-label small text-muted">
-                                            @(item.DaDuyet ? "Hiện" : "Ẩn")
-                                        </label>
-                                    </div>
+                                    @if (item.DaDuyet)
+                                    {
+                                        <span class="badge bg-success" onclick="toggleDuyet(@item.Id)" style="cursor:pointer;">
+                                            <i class="bi bi-check-circle"></i> Đã duyệt
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning text-dark" onclick="toggleDuyet(@item.Id)" style="cursor:pointer;">
+                                            <i class="bi bi-eye-slash"></i> Ẩn
+                                        </span>
+                                    }
                                 </td>
                                 <td class="text-end pe-4">
                                     <button class="btn btn-sm btn-outline-primary me-1"
@@ -96,27 +134,33 @@
                                         <i class="bi bi-reply-fill"></i>
                                     </button>
 
+                                    <form asp-action="XoaDanhGia" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa đánh giá này?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+
                                     <div class="modal fade" id="replyModal-@item.Id" tabindex="-1">
                                         <div class="modal-dialog">
                                             <form asp-action="TraLoiDanhGia" method="post">
                                                 <div class="modal-content">
                                                     <div class="modal-header">
-                                                        <h5 class="modal-title fw-bold">Trả lời khách hàng: @(item.TaiKhoan?.FullName)</h5>
+                                                        <h5 class="modal-title fw-bold">Trả lời đánh giá</h5>
                                                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <div class="modal-body text-start">
                                                         <input type="hidden" name="id" value="@item.Id" />
                                                         <div class="mb-3">
-                                                            <label class="form-label fw-bold">Nội dung đánh giá:</label>
-                                                            <p class="bg-light p-3 rounded fst-italic">"@item.NoiDung"</p>
+                                                            <label class="form-label text-muted">Nội dung đánh giá:</label>
+                                                            <p class="p-2 bg-light rounded fst-italic">"@item.NoiDung"</p>
                                                         </div>
                                                         <div class="mb-3">
-                                                            <label class="form-label fw-bold">Câu trả lời của Shop:</label>
-                                                            <textarea name="noiDungTraLoi" class="form-control" rows="4" placeholder="Nhập câu trả lời..." required>@item.TraLoi</textarea>
+                                                            <label class="form-label fw-bold">Nội dung trả lời:</label>
+                                                            <textarea name="noiDungTraLoi" class="form-control" rows="4" required placeholder="Nhập câu trả lời của bạn...">@item.TraLoi</textarea>
                                                         </div>
                                                     </div>
                                                     <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
                                                         <button type="submit" class="btn btn-primary">Gửi trả lời</button>
                                                     </div>
                                                 </div>
@@ -128,12 +172,11 @@
                         }
                     </tbody>
                 </table>
-
                 @if (!Model.Any())
                 {
-                    <div class="text-center py-5">
-                        <i class="bi bi-chat-square-quote text-muted opacity-25" style="font-size: 4rem;"></i>
-                        <p class="text-muted mt-3">Chưa có đánh giá nào.</p>
+                    <div class="text-center py-5 text-muted">
+                        <i class="bi bi-chat-square-text fs-1"></i>
+                        <p class="mt-2">Chưa có đánh giá nào.</p>
                     </div>
                 }
             </div>
@@ -143,35 +186,34 @@
 
 @section Scripts {
     <script>
-        // Xử lý nút gạt Duyệt/Ẩn không cần load lại trang (AJAX)
-        document.querySelectorAll('.toggle-status').forEach(toggle => {
-            toggle.addEventListener('change', function() {
-                const id = this.getAttribute('data-id');
-                const label = this.nextElementSibling;
+        document.addEventListener("DOMContentLoaded", function () {
+            // Logic Highlight từ URL
+            const params = new URLSearchParams(window.location.search);
+            const highlightId = params.get('highlightId');
 
-                fetch('/Admin/DuyetDanhGia', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: `id=${id}`
-                })
+            if (highlightId) {
+                const row = document.getElementById('row-' + highlightId);
+                if (row) {
+                    row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    row.classList.add('row-highlight');
+                    setTimeout(() => {
+                        row.classList.remove('row-highlight');
+                    }, 5000);
+                }
+            }
+        });
+
+        // Hàm AJAX duyệt nhanh (nếu bạn muốn dùng)
+        function toggleDuyet(id) {
+            fetch('/Admin/DuyetDanhGia?id=' + id, { method: 'POST' })
                 .then(res => res.json())
                 .then(data => {
                     if (data.success) {
-                        label.innerText = data.newStatus ? "Hiện" : "Ẩn";
-                        // Hiệu ứng nháy xanh nhẹ để báo thành công
-                        label.classList.add('text-success', 'fw-bold');
-                        setTimeout(() => label.classList.remove('text-success', 'fw-bold'), 1000);
+                        location.reload();
                     } else {
-                        alert("Lỗi khi cập nhật trạng thái!");
-                        this.checked = !this.checked; // Hoàn tác nếu lỗi
+                        alert('Lỗi khi cập nhật trạng thái');
                     }
-                })
-                .catch(err => {
-                    console.error(err);
-                    alert("Lỗi kết nối!");
-                    this.checked = !this.checked;
                 });
-            });
-        });
+        }
     </script>
 }

@@ -1,0 +1,113 @@
+﻿@model IEnumerable<banthietbidientu.Models.ThongBao>
+
+@{
+    ViewData["Title"] = "Quản lý thông báo";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold text-primary"><i class="bi bi-bell-fill me-2"></i> Tất cả thông báo</h4>
+        <button onclick="danhDauTatCaDaDoc()" class="btn btn-outline-primary btn-sm">
+            <i class="bi bi-check-all me-1"></i> Đánh dấu tất cả đã đọc
+        </button>
+    </div>
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="py-3 ps-4" style="width: 50px;">#</th>
+                            <th class="py-3">Loại</th>
+                            <th class="py-3">Nội dung</th>
+                            <th class="py-3">Thời gian</th>
+                            <th class="py-3 text-end pe-4">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                string rowClass = item.DaDoc ? "" : "bg-unread-row";
+                                string iconClass = item.LoaiThongBao switch
+                                {
+                                    0 => "bi-cart-check-fill text-success",
+                                    1 => "bi-info-circle-fill text-info",
+                                    2 => "bi-recycle text-warning",
+                                    3 => "bi-x-circle-fill text-danger",
+                                    _ => "bi-bell-fill text-secondary"
+                                };
+
+                                string linkUrl = !string.IsNullOrEmpty(item.RedirectAction)
+                                ? Url.Action(item.RedirectAction, "Admin", new { highlightId = item.RedirectId })
+                                : Url.Action("Index", "Admin");
+
+                                <tr class="@rowClass">
+                                    <td class="ps-4">
+                                        @if (!item.DaDoc)
+                                        {
+                                            <span class="badge bg-danger rounded-circle p-1" style="width: 10px; height: 10px;"> </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div class="fs-4">
+                                            <i class="bi @iconClass"></i>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold mb-1">@item.TieuDe</div>
+                                        <div class="text-muted small">@item.NoiDung</div>
+                                    </td>
+                                    <td class="text-muted small">
+                                        @item.NgayTao.ToString("HH:mm dd/MM/yyyy")
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="javascript:void(0)" onclick="markAndGo(@item.Id, '@linkUrl')" class="btn btn-sm btn-primary">
+                                            Xem chi tiết <i class="bi bi-arrow-right ms-1"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="5" class="text-center py-5 text-muted">
+                                    <i class="bi bi-bell-slash fs-1 d-block mb-3"></i>
+                                    Chưa có thông báo nào
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-unread-row {
+        background-color: #fff8e1 !important;
+    }
+
+        .bg-unread-row td:first-child {
+            border-left: 3px solid #ffc107;
+        }
+</style>
+
+<script>
+    function danhDauTatCaDaDoc() {
+        if(confirm('Bạn có chắc muốn đánh dấu tất cả là đã đọc?')) {
+            fetch('/Admin/MarkAsRead', { method: 'POST' })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) {
+                    location.reload();
+                }
+            });
+        }
+    }
+</script>

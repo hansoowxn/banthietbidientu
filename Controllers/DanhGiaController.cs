@@ -86,17 +86,45 @@ namespace banthietbidientu.Controllers
                 MaDon = donHang.MaDon,
                 Sao = soSao,
                 NoiDung = noiDung ?? "",
-                HinhAnh = imagePath ?? "", // Xử lý null ảnh
-
-                // --- SỬA LỖI TẠI ĐÂY: Gán chuỗi rỗng cho TraLoi ---
+                HinhAnh = imagePath ?? "",
                 TraLoi = "",
-
                 NgayTao = DateTime.Now,
-                DaDuyet = true // Duyệt luôn để test
+                // Lưu ý: Nếu muốn Admin duyệt trước khi hiện thì để false
+                DaDuyet = true
             };
 
             _context.DanhGias.Add(danhGia);
             await _context.SaveChangesAsync();
+
+            // --- 6. [PHẦN BỔ SUNG] TẠO THÔNG BÁO CHO ADMIN ---
+            try
+            {
+                var sanPham = await _context.SanPhams.FindAsync(sanPhamId);
+                string tenSp = sanPham?.Name ?? "Sản phẩm";
+                string extraInfo = (imagePath != null) ? " (kèm ảnh)" : "";
+
+                var thongBao = new ThongBao
+                {
+                    TieuDe = "Đánh giá mới" + extraInfo,
+                    NoiDung = $"{user.FullName ?? user.Username} đánh giá {soSao} sao cho {tenSp}",
+                    NgayTao = DateTime.Now,
+                    DaDoc = false,
+                    LoaiThongBao = 1, // Icon tin nhắn/đánh giá
+
+                    // Cấu hình chuyển hướng Highlight
+                    RedirectAction = "QuanLyDanhGia",
+                    RedirectId = danhGia.Id.ToString()
+                };
+
+                _context.ThongBaos.Add(thongBao);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                // Ghi log lỗi nếu cần, nhưng không chặn việc đánh giá thành công
+                Console.WriteLine("Lỗi tạo thông báo: " + ex.Message);
+            }
+            // --------------------------------------------------
 
             TempData["Success"] = "Cảm ơn bạn đã đánh giá sản phẩm!";
             return RedirectToAction("ChiTietSanPham", "Home", new { id = sanPhamId });

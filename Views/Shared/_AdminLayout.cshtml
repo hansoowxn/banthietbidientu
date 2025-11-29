@@ -115,15 +115,13 @@
             border-radius: 10px;
         }
 
-        /* --- [CẬP NHẬT] STYLE CHO TIN CHƯA ĐỌC (CAM/HỔ PHÁCH NỔI BẬT) --- */
         .bg-unread {
-            background-color: #FFF3E0 !important; /* Nền vàng cam nhạt */
-            border-left: 4px solid #FF9800 !important; /* Viền trái màu cam đậm nổi bật */
+            background-color: #FFF3E0 !important;
+            border-left: 4px solid #FF9800 !important;
         }
 
-            /* Hiệu ứng hover không làm mất màu nền */
             .bg-unread:hover {
-                background-color: #FFE0B2 !important; /* Cam nhạt hơn chút khi hover */
+                background-color: #FFE0B2 !important;
             }
 
         @@media (max-width: 768px) {
@@ -174,6 +172,7 @@
                 <li><a href="@Url.Action("NhapHang", "Admin")" class="@(currentAction == "NhapHang" ? "active" : "")"><i class="bi bi-box-arrow-in-down text-success"></i> Nhập hàng</a></li>
                 <li><a href="@Url.Action("QuanLyNhapHang", "Admin")" class="@(currentAction == "QuanLyNhapHang" ? "active" : "")"><i class="bi bi-journal-text"></i> Lịch sử nhập</a></li>
                 <li><a href="@Url.Action("Index", "Admin")" class="@(currentAction == "Index" ? "active" : "")"><i class="bi bi-grid-fill"></i> Tổng quan</a></li>
+
                 <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Quản lý</li>
                 <li><a href="@Url.Action("QuanLySanPham", "Admin")" class="@(currentAction == "QuanLySanPham" || currentAction == "ThemSanPham" || currentAction == "SuaSanPham" ? "active" : "")"><i class="bi bi-box-seam-fill"></i> Kho hàng</a></li>
                 <li><a href="@Url.Action("QuanLyDonHang", "Admin")" class="@(currentAction == "QuanLyDonHang" ? "active" : "")"><i class="bi bi-receipt"></i> Đơn hàng</a></li>
@@ -181,6 +180,7 @@
                 <li><a href="@Url.Action("QuanLyThuMua", "Admin")" class="@(currentAction == "QuanLyThuMua" ? "active" : "")"><i class="bi bi-phone-flip"></i> Thu cũ đổi mới</a></li>
                 <li><a href="@Url.Action("QuanLyDanhGia", "Admin")" class="@(currentAction == "QuanLyDanhGia" ? "active" : "")"><i class="bi bi-star-half"></i> Đánh giá</a></li>
                 <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Thống kê</li>
+
                 <li><a href="@Url.Action("BaoCao", "Admin")" class="@(currentAction == "BaoCao" ? "active" : "")"><i class="bi bi-bar-chart-line-fill"></i> Báo cáo doanh thu</a></li>
             </ul>
         </nav>
@@ -209,7 +209,7 @@
                             <li class="text-center p-3 text-muted small">Đang tải...</li>
                     </div>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-center small text-primary fw-bold" href="@Url.Action("QuanLyDonHang", "Admin")">Xem tất cả đơn hàng</a></li>
+                    <li><a class="dropdown-item text-center small text-primary fw-bold" href="@Url.Action("QuanLyThongBao", "Admin")">Xem tất cả thông báo</a></li>
                     </ul>
                 </div>
 
@@ -294,18 +294,14 @@
                                     : (item.loaiThongBao == 2
                                         ? '<div class="bg-light-warning text-warning rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-recycle"></i></div>'
                                         : '<div class="bg-light-info text-info rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-info-circle-fill"></i></div>');
-
-                                // --- [MỚI] SỬ DỤNG CLASS MÀU XANH DƯƠNG NHẠT ---
                                 let bgClass = item.daDoc ? '' : 'bg-unread';
 
                                 let linkUrl = item.redirectAction
                                     ? `/Admin/${item.redirectAction}?highlightId=${item.redirectId}`
                                     : '/Admin/Index';
-
-                                // --- [QUAN TRỌNG] HÀM ONCLICK: Đánh dấu đã đọc -> Rồi mới chuyển trang ---
                                 let html = `
                                     <li>
-                                        <a class="dropdown-item d-flex align-items-start p-2 border-bottom ${bgClass}"
+                                         <a class="dropdown-item d-flex align-items-start p-2 border-bottom ${bgClass}"
                                            href="javascript:void(0)"
                                            onclick="markAndGo(${item.id}, '${linkUrl}')">
                                             ${icon}
@@ -326,25 +322,19 @@
                 .catch(err => console.log("Lỗi API thông báo:", err));
         }
 
-        // --- [HÀM MỚI] Đánh dấu 1 tin đã đọc rồi chuyển trang ---
         function markAndGo(id, url) {
-            // Gọi API đánh dấu đã đọc
             fetch('/Admin/MarkOneRead?id=' + id, { method: 'POST' })
                 .then(() => {
-                    // Sau đó mới chuyển trang
                     window.location.href = url;
                 })
                 .catch(() => {
-                    // Nếu lỗi mạng vẫn chuyển trang bình thường
                     window.location.href = url;
                 });
         }
 
-        // Hàm đọc tất cả (dùng cho nút "Đọc tất cả")
         function danhDauDaDoc() {
             fetch('/Admin/MarkAsRead', { method: 'POST' });
             document.getElementById('notif-badge').classList.add('d-none');
-            // Load lại để xóa màu xanh
             setTimeout(loadThongBao, 500);
         }
     </script>

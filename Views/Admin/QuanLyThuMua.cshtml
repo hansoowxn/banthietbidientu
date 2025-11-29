@@ -1,4 +1,5 @@
 ﻿@model IEnumerable<banthietbidientu.Models.YeuCauThuMua>
+@inject banthietbidientu.Services.MemberService MemberService
 
 @{
     ViewData["Title"] = "Quản lý Thu cũ đổi mới";
@@ -6,94 +7,29 @@
 }
 
 <style>
-    /* --- ĐỊNH NGHĨA HIỆU ỨNG HIGHLIGHT MẠNH MẼ (FLASH) --- */
+    /* --- HIỆU ỨNG HIGHLIGHT --- */
     @@keyframes flash-animation {
         0% {
-            background-color: #ff4757;
-            color: white;
+            background-color: #ffc107;
         }
-        /* Đỏ rực (Bắt đầu) */
-        25% {
-            background-color: #ff6b81;
-            color: white;
-        }
-        /* Hồng đậm */
+        /* Vàng đậm */
         50% {
-            background-color: #ffa502;
-            color: black;
+            background-color: #fff3cd;
         }
-        /* Cam vàng */
-        75% {
-            background-color: #fff200;
-            color: black;
-        }
-        /* Vàng chanh */
+        /* Vàng nhạt */
         100% {
             background-color: transparent;
-            color: inherit;
         }
     }
 
-    {
-        background-color: #ff4757;
-        color: white;
-    }
-    /* Đỏ rực (Bắt đầu) */
-    25% {
-        background-color: #ff6b81;
-        color: white;
-    }
-    /* Hồng đậm */
-    50% {
-        background-color: #ffa502;
-        color: black;
-    }
-    /* Cam vàng */
-    75% {
-        background-color: #fff200;
-        color: black;
-    }
-    /* Vàng chanh */
-    100% {
-        background-color: transparent;
-        color: inherit;
-    }
-
-    {
-        background-color: #ff4757;
-        color: white;
-    }
-    /* Đỏ rực (Bắt đầu) */
-    25% {
-        background-color: #ff6b81;
-        color: white;
-    }
-    /* Hồng đậm */
-    50% {
-        background-color: #ffa502;
-        color: black;
-    }
-    /* Cam vàng */
-    75% {
-        background-color: #fff200;
-        color: black;
-    }
-    /* Vàng chanh */
-    100% {
-        background-color: transparent;
-        color: inherit;
-    }
-    /* Trở về bình thường */
-    }
-
-    /* Class này sẽ được Javascript thêm vào dòng cần làm nổi bật */
     .row-highlight {
-        animation: flash-animation 6s ease-out forwards; /* Chạy trong 6 giây */
+        animation: flash-animation 5s ease-out forwards;
     }
 
-        /* Đảm bảo text trong link cũng đổi màu theo cho dễ đọc */
-        .row-highlight a {
-            color: inherit !important;
+        /* Ghi đè màu nền của các ô trong dòng đang highlight để không bị table-hover che mất */
+        .row-highlight > td {
+            background-color: #fff3cd !important;
+            transition: background-color 2s ease-out;
         }
 </style>
 
@@ -106,6 +42,13 @@
     {
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             <i class="bi bi-check-circle me-2"></i> @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="bi bi-exclamation-triangle me-2"></i> @TempData["Error"]
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     }
@@ -128,7 +71,7 @@
                     <tbody>
                         @foreach (var item in Model)
                         {
-                            bool isFinalState = item.TrangThai == 2 || item.TrangThai == -1; // [MỚI] Biến kiểm tra trạng thái cuối
+                            bool isFinalState = item.TrangThai == 2 || item.TrangThai == -1;
                             <tr id="row-@item.Id" class="data-row @(isFinalState ? "text-muted" : "")">
                                 <td class="ps-4">
                                     <span class="fw-bold text-dark">@item.MaYeuCau</span>
@@ -151,11 +94,23 @@
                                     <div class="small text-secondary fst-italic">@item.NgayTao.ToString("dd/MM/yyyy HH:mm")</div>
                                 </td>
                                 <td>
-                                    @{
-                                        string roleText = item.TaiKhoan?.Role == "Admin" ? "Quản trị viên" : (item.TaiKhoan?.Role == "User" ? "Thành viên" : "Không rõ");
+                                    @if (item.TaiKhoan != null)
+                                    {
+                                        var tier = MemberService.GetUserTier(item.TaiKhoan.Username);
+                                        <div class="fw-bold text-dark">@item.TaiKhoan.FullName</div>
+                                        <div class="small text-muted"><i class="bi bi-telephone me-1"></i>@item.SoDienThoai</div>
+                                        <div class="mt-1">
+                                            <span class="badge bg-@tier.Color text-uppercase border" style="font-size: 0.7rem;">
+                                                <i class="bi @tier.Icon me-1"></i> @tier.Name
+                                            </span>
+                                        </div>
                                     }
-                                    <div class="fw-bold">@item.TaiKhoan?.FullName</div> <div class="small text-muted"><i class="bi bi-telephone me-1"></i>@item.SoDienThoai</div>
-                                    <div class="small text-primary fw-semibold">Hạng: @roleText</div>
+                                    else
+                                    {
+                                        <div class="fw-bold text-dark">Khách lẻ (Vãng lai)</div>
+                                        <div class="small text-muted"><i class="bi bi-telephone me-1"></i>@item.SoDienThoai</div>
+                                        <span class="badge bg-light text-dark border mt-1" style="font-size: 0.7rem;">Chưa đăng ký</span>
+                                    }
                                 </td>
                                 <td>
                                     @if (item.TrangThai == 0)
@@ -179,7 +134,6 @@
                                     <small class="text-muted">@item.GhiChu</small>
                                 </td>
                                 <td class="text-end pe-4">
-
                                     <button class="btn btn-sm @(isFinalState ? "btn-outline-secondary" : "btn-outline-primary")"
                                             data-bs-toggle="modal"
                                             data-bs-target="#modal-@item.Id">
@@ -191,7 +145,8 @@
                                             <form asp-action="CapNhatThuMua" method="post">
                                                 <div class="modal-content">
                                                     <div class="modal-header">
-                                                        <h5 class="modal-title fw-bold">Xử lý yêu cầu #@item.MaYeuCau</h5> <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                                        <h5 class="modal-title fw-bold">Xử lý yêu cầu #@item.MaYeuCau</h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                                                     </div>
                                                     <div class="modal-body text-start">
                                                         <input type="hidden" name="id" value="@item.Id" />
@@ -217,7 +172,7 @@
                                                     </div>
                                                     <div class="modal-footer">
                                                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                                                        @if (!isFinalState) // [CẬP NHẬT] Chỉ hiển thị nút Lưu khi không phải trạng thái cuối
+                                                        @if (!isFinalState)
                                                         {
                                                             <button type="submit" class="btn btn-primary">Lưu thay đổi</button>
                                                         }
@@ -252,19 +207,18 @@
             const highlightId = params.get('highlightId');
 
             if (highlightId) {
-                // Tìm dòng có ID tương ứng
                 const row = document.getElementById('row-' + highlightId);
                 if (row) {
                     // 1. Cuộn màn hình đến dòng đó
                     row.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-                    // 2. Thêm class highlight mới (row-highlight) thay vì table-warning
+                    // 2. Thêm class highlight
                     row.classList.add('row-highlight');
 
-                    // 3. Sau 6 giây thì xóa class
+                    // 3. Xóa class sau 5 giây (để hiệu ứng có thể chạy lại nếu reload)
                     setTimeout(() => {
                         row.classList.remove('row-highlight');
-                    }, 6000);
+                    }, 5000);
                 }
             }
         });
