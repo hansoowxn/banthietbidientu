@@ -6,8 +6,8 @@ using banthietbidientu.Data;
 using banthietbidientu.Models;
 using System.Collections.Generic;
 using System;
-using System.Text;
-using System.Threading.Tasks; // Đừng quên namespace này cho Async
+using System.Text; // Quan trọng: Để dùng StringBuilder, Encoding
+using System.Threading.Tasks; // Quan trọng: Để dùng Async/Await
 
 namespace banthietbidientu.Controllers
 {
@@ -25,27 +25,40 @@ namespace banthietbidientu.Controllers
         // --- 1. DASHBOARD ---
         public IActionResult Index()
         {
-            // [LOGIC PHÂN QUYỀN SAU NÀY]
-            // Nếu là Admin chi nhánh -> Chỉ hiện số liệu của StoreId tương ứng
-            // Nếu là Boss -> Hiện tất cả (Giữ nguyên logic hiện tại là đang hiện tất cả)
+            // Lấy thông tin User hiện tại để lọc dữ liệu
+            var user = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == User.Identity.Name);
+            int? storeId = user?.StoreId; // Nếu là Admin chi nhánh -> có StoreId
 
-            var tongDoanhThu = _context.DonHangs.Where(d => d.TrangThai == 3).Sum(x => x.TongTien);
-            var donHangMoi = _context.DonHangs.Count(x => x.NgayDat.Value.Date == DateTime.Today);
+            // Tạo Query cơ bản cho Đơn hàng
+            var queryDonHang = _context.DonHangs.AsQueryable();
+
+            // Nếu là Admin chi nhánh (StoreId != null) -> Lọc đơn hàng của Store đó
+            if (storeId.HasValue)
+            {
+                queryDonHang = queryDonHang.Where(d => d.StoreId == storeId);
+            }
+
+            // Tính toán các chỉ số
+            var tongDoanhThu = queryDonHang.Where(d => d.TrangThai == 3).Sum(x => x.TongTien);
+            var donHangMoi = queryDonHang.Count(x => x.NgayDat.Value.Date == DateTime.Today);
             var tongKhachHang = _context.TaiKhoans.Count(x => x.Role == "User");
+
+            // Tạm thời tính tổng sản phẩm sắp hết (chưa tách kho)
             var sapHetHang = _context.SanPhams.Count(x => x.SoLuong < 5);
 
-            var sttHoanThanh = _context.DonHangs.Count(x => x.TrangThai == 3);
-            var sttDangGiao = _context.DonHangs.Count(x => x.TrangThai == 2);
-            var sttChoXuLy = _context.DonHangs.Count(x => x.TrangThai == 0 || x.TrangThai == 1);
-            var sttDaHuy = _context.DonHangs.Count(x => x.TrangThai == -1);
+            var sttHoanThanh = queryDonHang.Count(x => x.TrangThai == 3);
+            var sttDangGiao = queryDonHang.Count(x => x.TrangThai == 2);
+            var sttChoXuLy = queryDonHang.Count(x => x.TrangThai == 0 || x.TrangThai == 1);
+            var sttDaHuy = queryDonHang.Count(x => x.TrangThai == -1);
 
             ViewBag.ChartData = new List<int> { sttHoanThanh, sttDangGiao, sttChoXuLy, sttDaHuy };
 
+            // Biểu đồ doanh thu 7 ngày (đã lọc theo Store)
             var revenueWeek = new List<decimal>();
             for (int i = 6; i >= 0; i--)
             {
                 var day = DateTime.Today.AddDays(-i);
-                var total = _context.DonHangs
+                var total = queryDonHang
                     .Where(x => x.NgayDat.Value.Date == day && x.TrangThai == 3)
                     .Sum(x => (decimal?)x.TongTien) ?? 0;
                 revenueWeek.Add(total);
@@ -60,18 +73,28 @@ namespace banthietbidientu.Controllers
             return View();
         }
 
-        // --- 2. QUẢN LÝ ĐƠN HÀNG ---
+        // --- 2. QUẢN LÝ ĐƠN HÀNG (CÓ LỌC THEO STORE) ---
         public IActionResult QuanLyDonHang(int? page)
         {
             int pageSize = 10;
             int pageNumber = page ?? 1;
 
+            var user = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == User.Identity.Name);
+            int? storeId = user?.StoreId;
+
             var query = _context.DonHangs
                 .Include(d => d.TaiKhoan)
                 .Include(d => d.ChiTietDonHangs)
                     .ThenInclude(ct => ct.SanPham)
-                .OrderByDescending(d => d.NgayDat)
-                .AsNoTracking();
+                .AsQueryable();
+
+            // [LỌC] Nếu là Admin chi nhánh -> Chỉ xem đơn của Store mình
+            if (storeId.HasValue)
+            {
+                query = query.Where(d => d.StoreId == storeId);
+            }
+
+            query = query.OrderByDescending(d => d.NgayDat);
 
             int totalItems = query.Count();
             int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
@@ -362,6 +385,7 @@ namespace banthietbidientu.Controllers
             return RedirectToAction("QuanLySanPham");
         }
 
+        // --- 6. QUẢN LÝ TÀI KHOẢN ---
         public IActionResult QuanLyTaiKhoan() => View(_context.TaiKhoans.AsNoTracking().ToList());
         [HttpGet] public IActionResult ThemTaiKhoan() => View();
         [HttpPost]
@@ -394,7 +418,123 @@ namespace banthietbidientu.Controllers
             return RedirectToAction("QuanLyTaiKhoan");
         }
 
-        // --- 6. XUẤT EXCEL & IN HÓA ĐƠN ---
+        // --- 7. BÁO CÁO NÂNG CAO (3 NĂM + LỌC STORE) ---
+        public IActionResult BaoCao(int? storeId, int? month, int? year)
+        {
+            // 1. Thiết lập tham số thời gian
+            var now = DateTime.Now;
+            int selectedYear = year ?? now.Year;
+            int selectedMonth = month ?? now.Month;
+
+            // 2. Phân quyền & Lọc Store
+            var user = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == User.Identity.Name);
+
+            // Nếu là Admin chi nhánh -> Bắt buộc xem Store của mình
+            if (user.Role == "Admin")
+            {
+                storeId = user.StoreId;
+            }
+            // Nếu là Boss -> storeId tùy chọn (null = Toàn hệ thống)
+
+            // Lấy tên chi nhánh để hiển thị
+            string storeName = "Toàn hệ thống";
+            if (storeId == 1) storeName = "Chi nhánh Hà Nội";
+            else if (storeId == 2) storeName = "Chi nhánh Đà Nẵng";
+            else if (storeId == 3) storeName = "Chi nhánh TP.HCM";
+
+            // 3. Hàm nội bộ lấy doanh thu theo năm (12 tháng)
+            List<decimal> GetMonthlyData(int y)
+            {
+                var data = new List<decimal>();
+                for (int m = 1; m <= 12; m++)
+                {
+                    var revenue = _context.DonHangs
+                        .Where(d => d.TrangThai == 3 && d.NgayDat.Value.Year == y && d.NgayDat.Value.Month == m
+                                    && (!storeId.HasValue || d.StoreId == storeId))
+                        .Sum(d => (decimal?)d.TongTien) ?? 0;
+                    data.Add(revenue);
+                }
+                return data;
+            }
+
+            // 4. Lấy dữ liệu 3 năm
+            var dataNamHienTai = GetMonthlyData(selectedYear);
+            var dataNamTruoc = GetMonthlyData(selectedYear - 1);
+            var dataNamKia = GetMonthlyData(selectedYear - 2);
+
+            // 5. Tính KPI (Cho Tháng/Năm được chọn)
+            var kpiQuery = _context.DonHangs
+                .Where(d => d.TrangThai == 3
+                            && d.NgayDat.Value.Year == selectedYear
+                            && d.NgayDat.Value.Month == selectedMonth
+                            && (!storeId.HasValue || d.StoreId == storeId));
+
+            decimal tongDoanhThuThang = kpiQuery.Sum(d => d.TongTien);
+            int tongDonHangThang = kpiQuery.Count();
+
+            // Tính số lượng bán trong tháng
+            int sanPhamDaBanThang = _context.ChiTietDonHangs
+                .Where(ct => ct.DonHang.TrangThai == 3
+                             && ct.DonHang.NgayDat.Value.Year == selectedYear
+                             && ct.DonHang.NgayDat.Value.Month == selectedMonth
+                             && (!storeId.HasValue || ct.DonHang.StoreId == storeId))
+                .Sum(ct => (int?)ct.SoLuong) ?? 0;
+
+            // Tính Lợi Nhuận Ước Tính (Tháng) = Doanh Thu - Giá Vốn
+            var loiNhuanQuery = _context.ChiTietDonHangs
+                .Where(ct => ct.DonHang.TrangThai == 3
+                             && ct.DonHang.NgayDat.Value.Year == selectedYear
+                             && ct.DonHang.NgayDat.Value.Month == selectedMonth
+                             && (!storeId.HasValue || ct.DonHang.StoreId == storeId));
+
+            decimal tongVon = loiNhuanQuery.Sum(ct => ct.GiaGoc * ct.SoLuong);
+            decimal loiNhuanUocTinh = tongDoanhThuThang - tongVon;
+
+            // 6. Chi tiết hiệu quả sản phẩm (Trong Tháng/Năm được chọn)
+            var baoCaoLoiNhuan = loiNhuanQuery
+                .GroupBy(ct => new { ct.SanPhamId, ct.SanPham.Name, ct.SanPham.ImageUrl })
+                .Select(g => new LoiNhuanSanPham
+                {
+                    TenSanPham = g.Key.Name,
+                    HinhAnh = g.Key.ImageUrl,
+                    SoLuongBan = g.Sum(x => x.SoLuong),
+                    DoanhThu = g.Sum(x => (x.Gia ?? 0) * x.SoLuong),
+                    GiaVon = g.Sum(x => x.GiaGoc * x.SoLuong),
+                    LoiNhuan = g.Sum(x => ((x.Gia ?? 0) - x.GiaGoc) * x.SoLuong)
+                })
+                .OrderByDescending(x => x.DoanhThu)
+                .ToList();
+
+            // 7. Đóng gói ViewModel
+            var model = new BaoCaoViewModel
+            {
+                TongDoanhThu = tongDoanhThuThang,
+                TongDonHang = tongDonHangThang,
+
+                // [ĐÃ SỬA] Tên thuộc tính khớp với Model mới
+                TongSanPhamDaBan = sanPhamDaBanThang,
+
+                LoiNhuanUocTinh = loiNhuanUocTinh,
+
+                DataNamHienTai = dataNamHienTai,
+                DataNamTruoc = dataNamTruoc,
+                DataNamKia = dataNamKia,
+                CurrentYear = selectedYear,
+
+                SelectedStoreId = storeId,
+                StoreName = storeName,
+                BaoCaoLoiNhuan = baoCaoLoiNhuan
+            };
+
+            // Truyền viewbag để giữ trạng thái bộ lọc
+            ViewBag.SelectedMonth = selectedMonth;
+            ViewBag.SelectedYear = selectedYear;
+            ViewBag.IsBoss = (user.Role == "Boss");
+
+            return View(model);
+        }
+
+        // --- 8. XUẤT EXCEL & IN HÓA ĐƠN ---
         [HttpGet]
         public IActionResult XuatExcelDonHang()
         {
@@ -472,83 +612,49 @@ namespace banthietbidientu.Controllers
             return View(model);
         }
 
-        // --- 7. BÁO CÁO THỐNG KÊ ---
-        public IActionResult BaoCao()
+        // --- 9. QUẢN LÝ THU CŨ ĐỔI MỚI (MỚI) ---
+        public IActionResult QuanLyThuMua()
         {
-            var tongDoanhThu = _context.DonHangs.Where(d => d.TrangThai == 3).Sum(d => d.TongTien);
-            var tongDonHang = _context.DonHangs.Count();
-            var sanPhamSapHet = _context.SanPhams.Count(s => s.SoLuong < 5);
-            var tongSanPhamDaBan = _context.ChiTietDonHangs.Where(ct => ct.DonHang.TrangThai == 3).Sum(ct => ct.SoLuong);
-
-            var labelsNgay = new List<string>();
-            var valuesDoanhThu = new List<decimal>();
-            for (int i = 6; i >= 0; i--)
-            {
-                var date = DateTime.Today.AddDays(-i);
-                labelsNgay.Add(date.ToString("dd/MM"));
-                var revenue = _context.DonHangs
-                    .Where(d => d.TrangThai == 3 && d.NgayDat.HasValue && d.NgayDat.Value.Date == date)
-                    .Sum(d => d.TongTien);
-                valuesDoanhThu.Add(revenue);
-            }
-
-            var topProducts = _context.ChiTietDonHangs
-                .Where(ct => ct.DonHang.TrangThai == 3)
-                .GroupBy(ct => ct.SanPham.Name)
-                .Select(g => new { Name = g.Key, Count = g.Sum(x => x.SoLuong) })
-                .OrderByDescending(x => x.Count)
-                .Take(5)
+            var listYeuCau = _context.YeuCauThuMuas
+                .Include(y => y.TaiKhoan)
+                .OrderByDescending(y => y.NgayTao)
                 .ToList();
-
-            var topUsers = _context.DonHangs
-                .Where(d => d.TrangThai == 3 && d.TaiKhoanId != null)
-                .GroupBy(d => d.TaiKhoan)
-                .Select(g => new TopKhachHang
-                {
-                    HoTen = g.Key.FullName ?? "Ẩn danh",
-                    Email = g.Key.Email ?? "---",
-                    Role = g.Key.Role,
-                    SoLanMua = g.Count(),
-                    TongChiTieu = g.Sum(x => x.TongTien)
-                })
-                .OrderByDescending(x => x.TongChiTieu)
-                .Take(5)
-                .ToList();
-
-            var baoCaoLoiNhuan = _context.ChiTietDonHangs
-                .Include(ct => ct.SanPham)
-                .Where(ct => ct.DonHang.TrangThai == 3)
-                .GroupBy(ct => new { ct.SanPhamId, ct.SanPham.Name, ct.SanPham.ImageUrl })
-                .Select(g => new LoiNhuanSanPham
-                {
-                    TenSanPham = g.Key.Name,
-                    HinhAnh = g.Key.ImageUrl,
-                    SoLuongBan = g.Sum(x => x.SoLuong),
-                    DoanhThu = g.Sum(x => (x.Gia ?? 0) * x.SoLuong),
-                    GiaVon = g.Sum(x => x.GiaGoc * x.SoLuong),
-                    LoiNhuan = g.Sum(x => ((x.Gia ?? 0) - x.GiaGoc) * x.SoLuong)
-                })
-                .OrderByDescending(x => x.LoiNhuan)
-                .ToList();
-
-            var model = new BaoCaoViewModel
-            {
-                TongDoanhThu = tongDoanhThu,
-                TongSanPhamDaBan = tongSanPhamDaBan,
-                TongDonHang = tongDonHang,
-                SanPhamSapHet = sanPhamSapHet,
-                LabelsNgay = labelsNgay,
-                ValuesDoanhThu = valuesDoanhThu,
-                TopSanPhamTen = topProducts.Select(p => p.Name).ToList(),
-                TopSanPhamSoLuong = topProducts.Select(p => p.Count).ToList(),
-                TopKhachHangs = topUsers,
-                BaoCaoLoiNhuan = baoCaoLoiNhuan
-            };
-
-            return View(model);
+            return View(listYeuCau);
         }
 
-        // --- 8. QUẢN LÝ ĐÁNH GIÁ (MỚI) ---
+        [HttpPost]
+        public IActionResult CapNhatThuMua(int id, int trangThai, string ghiChuAdmin)
+        {
+            var yeuCau = _context.YeuCauThuMuas.Find(id);
+            if (yeuCau != null)
+            {
+                if (yeuCau.TrangThai == 2 || yeuCau.TrangThai == -1)
+                {
+                    TempData["Error"] = "Yêu cầu này đã hoàn tất hoặc đã hủy, không thể thay đổi trạng thái nữa!";
+                    return RedirectToAction("QuanLyThuMua");
+                }
+
+                if (trangThai == 2 || trangThai == -1)
+                {
+                    if (!string.IsNullOrEmpty(ghiChuAdmin))
+                    {
+                        yeuCau.GhiChu = ghiChuAdmin;
+                    }
+                }
+                else if (trangThai == 1 && string.IsNullOrEmpty(yeuCau.GhiChu) && !string.IsNullOrEmpty(ghiChuAdmin))
+                {
+                    yeuCau.GhiChu = ghiChuAdmin;
+                }
+
+                yeuCau.TrangThai = trangThai;
+
+                _context.SaveChanges();
+                TempData["Success"] = "Đã cập nhật trạng thái yêu cầu.";
+            }
+            return RedirectToAction("QuanLyThuMua");
+        }
+
+        // --- 10. QUẢN LÝ ĐÁNH GIÁ (MỚI) ---
         public IActionResult QuanLyDanhGia()
         {
             var listDanhGia = _context.DanhGias
@@ -602,49 +708,6 @@ namespace banthietbidientu.Controllers
                 TempData["Success"] = "Đã xóa đánh giá.";
             }
             return RedirectToAction("QuanLyDanhGia");
-        }
-
-        // --- 9. QUẢN LÝ THU CŨ ĐỔI MỚI (MỚI) ---
-        public IActionResult QuanLyThuMua()
-        {
-            var listYeuCau = _context.YeuCauThuMuas
-                .Include(y => y.TaiKhoan)
-                .OrderByDescending(y => y.NgayTao)
-                .ToList();
-            return View(listYeuCau);
-        }
-
-        [HttpPost]
-        public IActionResult CapNhatThuMua(int id, int trangThai, string ghiChuAdmin)
-        {
-            var yeuCau = _context.YeuCauThuMuas.Find(id);
-            if (yeuCau != null)
-            {
-                if (yeuCau.TrangThai == 2 || yeuCau.TrangThai == -1)
-                {
-                    TempData["Error"] = "Yêu cầu này đã hoàn tất hoặc đã hủy, không thể thay đổi trạng thái nữa!";
-                    return RedirectToAction("QuanLyThuMua");
-                }
-
-                if (trangThai == 2 || trangThai == -1)
-                {
-                    if (!string.IsNullOrEmpty(ghiChuAdmin))
-                    {
-                        yeuCau.GhiChu = ghiChuAdmin;
-                    }
-                }
-                else if (trangThai == 1 && string.IsNullOrEmpty(yeuCau.GhiChu) && !string.IsNullOrEmpty(ghiChuAdmin))
-                {
-                    yeuCau.GhiChu = ghiChuAdmin;
-                }
-
-                yeuCau.TrangThai = trangThai;
-
-
-                _context.SaveChanges();
-                TempData["Success"] = "Đã cập nhật trạng thái yêu cầu.";
-            }
-            return RedirectToAction("QuanLyThuMua");
         }
     }
 }

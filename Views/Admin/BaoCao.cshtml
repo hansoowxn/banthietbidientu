@@ -1,228 +1,212 @@
 ﻿@model banthietbidientu.Models.BaoCaoViewModel
+
 @{
-    ViewData["Title"] = "Báo cáo thống kê";
+    ViewData["Title"] = "Báo cáo doanh thu";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    int currentMonth = ViewBag.SelectedMonth ?? DateTime.Now.Month;
+    int currentYear = ViewBag.SelectedYear ?? DateTime.Now.Year;
+    bool isBoss = ViewBag.IsBoss ?? false;
 }
 
-<div class="container-fluid py-4">
+<style>
+    /* Card KPI Gradient */
+    .kpi-card {
+        border: none;
+        border-radius: 15px;
+        color: white;
+        overflow: hidden;
+        position: relative;
+        transition: transform 0.3s;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
 
-    <!-- Header Trang -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="fw-bold mb-1 text-dark">Báo Cáo Kinh Doanh</h4>
-            <small class="text-muted">Cập nhật lúc: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</small>
+        .kpi-card:hover {
+            transform: translateY(-5px);
+        }
+
+    .bg-gradient-primary {
+        background: linear-gradient(45deg, #4e73df, #224abe);
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(45deg, #1cc88a, #13855c);
+    }
+
+    .bg-gradient-info {
+        background: linear-gradient(45deg, #36b9cc, #258391);
+    }
+
+    .bg-gradient-warning {
+        background: linear-gradient(45deg, #f6c23e, #dda20a);
+    }
+
+    .kpi-icon {
+        position: absolute;
+        right: 20px;
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 3rem;
+        opacity: 0.3;
+    }
+
+    /* Table Styles */
+    .profit-plus {
+        color: #1cc88a;
+        font-weight: bold;
+    }
+
+    .profit-minus {
+        color: #e74a3b;
+        font-weight: bold;
+    }
+
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fc;
+    }
+</style>
+
+<div class="container-fluid p-4">
+    <form method="get" class="bg-white p-3 rounded-3 shadow-sm mb-4 d-flex flex-wrap gap-3 align-items-end">
+        @if (isBoss)
+        {
+            <div class="flex-grow-1">
+                <label class="fw-bold small text-muted">Chọn Chi Nhánh</label>
+                <select name="storeId" class="form-select">
+                    <option value="">-- Toàn hệ thống --</option>
+                    <option value="1" selected="@(Model.SelectedStoreId == 1)">Hà Nội</option>
+                    <option value="2" selected="@(Model.SelectedStoreId == 2)">Đà Nẵng</option>
+                    <option value="3" selected="@(Model.SelectedStoreId == 3)">TP. Hồ Chí Minh</option>
+                </select>
+            </div>
+        }
+
+        <div style="width: 120px;">
+            <label class="fw-bold small text-muted">Tháng</label>
+            <select name="month" class="form-select">
+                @for (int i = 1; i <= 12; i++)
+                {
+                    <option value="@i" selected="@(i == currentMonth)">Tháng @i</option>
+                }
+            </select>
         </div>
-        <button class="btn btn-primary btn-sm shadow-sm" onclick="window.print()">
-            <i class="bi bi-printer me-2"></i> In Báo Cáo
-        </button>
+
+        <div style="width: 120px;">
+            <label class="fw-bold small text-muted">Năm</label>
+            <select name="year" class="form-select">
+                @for (int y = DateTime.Now.Year; y >= DateTime.Now.Year - 2; y--)
+                {
+                    <option value="@y" selected="@(y == currentYear)">@y</option>
+                }
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary px-4 fw-bold"><i class="bi bi-filter"></i> Xem Báo Cáo</button>
+        <a href="@Url.Action("XuatExcelDonHang")" class="btn btn-success px-3"><i class="bi bi-file-earmark-excel"></i> Xuất Excel</a>
+    </form>
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card bg-gradient-primary h-100 py-2">
+                <div class="card-body">
+                    <div class="text-uppercase small fw-bold mb-1 text-white-50">Doanh Thu (Tháng @currentMonth)</div>
+                    <div class="h3 mb-0 fw-bold">@Model.TongDoanhThu.ToString("N0") đ</div>
+                    <i class="bi bi-currency-dollar kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card bg-gradient-success h-100 py-2">
+                <div class="card-body">
+                    <div class="text-uppercase small fw-bold mb-1 text-white-50">Lợi Nhuận (Ước tính)</div>
+                    <div class="h3 mb-0 fw-bold">@Model.LoiNhuanUocTinh.ToString("N0") đ</div>
+                    <i class="bi bi-graph-up-arrow kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card bg-gradient-info h-100 py-2">
+                <div class="card-body">
+                    <div class="text-uppercase small fw-bold mb-1 text-white-50">Tổng Đơn Hàng</div>
+                    <div class="h3 mb-0 fw-bold">@Model.TongDonHang đơn</div>
+                    <i class="bi bi-receipt kpi-icon"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="card kpi-card bg-gradient-warning h-100 py-2">
+                <div class="card-body">
+                    <div class="text-uppercase small fw-bold mb-1 text-white-50">Sản Phẩm Đã Bán</div>
+                    <div class="h3 mb-0 fw-bold">@Model.TongSanPhamDaBan cái</div>
+                    <i class="bi bi-box-seam kpi-icon"></i>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <!-- 4 Thẻ thống kê tổng quan -->
-    <div class="row g-3 mb-4">
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100" style="background: linear-gradient(45deg, #4e73df, #224abe);">
-                <div class="card-body text-white">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-white-50 small text-uppercase fw-bold mb-1">Tổng Doanh Thu</div>
-                            <div class="h3 mb-0 fw-bold">@Model.TongDoanhThu.ToString("#,##0") đ</div>
-                        </div>
-                        <div class="fs-1 text-white-50"><i class="bi bi-wallet2"></i></div>
-                    </div>
-                </div>
-            </div>
+    <div class="card shadow-sm mb-4 rounded-4 border-0">
+        <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center">
+            <h6 class="m-0 fw-bold text-primary">
+                <i class="bi bi-bar-chart-line-fill me-2"></i> Biểu đồ Doanh thu 3 năm gần nhất (@Model.StoreName)
+            </h6>
         </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100 border-start border-4 border-success">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-success small text-uppercase fw-bold mb-1">Sản phẩm đã bán</div>
-                            <div class="h3 mb-0 fw-bold text-dark">@Model.TongSanPhamDaBan</div>
-                        </div>
-                        <div class="fs-1 text-gray-300"><i class="bi bi-box-seam"></i></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100 border-start border-4 border-info">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-info small text-uppercase fw-bold mb-1">Tổng giao dịch</div>
-                            <div class="h3 mb-0 fw-bold text-dark">@Model.TongDonHang</div>
-                        </div>
-                        <div class="fs-1 text-gray-300"><i class="bi bi-receipt"></i></div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="col-xl-3 col-md-6">
-            <div class="card border-0 shadow-sm h-100 border-start border-4 border-danger">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <div class="text-danger small text-uppercase fw-bold mb-1">Sắp hết hàng</div>
-                            <div class="h3 mb-0 fw-bold text-dark">@Model.SanPhamSapHet <small class="fs-6 text-muted">mã</small></div>
-                        </div>
-                        <div class="fs-1 text-gray-300"><i class="bi bi-exclamation-triangle"></i></div>
-                    </div>
-                </div>
-            </div>
+        <div class="card-body">
+            <canvas id="revenueChart" height="80"></canvas>
         </div>
     </div>
 
-    <!-- Khu vực Biểu đồ -->
-    <div class="row g-3 mb-4">
-        <!-- Biểu đồ Doanh thu (Line Chart) -->
-        <div class="col-lg-8">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white py-3 border-0">
-                    <h6 class="m-0 fw-bold text-primary"><i class="bi bi-graph-up-arrow me-2"></i>Biểu đồ doanh thu 7 ngày qua</h6>
-                </div>
-                <div class="card-body">
-                    <div style="height: 350px;">
-                        <canvas id="revenueChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Biểu đồ Top sản phẩm (Bar Chart) -->
-        <div class="col-lg-4">
-            <div class="card border-0 shadow-sm h-100">
-                <div class="card-header bg-white py-3 border-0">
-                    <h6 class="m-0 fw-bold text-primary"><i class="bi bi-trophy me-2"></i>Top 5 Bán Chạy</h6>
-                </div>
-                <div class="card-body">
-                    <div style="height: 350px;">
-                        <canvas id="topProductChart"></canvas>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Bảng Khách hàng VIP -->
-    <div class="card border-0 shadow-sm">
-        <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 fw-bold text-primary"><i class="bi bi-people-fill me-2"></i>Khách Hàng Tiềm Năng (VIP)</h6>
-            <a href="@Url.Action("QuanLyTaiKhoan", "Admin")" class="btn btn-sm btn-outline-primary rounded-pill">Xem tất cả</a>
+    <div class="card shadow-sm rounded-4 border-0">
+        <div class="card-header py-3 bg-white">
+            <h6 class="m-0 fw-bold text-success">
+                <i class="bi bi-table me-2"></i> Hiệu quả kinh doanh theo Sản phẩm (Tháng @currentMonth/@currentYear)
+            </h6>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
                 <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="ps-4">Khách hàng</th>
-                            <th class="text-center">Hạng thành viên</th>
-                            <th>Email</th>
-                            <th class="text-center">Số lần mua</th>
-                            <th class="text-end pe-4">Tổng chi tiêu</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model.TopKhachHangs != null)
-                        {
-                            foreach (var khach in Model.TopKhachHangs)
-                            {
-                                string rankName = "Thành Viên";
-                                string badgeClass = "bg-secondary";
-
-                                // --- LOGIC QUAN TRỌNG: KIỂM TRA ROLE ---
-                                if (khach.Role == "Admin")
-                                {
-                                    rankName = "👑 TỐI THƯỢNG";
-                                    // Màu đỏ gradient quyền lực cho Admin
-                                    badgeClass = "bg-danger bg-gradient text-white border border-danger shadow-sm";
-                                }
-                                else
-                                {
-                                    // Logic thường cho khách dựa trên tiền
-                                    if (khach.TongChiTieu >= 100000000) { rankName = "💎 KIM CƯƠNG"; badgeClass = "bg-dark text-white border border-info"; }
-                                    else if (khach.TongChiTieu >= 50000000) { rankName = "🏆 BẠCH KIM"; badgeClass = "bg-info text-dark"; }
-                                    else if (khach.TongChiTieu >= 20000000) { rankName = "🥇 VÀNG"; badgeClass = "bg-warning text-dark"; }
-                                    else if (khach.TongChiTieu >= 10000000) { rankName = "🥈 BẠC"; badgeClass = "bg-secondary text-white"; }
-                                }
-
-                                <tr>
-                                    <td class="ps-4">
-                                        <div class="fw-bold text-dark">@khach.HoTen</div>
-                                        @if (khach.Role == "Admin")
-                                        {
-                                            <span class="badge bg-light text-danger border border-danger mt-1" style="font-size: 9px;">ADMINISTRATOR</span>
-                                        }
-                                    </td>
-
-                                    <td class="text-center">
-                                        <span class="badge rounded-pill @badgeClass px-3 py-2" style="min-width: 110px;">@rankName</span>
-                                    </td>
-
-                                    <td class="text-muted small">@khach.Email</td>
-                                    <td class="text-center"><span class="badge bg-light text-dark border rounded-pill px-3">@khach.SoLanMua đơn</span></td>
-                                    <td class="text-end pe-4 fw-bold text-success">@khach.TongChiTieu.ToString("#,##0") đ</td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm mt-4">
-        <div class="card-header bg-white py-3 border-0 d-flex justify-content-between align-items-center">
-            <h6 class="m-0 fw-bold text-success"><i class="bi bi-cash-coin me-2"></i>Chi Tiết Lợi Nhuận Sản Phẩm</h6>
-        </div>
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
+                    <thead class="bg-light text-secondary">
                         <tr>
                             <th class="ps-4">Sản phẩm</th>
                             <th class="text-center">Số lượng bán</th>
                             <th class="text-end">Doanh thu</th>
                             <th class="text-end">Giá vốn</th>
-                            <th class="text-end pe-4">Lợi nhuận</th>
+                            <th class="text-end">Lợi nhuận</th>
+                            <th class="text-end pe-4">% Tỷ suất LN</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @if (Model.BaoCaoLoiNhuan != null)
+                        @if (Model.BaoCaoLoiNhuan != null && Model.BaoCaoLoiNhuan.Any())
                         {
                             foreach (var item in Model.BaoCaoLoiNhuan)
                             {
-                                // Tính tỷ suất lợi nhuận (Margin)
-                                double margin = item.DoanhThu > 0 ? (double)(item.LoiNhuan / item.DoanhThu) * 100 : 0;
-                                string marginClass = margin >= 30 ? "text-success" : (margin >= 10 ? "text-warning" : "text-danger");
-
                                 <tr>
                                     <td class="ps-4">
                                         <div class="d-flex align-items-center">
-                                            <img src="@(item.HinhAnh ?? "/image/logo.png")" class="rounded border me-3" style="width: 40px; height: 40px; object-fit: cover;">
-                                            <div class="fw-bold text-dark">@item.TenSanPham</div>
+                                            <img src="@item.HinhAnh" class="rounded border me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                            <span class="fw-bold text-dark">@item.TenSanPham</span>
                                         </div>
                                     </td>
-                                    <td class="text-center">
-                                        <span class="badge bg-light text-dark border">@item.SoLuongBan</span>
+                                    <td class="text-center">@item.SoLuongBan</td>
+                                    <td class="text-end fw-bold text-primary">@item.DoanhThu.ToString("N0")</td>
+                                    <td class="text-end text-muted">@item.GiaVon.ToString("N0")</td>
+                                    <td class="text-end @(item.LoiNhuan >= 0 ? "profit-plus" : "profit-minus")">
+                                        @item.LoiNhuan.ToString("N0")
                                     </td>
-                                    <td class="text-end fw-bold text-primary">@item.DoanhThu.ToString("#,##0") đ</td>
-                                    <td class="text-end text-muted">@item.GiaVon.ToString("#,##0") đ</td>
                                     <td class="text-end pe-4">
-                                        <div class="fw-bold text-success">@item.LoiNhuan.ToString("#,##0") đ</div>
-                                        <small class="@marginClass fw-bold" style="font-size: 10px;">
-                                            (@margin.ToString("0.0")%)
-                                            @if (margin >= 30)
-                                            {
-                                                <i class="bi bi-arrow-up-right"></i>
-                                            }
-                                        </small>
+                                        <span class="badge @(item.Margin >= 30 ? "bg-success" : item.Margin >= 10 ? "bg-warning text-dark" : "bg-danger")">
+                                            @item.Margin.ToString("0.0")%
+                                        </span>
                                     </td>
                                 </tr>
                             }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    Không có dữ liệu bán hàng trong tháng này.
+                                </td>
+                            </tr>
                         }
                     </tbody>
                 </table>
@@ -234,115 +218,91 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function() {
-
-            // --- 1. BIỂU ĐỒ DOANH THU (Giao diện mới: Gradient & Smooth) ---
-            const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
-
-            // Tạo màu gradient bóng đổ
-            let gradient = ctxRevenue.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(13, 110, 253, 0.5)'); // Xanh đậm ở trên
-            gradient.addColorStop(1, 'rgba(13, 110, 253, 0.0)'); // Nhạt dần xuống dưới
-
-            const labelsNgay = @Html.Raw(Json.Serialize(Model.LabelsNgay));
-            const dataDoanhThu = @Html.Raw(Json.Serialize(Model.ValuesDoanhThu));
-
-            new Chart(ctxRevenue, {
-                type: 'line',
-                data: {
-                    labels: labelsNgay,
-                    datasets: [{
-                        label: 'Doanh thu',
-                        data: dataDoanhThu,
-                        backgroundColor: gradient,
-                        borderColor: '#0d6efd',
-                        borderWidth: 3,
-                        pointBackgroundColor: '#ffffff',
-                        pointBorderColor: '#0d6efd',
+        // Dữ liệu từ C#
+        var ctx = document.getElementById("revenueChart");
+        var myLineChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"],
+                datasets: [
+                    {
+                        label: "Năm nay (@Model.CurrentYear)",
+                        lineTension: 0.3,
+                        backgroundColor: "rgba(78, 115, 223, 0.05)",
+                        borderColor: "rgba(78, 115, 223, 1)",
+                        pointRadius: 3,
+                        pointBackgroundColor: "rgba(78, 115, 223, 1)",
+                        pointBorderColor: "rgba(78, 115, 223, 1)",
+                        pointHoverRadius: 3,
+                        pointHoverBackgroundColor: "rgba(78, 115, 223, 1)",
+                        pointHoverBorderColor: "rgba(78, 115, 223, 1)",
+                        pointHitRadius: 10,
                         pointBorderWidth: 2,
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
-                        fill: true,
-                        tension: 0.4 // Độ cong mềm mại (quan trọng)
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            padding: 12,
-                            titleFont: { size: 14 },
-                            bodyFont: { size: 14, weight: 'bold' },
-                            callbacks: {
-                                label: function(context) {
-                                    let value = context.raw;
-                                    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-                                }
-                            }
-                        }
+                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamHienTai)),
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { borderDash: [5, 5], color: '#e9ecef' },
-                            ticks: {
-                                callback: function(value) {
-                                    // Rút gọn số (1tr, 2tr...)
-                                    if(value >= 1000000000) return (value/1000000000) + ' Tỷ';
-                                    if(value >= 1000000) return (value/1000000) + ' Tr';
-                                    return value;
-                                },
-                                font: { size: 11 }
-                            }
+                    {
+                        label: "Năm trước (@(Model.CurrentYear - 1))",
+                        lineTension: 0.3,
+                        borderColor: "#1cc88a",
+                        pointRadius: 3,
+                        pointBackgroundColor: "#1cc88a",
+                        pointBorderColor: "#1cc88a",
+                        borderDash: [5, 5], // Nét đứt
+                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamTruoc)),
+                    },
+                    {
+                        label: "Năm kia (@(Model.CurrentYear - 2))",
+                        lineTension: 0.3,
+                        borderColor: "#e74a3b",
+                        pointRadius: 3,
+                        pointBackgroundColor: "#e74a3b",
+                        pointBorderColor: "#e74a3b",
+                        borderDash: [2, 2], // Nét chấm
+                        hidden: true, // Mặc định ẩn
+                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamKia)),
+                    }
+                ],
+            },
+            options: {
+                maintainAspectRatio: false,
+                layout: { padding: { left: 10, right: 25, top: 25, bottom: 0 } },
+                scales: {
+                    x: { grid: { display: false, drawBorder: false }, ticks: { maxTicksLimit: 12 } },
+                    y: {
+                        ticks: {
+                            maxTicksLimit: 5, padding: 10,
+                            callback: function(value) { return value.toLocaleString('vi-VN') + 'đ'; }
                         },
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 11 } }
-                        }
+                        grid: { color: "rgb(234, 236, 244)", zeroLineColor: "rgb(234, 236, 244)", drawBorder: false, borderDash: [2] }
                     },
-                    interaction: {
-                        mode: 'index',
+                },
+                plugins: {
+                    legend: { display: true, position: 'bottom' },
+                    tooltip: {
+                        backgroundColor: "rgb(255,255,255)",
+                        bodyColor: "#858796",
+                        titleMarginBottom: 10,
+                        titleColor: '#6e707e',
+                        titleFont: { size: 14 },
+                        borderColor: '#dddfeb',
+                        borderWidth: 1,
+                        xPadding: 15,
+                        yPadding: 15,
+                        displayColors: false,
                         intersect: false,
-                    },
-                }
-            });
-
-            // --- 2. BIỂU ĐỒ TOP SẢN PHẨM (Fix số nguyên) ---
-            const ctxProduct = document.getElementById('topProductChart').getContext('2d');
-            const labelsSP = @Html.Raw(Json.Serialize(Model.TopSanPhamTen));
-            const dataSP = @Html.Raw(Json.Serialize(Model.TopSanPhamSoLuong));
-
-            new Chart(ctxProduct, {
-                type: 'bar',
-                data: {
-                    labels: labelsSP,
-                    datasets: [{
-                        label: 'Số lượng bán',
-                        data: dataSP,
-                        backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b'],
-                        borderRadius: 5,
-                        barThickness: 20
-                    }]
-                },
-                options: {
-                    indexAxis: 'y', // Biểu đồ ngang
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: {
-                                stepSize: 1, // Bước nhảy là 1 (không có số lẻ)
-                                precision: 0
+                        mode: 'index',
+                        caretPadding: 10,
+                        callbacks: {
+                            label: function(context) {
+                                var label = context.dataset.label || '';
+                                if (label) { label += ': '; }
+                                label += context.parsed.y.toLocaleString('vi-VN') + ' đ';
+                                return label;
                             }
-                        },
-                        y: { grid: { display: false } }
+                        }
                     }
                 }
-            });
+            }
         });
     </script>
 }

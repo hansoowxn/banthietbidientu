@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using banthietbidientu.Models; // Đảm bảo có dòng này để nhận diện TaiKhoan
 
 namespace banthietbidientu.Models
 {
@@ -12,12 +13,17 @@ namespace banthietbidientu.Models
 
         public decimal TongTien { get; set; }
 
-        // --- QUAN TRỌNG: Thuộc tính này để hứng địa chỉ mới nhập từ Form ---
+        // Các trường nhận dữ liệu từ Form
         public string DiaChi { get; set; }
         public string NguoiNhan { get; set; }
         public string SoDienThoai { get; set; }
         public string GhiChu { get; set; }
+
+        // --- [QUAN TRỌNG] Các trường mới bắt buộc phải có ---
+        public int? StoreId { get; set; }
+        public string DeliveryType { get; set; }
     }
+
     public class CartItem
     {
         public int Id { get; set; }
@@ -25,6 +31,6 @@ namespace banthietbidientu.Models
         public string Image { get; set; }
         public decimal Price { get; set; }
         public int Quantity { get; set; }
-        public decimal Total => Price * Quantity; // Thành tiền = Giá * Số lượng
+        public decimal Total => Price * Quantity;
     }
 }
