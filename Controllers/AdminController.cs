@@ -332,15 +332,21 @@ namespace banthietbidientu.Controllers
 
         // --- [MỚI] API CẬP NHẬT GIÁ NHẬP NHANH ---
         [HttpPost]
-        public IActionResult CapNhatGiaNhapNhanh(int id, decimal giaNhap)
+        [HttpPost]
+        public async Task<IActionResult> CapNhatGiaNhapNhanh(int id, decimal giaNhap)
         {
-            var sp = _context.SanPhams.Find(id);
+            // Dùng FindAsync thay vì Find
+            var sp = await _context.SanPhams.FindAsync(id);
+
             if (sp != null)
             {
                 if (giaNhap < 0) return Json(new { success = false, message = "Giá nhập không được âm" });
 
                 sp.GiaNhap = giaNhap;
-                _context.SaveChanges();
+
+                // Dùng SaveChangesAsync thay vì SaveChanges
+                await _context.SaveChangesAsync();
+
                 return Json(new { success = true });
             }
             return Json(new { success = false, message = "Không tìm thấy sản phẩm" });
