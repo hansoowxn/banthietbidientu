@@ -299,35 +299,66 @@
     <script>
         // 1. Biểu đồ Đường (3 Năm)
         var ctx = document.getElementById("revenueChart");
-        new Chart(ctx, {
+        var myLineChart = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"],
                 datasets: [
                     {
-                        label: "Năm nay (@Model.CurrentYear)", tension: 0.4, backgroundColor: "rgba(78, 115, 223, 0.05)", borderColor: "#4e73df",
-                        pointBackgroundColor: "#4e73df", borderWidth: 3, data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamHienTai))
+                        label: "Năm nay (@Model.CurrentYear)",
+                        tension: 0.4,
+                        backgroundColor: "rgba(78, 115, 223, 0.05)",
+                        borderColor: "#4e73df", // Xanh dương đậm
+                        pointBackgroundColor: "#4e73df",
+                        borderWidth: 3,
+                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamHienTai)),
                     },
                     {
-                        label: "Năm trước (@(Model.CurrentYear - 1))", tension: 0.4, borderColor: "#1cc88a", pointBackgroundColor: "#1cc88a",
-                        borderDash: [5, 5], borderWidth: 2, data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamTruoc))
+                        label: "Năm trước (@(Model.CurrentYear - 1))",
+                        tension: 0.4,
+                        borderColor: "#1cc88a", // Xanh lá
+                        pointBackgroundColor: "#1cc88a",
+                        borderDash: [5, 5],
+                        borderWidth: 2,
+                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamTruoc)),
+                    },
+                    {
+                        // [ĐÃ BỔ SUNG] Đường thứ 3: Năm kia
+                        label: "Năm kia (@(Model.CurrentYear - 2))",
+                        tension: 0.4,
+                        borderColor: "#e74a3b", // Màu đỏ
+                        pointBackgroundColor: "#e74a3b",
+                        borderDash: [2, 2], // Nét chấm nhỏ hơn để phân biệt
+                        borderWidth: 2,
+                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamKia)),
                     }
-                ]
+                ],
             },
-            options: { maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'top' },
+                    tooltip: {
+                        mode: 'index', intersect: false,
+                        callbacks: { label: function(c) { return c.dataset.label + ": " + c.parsed.y.toLocaleString('vi-VN') + ' đ'; } }
+                    }
+                },
+                scales: {
+                    y: { beginAtZero: true, ticks: { callback: function(v) { return v/1000000 + 'M'; } } },
+                    x: { grid: { display: false } }
+                }
+            }
         });
 
-        // 2. Biểu đồ Tròn (Pie Chart)
+        // 2. Biểu đồ Tròn (Pie Chart) - Giữ nguyên
         var ctxPie = document.getElementById("pieChart");
 
-        // Logic chọn dữ liệu: Nếu Boss xem Tổng -> So sánh Store, ngược lại -> Danh mục
         var pieLabels = [];
         var pieData = [];
         var pieColors = [];
 
         @if (isBoss && Model.SelectedStoreId == null)
         {
-            // Boss xem tổng: So sánh 3 Chi nhánh
             <text>
                 pieLabels = ["Hà Nội", "Đà Nẵng", "TP.HCM"];
                 pieData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.StoreRevenueComparison));
@@ -336,7 +367,6 @@
         }
         else
         {
-            // Admin hoặc Boss xem chi nhánh: Tỷ trọng Danh mục
             <text>
                 pieLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CategoryLabels));
                 pieData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CategoryValues));
