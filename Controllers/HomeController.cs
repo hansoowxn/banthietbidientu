@@ -164,6 +164,29 @@ namespace banthietbidientu.Controllers
             return View(model);
         }
 
+        [HttpGet]
+        public IActionResult SearchLive(string query)
+        {
+            if (string.IsNullOrEmpty(query)) return Json(new List<object>());
+
+            var products = _context.SanPhams
+                .AsNoTracking()
+                .Where(p => p.Name.Contains(query))
+                .OrderByDescending(p => p.Id)
+                .Take(5) // Chỉ lấy 5 sản phẩm gợi ý
+                .Select(p => new
+                {
+                    id = p.Id,
+                    name = p.Name,
+                    price = p.Price,
+                    image = p.ImageUrl
+                })
+                .ToList();
+
+            return Json(products);
+        }
+
+
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> GuiYeuCauThuMua(YeuCauThuMuaViewModel model)
