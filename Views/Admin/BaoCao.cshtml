@@ -77,17 +77,17 @@
     <div class="d-flex flex-wrap justify-content-between align-items-end mb-4 gap-3">
         <div>
             <h4 class="fw-bold text-dark mb-1">Báo Cáo Hiệu Quả Kinh Doanh</h4>
-            <p class="text-muted mb-0">Dữ liệu thống kê cho <strong>@Model.StoreName</strong></p>
+            <p class="text-muted mb-0">Dữ liệu thống kê cho: <strong class="text-primary">@Model.StoreName</strong></p>
         </div>
 
         <form method="get" class="d-flex gap-2 bg-white p-2 rounded-3 shadow-sm">
             @if (isBoss)
             {
-                <select name="storeId" class="form-select form-select-sm border-0 bg-light fw-bold">
+                <select name="storeId" class="form-select form-select-sm border-0 bg-light fw-bold" style="width: auto; min-width: 170px;">
                     <option value="">-- Toàn hệ thống --</option>
-                    <option value="1" selected="@(Model.SelectedStoreId == 1)">Hà Nội</option>
-                    <option value="2" selected="@(Model.SelectedStoreId == 2)">Đà Nẵng</option>
-                    <option value="3" selected="@(Model.SelectedStoreId == 3)">TP.HCM</option>
+                    <option value="1" selected="@(Model.SelectedStoreId == 1)">Chi nhánh Hà Nội</option>
+                    <option value="2" selected="@(Model.SelectedStoreId == 2)">Chi nhánh Đà Nẵng</option>
+                    <option value="3" selected="@(Model.SelectedStoreId == 3)">Chi nhánh TP.HCM</option>
                 </select>
             }
             <select name="month" class="form-select form-select-sm border-0 bg-light fw-bold">
@@ -170,7 +170,7 @@
                                 <th class="text-end">Thực thu</th>
                                 <th class="text-end">Vốn</th>
                                 <th class="text-end">Lãi ròng</th>
-                                <th class="text-end pe-4">% Lãi</th>
+                                <th class="text-end pe-4">% Tỷ suất LN</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -201,7 +201,7 @@
                             }
                             else
                             {
-                                <tr><td colspan="6" class="text-center py-4 text-muted">Chưa có dữ liệu bán hàng.</td></tr>
+                                <tr><td colspan="6" class="text-center py-4 text-muted">Chưa có dữ liệu bán hàng trong tháng này.</td></tr>
                             }
                         </tbody>
                     </table>

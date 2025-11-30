@@ -16,7 +16,7 @@
 
     @RenderSection("Styles", required: false)
     <style>
-        /* --- CSS Nút Admin --- */
+        /* --- CSS Admin Link --- */
         .admin-link a {
             color: #dc3545 !important;
             font-weight: 700 !important;
@@ -36,6 +36,7 @@
             min-height: 100vh;
         }
 
+        /* --- Header Styles --- */
         .smarttech-header {
             z-index: 1020 !important;
             position: fixed;
@@ -59,6 +60,14 @@
             flex: 1;
         }
 
+        .btn-dropdown-custom {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white !important;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+
         .header-top {
             display: flex;
             align-items: center;
@@ -71,7 +80,7 @@
             flex-shrink: 0;
         }
 
-        /* --- [MỚI] SEARCH BAR STYLES --- */
+        /* --- SEARCH BAR STYLES (Mới) --- */
         .header-search-wrapper {
             flex-grow: 1;
             max-width: 600px;
@@ -168,7 +177,7 @@
             font-weight: 700;
         }
 
-        /* --- [MỚI] NÚT THU CŨ ĐỔI MỚI (Gradient) --- */
+        /* --- NÚT THU CŨ ĐỔI MỚI (Gradient) --- */
         .btn-trade-in {
             background: linear-gradient(135deg, #FF8008 0%, #FFC837 100%); /* Cam Vàng sang trọng */
             border: none;
@@ -183,6 +192,9 @@
             font-size: 0.9rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
         }
 
             .btn-trade-in:hover {
@@ -194,7 +206,6 @@
 
             .btn-trade-in i {
                 font-size: 1.1rem;
-                vertical-align: text-bottom;
                 margin-right: 5px;
             }
 
@@ -267,7 +278,7 @@
             }
         }
 
-        /* Footer & FAB Styles (Giữ nguyên) */
+        /* Footer & FAB Styles */
         .fab-container {
             position: fixed;
             bottom: 5px;
@@ -418,6 +429,7 @@
                         <button class="btn dropdown-toggle d-flex align-items-center gap-2 shadow-sm @currentTier.CssClass"
                                 type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false"
                                 style="transition: all 0.3s; border: 1px solid rgba(255,255,255,0.5);">
+
                             <i class="bi @currentTier.Icon fs-5"></i>
                             <div class="d-flex flex-column text-start" style="line-height: 1.1;">
                                 <span style="font-size: 0.9rem;">@User.Identity.Name</span>
@@ -429,22 +441,31 @@
                             <li class="px-3 py-2 text-center bg-light border-bottom">
                                 <div class="small text-muted">Hạng thành viên</div>
                                 <div class="fw-bold text-primary text-uppercase">@currentTier.Name</div>
+
                                 @if (currentTier.CssClass != "tier-boss" && currentTier.CssClass != "tier-admin")
                                 {
                                     <div class="progress mt-2" style="height: 4px;">
                                         @{
-                                            decimal maxLevel = 100000000; var percent = (int)((currentTier.TotalSpent / maxLevel) * 100); if (percent > 100) percent = 100;
+                                            decimal maxLevel = 100000000;
+                                            var percent = (int)((currentTier.TotalSpent / maxLevel) * 100);
+                                            if (percent > 100) percent = 100;
                                         }
                                         <div class="progress-bar bg-success" role="progressbar" style="width: @percent%"></div>
                                     </div>
                                     <small class="text-muted" style="font-size: 10px;">Chi tiêu: @currentTier.TotalSpent.ToString("#,##0") đ</small>
                                 }
                             </li>
+
                             @if (User.IsInRole("Admin") || User.IsInRole("Boss"))
                             {
-                                <li><a class="dropdown-item text-danger fw-bold py-2" asp-controller="Admin" asp-action="Index"><i class="bi bi-speedometer2 me-2"></i> Trang quản trị</a></li>
+                                <li>
+                                    <a class="dropdown-item text-danger fw-bold py-2" asp-controller="Admin" asp-action="Index">
+                                        <i class="bi bi-speedometer2 me-2"></i> Trang quản trị
+                                    </a>
+                                </li>
                                 <li><hr class="dropdown-divider"></li>
                             }
+
                             <li><a class="dropdown-item py-2" asp-controller="Login" asp-action="Profile"><i class="bi bi-person-badge me-2"></i> Hồ sơ của tôi</a></li>
                             <li><a class="dropdown-item py-2" asp-controller="Login" asp-action="LichSuMuaHang"><i class="bi bi-bag-check me-2"></i> Lịch sử mua hàng</a></li>
                             <li><hr class="dropdown-divider"></li>
@@ -467,6 +488,7 @@
 
         <nav class="header-nav">
             <ul class="header-nav-list container-fluid">
+                <li><a asp-controller="Home" asp-action="Index" asp-route-category="">Tất cả sản phẩm</a></li>
                 <li><a asp-controller="Home" asp-action="Index" asp-route-category="Điện thoại">Điện thoại</a></li>
                 <li><a asp-controller="Home" asp-action="Index" asp-route-category="Laptop">Laptop</a></li>
                 <li><a asp-controller="Home" asp-action="Index" asp-route-category="Tablet">Tablet</a></li>
@@ -488,18 +510,28 @@
 
     <div class="fab-container" id="fab-container">
         <div class="fab-options">
-            <a href="https://zalo.me/0965629698" class="btn btn-light btn-lg rounded-circle shadow fab-option" title="Zalo" target="_blank"><i class="bi bi-chat-text-fill" style="color: #0068ff;"></i></a>
-            <a href="https://www.facebook.com/khanh.shyz309" class="btn btn-light btn-lg rounded-circle shadow fab-option" title="Facebook" target="_blank"><i class="bi bi-facebook" style="color: #1877f2;"></i></a>
-            <a href="mailto:vuduc792@gmail.com" class="btn btn-light btn-lg rounded-circle shadow fab-option" title="Gmail" target="_blank"><i class="bi bi-envelope-fill" style="color: #db4437;"></i></a>
+            <a href="https://zalo.me/0965629698" class="btn btn-light btn-lg rounded-circle shadow fab-option" title="Zalo" target="_blank">
+                <i class="bi bi-chat-text-fill" style="color: #0068ff;"></i>
+            </a>
+            <a href="https://www.facebook.com/khanh.shyz309" class="btn btn-light btn-lg rounded-circle shadow fab-option" title="Facebook" target="_blank">
+                <i class="bi bi-facebook" style="color: #1877f2;"></i>
+            </a>
+            <a href="mailto:vuduc792@gmail.com" class="btn btn-light btn-lg rounded-circle shadow fab-option" title="Gmail" target="_blank">
+                <i class="bi bi-envelope-fill" style="color: #db4437;"></i>
+            </a>
         </div>
-        <button class="btn btn-primary btn-lg rounded-circle shadow fab-toggler" onclick="toggleFabMenu(event)"><i class="bi bi-chat-dots-fill fs-4"></i></button>
+        <button class="btn btn-primary btn-lg rounded-circle shadow fab-toggler" onclick="toggleFabMenu(event)">
+            <i class="bi bi-chat-dots-fill fs-4"></i>
+        </button>
     </div>
 
     <div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title" id="locationModalLabel"><i class="bi bi-shop"></i> Hệ thống cửa hàng SmartTech</h5>
+                    <h5 class="modal-title" id="locationModalLabel">
+                        <i class="bi bi-shop"></i> Hệ thống cửa hàng SmartTech
+                    </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -508,25 +540,46 @@
                         <div class="col-lg-5 col-md-12">
                             <div class="list-group list-group-flush mb-3">
                                 <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="panToMap(event, 21.0362, 105.7829)">
-                                    <div><strong class="d-block text-primary">Hà Nội <i class="bi bi-chevron-right ms-2"></i></strong>120 Xuân Thủy, P. Dịch Vọng Hậu, Cầu Giấy</div>
-                                    <button class="btn btn-sm btn-outline-primary" title="Chỉ đường" onclick="event.stopPropagation(); getDirections(21.0362, 105.7829)"><i class="bi bi-signpost-fill"></i></button>
+                                    <div>
+                                        <strong class="d-block text-primary">Hà Nội <i class="bi bi-chevron-right ms-2"></i></strong>
+                                        120 Xuân Thủy, P. Dịch Vọng Hậu, Cầu Giấy
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary" title="Chỉ đường" onclick="event.stopPropagation(); getDirections(21.0362, 105.7829)">
+                                        <i class="bi bi-signpost-fill"></i>
+                                    </button>
                                 </a>
                                 <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="panToMap(event, 16.0718, 108.2236)">
-                                    <div><strong class="d-block text-primary">Đà Nẵng <i class="bi bi-chevron-right ms-2"></i></strong>78 Bạch Đằng, P. Hải Châu I, Hải Châu</div>
-                                    <button class="btn btn-sm btn-outline-primary" title="Chỉ đường" onclick="event.stopPropagation(); getDirections(16.0718, 108.2236)"><i class="bi bi-signpost-fill"></i></button>
+                                    <div>
+                                        <strong class="d-block text-primary">Đà Nẵng <i class="bi bi-chevron-right ms-2"></i></strong>
+                                        78 Bạch Đằng, P. Hải Châu I, Hải Châu
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary" title="Chỉ đường" onclick="event.stopPropagation(); getDirections(16.0718, 108.2236)">
+                                        <i class="bi bi-signpost-fill"></i>
+                                    </button>
                                 </a>
                                 <a href="#" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" onclick="panToMap(event, 10.7744, 106.7035)">
-                                    <div><strong class="d-block text-primary">TP. Hồ Chí Minh <i class="bi bi-chevron-right ms-2"></i></strong>55 Nguyễn Huệ, P. Bến Nghé, Quận 1</div>
-                                    <button class="btn btn-sm btn-outline-primary" title="Chỉ đường" onclick="event.stopPropagation(); getDirections(10.7744, 106.7035)"><i class="bi bi-signpost-fill"></i></button>
+                                    <div>
+                                        <strong class="d-block text-primary">TP. Hồ Chí Minh <i class="bi bi-chevron-right ms-2"></i></strong>
+                                        55 Nguyễn Huệ, P. Bến Nghé, Quận 1
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary" title="Chỉ đường" onclick="event.stopPropagation(); getDirections(10.7744, 106.7035)">
+                                        <i class="bi bi-signpost-fill"></i>
+                                    </button>
                                 </a>
                             </div>
-                            <button type="button" class="btn btn-primary w-100 mb-2" onclick="findUserLocation()"><i class="bi bi-crosshair me-2"></i> Vị trí của tôi</button>
+                            <button type="button" class="btn btn-primary w-100 mb-2" onclick="findUserLocation()">
+                                <i class="bi bi-crosshair me-2"></i> Vị trí của tôi
+                            </button>
                             <p id="location-status" class="text-center small text-secondary"></p>
                         </div>
-                        <div class="col-lg-7 col-md-12"><div id="map" style="height: 350px; border-radius: 8px; border: 1px solid #ccc;"></div></div>
+                        <div class="col-lg-7 col-md-12">
+                            <div id="map" style="height: 350px; border-radius: 8px; border: 1px solid #ccc;"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button></div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                </div>
             </div>
         </div>
     </div>
@@ -534,44 +587,156 @@
     <footer class="site-footer">
         <div class="container">
             <div class="row gy-4">
-                <div class="col-lg-4 col-md-6"><h5 class="d-flex align-items-center"><img src="~/image/logo.png" alt="SmartTech" style="height: 30px; margin-right: 10px; filter: brightness(0) invert(1);">SmartTech</h5><p class="text-muted mt-3">Hệ thống bán lẻ điện thoại, máy tính, phụ kiện công nghệ chính hãng uy tín hàng đầu Việt Nam.</p><ul class="list-unstyled text-muted"><li><i class="bi bi-geo-alt-fill me-2 text-primary"></i> 120 Xuân Thủy, Cầu Giấy, Hà Nội</li><li><i class="bi bi-telephone-fill me-2 text-primary"></i> 0965.629.698 (8:00 - 21:30)</li><li><i class="bi bi-envelope-fill me-2 text-primary"></i> vuduc792@gmail.com</li></ul></div>
+                <div class="col-lg-4 col-md-6">
+                    <h5 class="d-flex align-items-center">
+                        <img src="~/image/logo.png" alt="SmartTech" style="height: 30px; margin-right: 10px; filter: brightness(0) invert(1);">
+                        SmartTech
+                    </h5>
+                    <p class="text-muted mt-3">Hệ thống bán lẻ điện thoại, máy tính, phụ kiện công nghệ chính hãng uy tín hàng đầu Việt Nam.</p>
+                    <ul class="list-unstyled text-muted">
+                        <li><i class="bi bi-geo-alt-fill me-2 text-primary"></i> 120 Xuân Thủy, Cầu Giấy, Hà Nội</li>
+                        <li><i class="bi bi-telephone-fill me-2 text-primary"></i> 0965.629.698 (8:00 - 21:30)</li>
+                        <li><i class="bi bi-envelope-fill me-2 text-primary"></i> vuduc792@gmail.com</li>
+                    </ul>
+                </div>
                 <div class="col-lg-2 col-md-6"><h5>Chính sách</h5><ul class="list-unstyled"><li><a href="#">Chính sách bảo hành</a></li><li><a href="#">Chính sách đổi trả</a></li><li><a href="#">Chính sách bảo mật</a></li><li><a href="#">Hướng dẫn mua hàng</a></li><li><a href="#">Kiểm tra đơn hàng</a></li></ul></div>
                 <div class="col-lg-2 col-md-6"><h5>Về SmartTech</h5><ul class="list-unstyled"><li><a href="#">Giới thiệu công ty</a></li><li><a href="#">Tuyển dụng</a></li><li><a href="#">Hệ thống cửa hàng</a></li><li><a href="#">Tin tức công nghệ</a></li><li><a href="#">Liên hệ hợp tác</a></li></ul></div>
                 <div class="col-lg-4 col-md-6"><h5>Kết nối với chúng tôi</h5><p class="text-muted mb-3">Theo dõi SmartTech để nhận thông tin khuyến mãi mới nhất.</p><div class="d-flex gap-2"><a href="https://facebook.com" class="footer-social-icon" title="Facebook"><i class="bi bi-facebook"></i></a><a href="https://youtube.com" class="footer-social-icon" title="Youtube"><i class="bi bi-youtube"></i></a><a href="https://instagram.com" class="footer-social-icon" title="Instagram"><i class="bi bi-instagram"></i></a><a href="https://tiktok.com" class="footer-social-icon" title="Tiktok"><i class="bi bi-tiktok"></i></a></div><div class="mt-4"><h6 class="text-white">Thanh toán miễn phí</h6><div class="d-flex gap-2 text-white fs-4"><i class="bi bi-credit-card-2-front"></i><i class="bi bi-qr-code-scan"></i><i class="bi bi-cash-coin"></i></div></div></div>
             </div>
         </div>
-        <div class="footer-bottom"><div class="container d-flex flex-wrap justify-content-between align-items-center"><div class="text-white-50 small">© @DateTime.Now.Year SmartTech Corporation. All rights reserved.</div><div class="d-flex gap-3 small"><a asp-controller="Home" asp-action="Terms">Điều khoản sử dụng</a><a asp-controller="Home" asp-action="Privacy">Chính sách quyền riêng tư</a></div></div></div>
+        <div class="footer-bottom">
+            <div class="container d-flex flex-wrap justify-content-between align-items-center">
+                <div class="text-white-50 small">© @DateTime.Now.Year SmartTech Corporation. All rights reserved.</div>
+                <div class="d-flex gap-3 small"><a asp-controller="Home" asp-action="Terms">Điều khoản sử dụng</a><a asp-controller="Home" asp-action="Privacy">Chính sách quyền riêng tư</a></div>
+            </div>
+        </div>
     </footer>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        var mapid; var storeMarkers = []; var userMarker;
-        const stores = [{ name: 'Hà Nội', lat: 21.0362, lng: 105.7829, address: '120 Xuân Thủy, Cầu Giấy' }, { name: 'Đà Nẵng', lat: 16.0718, lng: 108.2236, address: '78 Bạch Đằng, Hải Châu I' }, { name: 'TP.HCM', lat: 10.7744, lng: 106.7035, address: '55 Nguyễn Huệ, Quận 1' }];
+        var mapid;
+        var storeMarkers = [];
+        var userMarker;
+
+        // --- CẬP NHẬT TOẠ ĐỘ CHUẨN ---
+        const stores = [
+            { name: 'Hà Nội', lat: 21.0362, lng: 105.7829, address: '120 Xuân Thủy, Cầu Giấy' },
+            { name: 'Đà Nẵng', lat: 16.0718, lng: 108.2236, address: '78 Bạch Đằng, Hải Châu I' },
+            { name: 'TP.HCM', lat: 10.7744, lng: 106.7035, address: '55 Nguyễn Huệ, Quận 1' }
+        ];
+
         let storeLogoIcon, userIcon;
         if (typeof L !== 'undefined') {
             storeLogoIcon = L.icon({ iconUrl: '/image/logo.png', iconSize: [35, 35], iconAnchor: [17, 35], popupAnchor: [0, -35] });
             userIcon = L.divIcon({ className: 'custom-div-icon', html: '<i class="bi bi-geo-alt-fill text-danger" style="font-size: 2rem;"></i>', iconSize: [32, 32], iconAnchor: [16, 32] });
         }
 
-        function toggleFabMenu(event) { event.stopPropagation(); document.getElementById('fab-container').classList.toggle('active'); }
-        document.addEventListener('click', function (event) { if (document.getElementById('fab-container').classList.contains('active')) document.getElementById('fab-container').classList.remove('active'); });
-        document.addEventListener('DOMContentLoaded', function () { const locationModal = document.getElementById('locationModal'); if (locationModal) { locationModal.addEventListener('shown.bs.modal', function () { initLeafletMap(); if (mapid) { setTimeout(function () { mapid.invalidateSize(); mapid.setView([stores[0].lat, stores[0].lng], 12); }, 300); } }); } });
-        function initLeafletMap() { if (mapid) return; if (typeof L === 'undefined') return; try { const hanoi = { lat: stores[0].lat, lng: stores[0].lng }; mapid = L.map('map').setView([hanoi.lat, hanoi.lng], 12); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(mapid); stores.forEach(store => { const marker = L.marker([store.lat, store.lng], { icon: storeLogoIcon }).addTo(mapid); marker.bindPopup(`<strong>${store.name}</strong><br>${store.address}`); storeMarkers.push(marker); }); } catch (error) { console.error(error); } }
-        function panToMap(event, lat, lng) { event.preventDefault(); if (!mapid) return; mapid.setView([lat, lng], 15); const markerToOpen = storeMarkers.find(marker => { const pos = marker.getLatLng(); return pos.lat === lat && pos.lng === lng; }); if (markerToOpen) markerToOpen.openPopup(); }
-        function findUserLocation() { const statusElement = document.getElementById('location-status'); if (!mapid) return; if (navigator.geolocation) { statusElement.innerText = "Đang tìm..."; navigator.geolocation.getCurrentPosition((position) => { const lat = position.coords.latitude; const lng = position.coords.longitude; statusElement.innerText = ""; if (userMarker) mapid.removeLayer(userMarker); userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(mapid).bindPopup("Vị trí của bạn").openPopup(); mapid.setView([lat, lng], 14); L.circle([lat, lng], { radius: position.coords.accuracy, color: 'blue', fillOpacity: 0.1, weight: 1 }).addTo(mapid); }, (error) => { alert("Không thể lấy vị trí."); statusElement.innerText = ""; }); } else { alert("Trình duyệt không hỗ trợ Geolocation."); } }
-        function getDirections(lat, lng) { const destination = `${lat},${lng}`; const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`; window.open(url, '_blank'); }
-        function togglePassword(inputId, iconId) { const input = document.getElementById(inputId); const icon = document.getElementById(iconId); if (input.type === "password") { input.type = "text"; icon.classList.remove("bi-eye"); icon.classList.add("bi-eye-slash"); } else { input.type = "password"; icon.classList.remove("bi-eye-slash"); icon.classList.add("bi-eye"); } }
+        function toggleFabMenu(event) {
+            event.stopPropagation();
+            document.getElementById('fab-container').classList.toggle('active');
+        }
 
-        // [MỚI] JS Xử lý Live Search
+        document.addEventListener('click', function (event) {
+            if (document.getElementById('fab-container').classList.contains('active'))
+                document.getElementById('fab-container').classList.remove('active');
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const locationModal = document.getElementById('locationModal');
+            if (locationModal) {
+                locationModal.addEventListener('shown.bs.modal', function () {
+                    initLeafletMap();
+                    if (mapid) {
+                        setTimeout(function () {
+                            mapid.invalidateSize();
+                            mapid.setView([stores[0].lat, stores[0].lng], 12);
+                        }, 300);
+                    }
+                });
+            }
+        });
+
+        function initLeafletMap() {
+            if (mapid) return;
+            if (typeof L === 'undefined') return;
+
+            try {
+                const hanoi = { lat: stores[0].lat, lng: stores[0].lng };
+                mapid = L.map('map').setView([hanoi.lat, hanoi.lng], 12);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>' }).addTo(mapid);
+
+                stores.forEach(store => {
+                    const marker = L.marker([store.lat, store.lng], { icon: storeLogoIcon }).addTo(mapid);
+                    marker.bindPopup(`<strong>${store.name}</strong><br>${store.address}`);
+                    storeMarkers.push(marker);
+                });
+            } catch (error) { console.error(error); }
+        }
+
+        function panToMap(event, lat, lng) {
+            event.preventDefault();
+            if (!mapid) return;
+            mapid.setView([lat, lng], 15);
+            const markerToOpen = storeMarkers.find(marker => {
+                const pos = marker.getLatLng();
+                return pos.lat === lat && pos.lng === lng;
+            });
+            if (markerToOpen) markerToOpen.openPopup();
+        }
+
+        function findUserLocation() {
+            const statusElement = document.getElementById('location-status');
+            if (!mapid) return;
+
+            if (navigator.geolocation) {
+                statusElement.innerText = "Đang tìm...";
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        statusElement.innerText = "";
+                        if (userMarker) mapid.removeLayer(userMarker);
+                        userMarker = L.marker([lat, lng], { icon: userIcon }).addTo(mapid).bindPopup("Vị trí của bạn").openPopup();
+                        mapid.setView([lat, lng], 14);
+                        L.circle([lat, lng], { radius: position.coords.accuracy, color: 'blue', fillOpacity: 0.1, weight: 1 }).addTo(mapid);
+                    },
+                    (error) => { alert("Không thể lấy vị trí."); statusElement.innerText = ""; }
+                );
+            } else { alert("Trình duyệt không hỗ trợ Geolocation."); }
+        }
+
+        function getDirections(lat, lng) {
+            const destination = `${lat},${lng}`;
+            const url = `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`;
+            window.open(url, '_blank');
+        }
+
+        function togglePassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove("bi-eye");
+                icon.classList.add("bi-eye-slash");
+            } else {
+                input.type = "password";
+                icon.classList.remove("bi-eye-slash");
+                icon.classList.add("bi-eye");
+            }
+        }
+
+        // --- [MỚI] SCRIPT CHO LIVE SEARCH ---
         $(document).ready(function () {
             let debounceTimer;
+
             $('#searchInput').on('keyup', function () {
                 const query = $(this).val().trim();
                 const resultsContainer = $('#searchResults');
 
                 clearTimeout(debounceTimer);
+
                 if (query.length < 1) {
                     resultsContainer.hide();
                     return;
@@ -584,6 +749,7 @@
                         data: { query: query },
                         success: function (data) {
                             resultsContainer.empty();
+
                             if (data.length > 0) {
                                 data.forEach(product => {
                                     const price = product.price.toLocaleString('vi-VN') + ' đ';
@@ -608,7 +774,7 @@
                             console.log('Lỗi tìm kiếm');
                         }
                     });
-                }, 300); // Delay 300ms để tránh spam server
+                }, 300);
             });
 
             // Ẩn dropdown khi click ra ngoài
