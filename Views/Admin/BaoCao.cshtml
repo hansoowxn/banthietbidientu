@@ -70,6 +70,15 @@
         color: #d63031;
         font-weight: 700;
     }
+
+    .growth-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        display: inline-block;
+        margin-top: 5px;
+    }
 </style>
 
 <div class="container-fluid p-4">
@@ -110,20 +119,35 @@
     <div class="row g-4 mb-4">
         <div class="col-xl-3 col-md-6">
             <div class="card kpi-card bg-gradient-primary h-100 p-3">
-                <div class="text-white-50 small text-uppercase fw-bold">Doanh thu thực (Tháng @currentMonth)</div>
+                <div class="text-white-50 small text-uppercase fw-bold">Doanh thu thực</div>
                 <div class="h2 fw-bold mb-0 mt-1">@Model.TongDoanhThu.ToString("N0") đ</div>
-                <div class="small text-white-50 mt-2">
-                    <i class="bi bi-tag-fill"></i> Gốc: @Model.TongDoanhThuGoc.ToString("N0") đ
+                <div class="growth-badge">
+                    @if (Model.GrowthDoanhThu >= 0)
+                    {
+                        <span><i class="bi bi-arrow-up"></i> @Model.GrowthDoanhThu.ToString("0.0")%</span>
+                    }
+                    else
+                    {
+                        <span><i class="bi bi-arrow-down"></i> @Model.GrowthDoanhThu.ToString("0.0")%</span>
+                    }
+                    <span class="opacity-75"> so với tháng trước</span>
                 </div>
                 <i class="bi bi-wallet2 kpi-icon"></i>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
             <div class="card kpi-card bg-gradient-success h-100 p-3">
-                <div class="text-white-50 small text-uppercase fw-bold">Lợi nhuận ròng (Ước tính)</div>
+                <div class="text-white-50 small text-uppercase fw-bold">Lợi nhuận ròng</div>
                 <div class="h2 fw-bold mb-0 mt-1">@Model.LoiNhuanUocTinh.ToString("N0") đ</div>
-                <div class="small text-white-50 mt-2">
-                    Margin: @(Model.TongDoanhThu > 0 ? ((Model.LoiNhuanUocTinh / Model.TongDoanhThu) * 100).ToString("0.0") : "0")%
+                <div class="growth-badge">
+                    @if (Model.GrowthLoiNhuan >= 0)
+                    {
+                        <span><i class="bi bi-arrow-up"></i> @Model.GrowthLoiNhuan.ToString("0.0")%</span>
+                    }
+                    else
+                    {
+                        <span><i class="bi bi-arrow-down"></i> @Model.GrowthLoiNhuan.ToString("0.0")%</span>
+                    }
                 </div>
                 <i class="bi bi-graph-up-arrow kpi-icon"></i>
             </div>
@@ -132,35 +156,64 @@
             <div class="card kpi-card bg-gradient-info h-100 p-3">
                 <div class="text-white-50 small text-uppercase fw-bold">Tổng đơn hàng</div>
                 <div class="h2 fw-bold mb-0 mt-1">@Model.TongDonHang đơn</div>
-                <div class="small text-white-50 mt-2">Đã hoàn thành & thanh toán</div>
+                <div class="growth-badge">
+                    @if (Model.GrowthDonHang >= 0)
+                    {
+                        <span><i class="bi bi-arrow-up"></i> @Model.GrowthDonHang.ToString("0.0")%</span>
+                    }
+                    else
+                    {
+                        <span><i class="bi bi-arrow-down"></i> @Model.GrowthDonHang.ToString("0.0")%</span>
+                    }
+                </div>
                 <i class="bi bi-receipt kpi-icon"></i>
             </div>
         </div>
         <div class="col-xl-3 col-md-6">
             <div class="card kpi-card bg-gradient-warning h-100 p-3">
                 <div class="text-white-50 small text-uppercase fw-bold">Sản phẩm đã bán</div>
-                <div class="h2 fw-bold mb-0 mt-1">@Model.TongSanPhamDaBan sản phẩm</div>
-                <div class="small text-white-50 mt-2">Kho sắp hết: @Model.SanPhamSapHet mã</div>
+                <div class="h2 fw-bold mb-0 mt-1">@Model.TongSanPhamDaBan sp</div>
+                <div class="growth-badge">
+                    @if (Model.GrowthSanPham >= 0)
+                    {
+                        <span><i class="bi bi-arrow-up"></i> @Model.GrowthSanPham.ToString("0.0")%</span>
+                    }
+                    else
+                    {
+                        <span><i class="bi bi-arrow-down"></i> @Model.GrowthSanPham.ToString("0.0")%</span>
+                    }
+                </div>
                 <i class="bi bi-box-seam kpi-icon"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="@(isBoss && Model.SelectedStoreId == null ? "col-lg-8" : "col-lg-8")">
+            <div class="card table-card h-100">
+                <div class="card-header"><h6 class="fw-bold text-dark m-0">Xu hướng doanh thu (3 năm)</h6></div>
+                <div class="card-body"><canvas id="revenueChart" height="100"></canvas></div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card table-card h-100">
+                <div class="card-header">
+                    <h6 class="fw-bold text-dark m-0">
+                        @(isBoss && Model.SelectedStoreId == null ? "Tỷ trọng theo Chi nhánh" : "Tỷ trọng Danh mục")
+                    </h6>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center">
+                    <canvas id="pieChart" height="200"></canvas>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="row">
         <div class="col-lg-8">
-            <div class="card table-card mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h6 class="fw-bold text-dark m-0">Xu hướng doanh thu (3 năm)</h6>
-                </div>
-                <div class="card-body">
-                    <canvas id="revenueChart" height="100"></canvas>
-                </div>
-            </div>
-
             <div class="card table-card">
-                <div class="card-header">
-                    <h6 class="fw-bold text-dark m-0">Hiệu quả kinh doanh theo sản phẩm (Tháng @currentMonth)</h6>
-                </div>
+                <div class="card-header"><h6 class="fw-bold text-dark m-0">Hiệu quả kinh doanh theo sản phẩm</h6></div>
                 <div class="table-responsive">
                     <table class="table align-middle mb-0 table-hover">
                         <thead class="bg-light small text-uppercase text-muted">
@@ -188,20 +241,14 @@
                                         <td class="text-center">@item.SoLuongBan</td>
                                         <td class="text-end fw-bold text-primary">@item.DoanhThuThuc.ToString("N0")</td>
                                         <td class="text-end text-muted small">@item.GiaVon.ToString("N0")</td>
-                                        <td class="text-end @(item.LoiNhuan >= 0 ? "text-profit-plus" : "text-profit-minus")">
-                                            @item.LoiNhuan.ToString("N0")
-                                        </td>
-                                        <td class="text-end pe-4">
-                                            <span class="badge @(item.Margin >= 20 ? "bg-success" : item.Margin >= 5 ? "bg-warning text-dark" : "bg-danger") bg-opacity-75">
-                                                @item.Margin.ToString("0.0")%
-                                            </span>
-                                        </td>
+                                        <td class="text-end @(item.LoiNhuan >= 0 ? "text-profit-plus" : "text-profit-minus")">@item.LoiNhuan.ToString("N0")</td>
+                                        <td class="text-end pe-4"><span class="badge @(item.Margin >= 20 ? "bg-success" : item.Margin >= 5 ? "bg-warning text-dark" : "bg-danger") bg-opacity-75">@item.Margin.ToString("0.0")%</span></td>
                                     </tr>
                                 }
                             }
                             else
                             {
-                                <tr><td colspan="6" class="text-center py-4 text-muted">Chưa có dữ liệu bán hàng trong tháng này.</td></tr>
+                                <tr><td colspan="6" class="text-center py-4 text-muted">Chưa có dữ liệu bán hàng.</td></tr>
                             }
                         </tbody>
                     </table>
@@ -213,7 +260,6 @@
             <div class="card table-card h-100">
                 <div class="card-header bg-gradient-info text-white">
                     <h6 class="fw-bold m-0"><i class="bi bi-gem me-2"></i>Khách Hàng Tiềm Năng (VIP)</h6>
-                    <small class="opacity-75">User chi tiêu > 100 Triệu</small>
                 </div>
                 <div class="card-body p-0">
                     @if (Model.KhachHangTiemNangs != null && Model.KhachHangTiemNangs.Any())
@@ -240,10 +286,7 @@
                     }
                     else
                     {
-                        <div class="text-center py-5 text-muted">
-                            <i class="bi bi-people fs-1 d-block mb-2 opacity-50"></i>
-                            Chưa có khách hàng nào đạt hạng Kim Cương.
-                        </div>
+                        <div class="text-center py-5 text-muted"><i class="bi bi-people fs-1 d-block mb-2 opacity-50"></i>Chưa có khách hàng VIP.</div>
                     }
                 </div>
             </div>
@@ -254,46 +297,64 @@
 @section Scripts {
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        // 1. Biểu đồ Đường (3 Năm)
         var ctx = document.getElementById("revenueChart");
-        var myLineChart = new Chart(ctx, {
+        new Chart(ctx, {
             type: 'line',
             data: {
                 labels: ["T1", "T2", "T3", "T4", "T5", "T6", "T7", "T8", "T9", "T10", "T11", "T12"],
                 datasets: [
                     {
-                        label: "Năm nay (@Model.CurrentYear)",
-                        tension: 0.4,
-                        backgroundColor: "rgba(78, 115, 223, 0.05)",
-                        borderColor: "#4e73df",
-                        pointBackgroundColor: "#4e73df",
-                        borderWidth: 3,
-                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamHienTai)),
+                        label: "Năm nay (@Model.CurrentYear)", tension: 0.4, backgroundColor: "rgba(78, 115, 223, 0.05)", borderColor: "#4e73df",
+                        pointBackgroundColor: "#4e73df", borderWidth: 3, data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamHienTai))
                     },
                     {
-                        label: "Năm trước (@(Model.CurrentYear - 1))",
-                        tension: 0.4,
-                        borderColor: "#1cc88a",
-                        pointBackgroundColor: "#1cc88a",
-                        borderDash: [5, 5],
-                        borderWidth: 2,
-                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamTruoc)),
+                        label: "Năm trước (@(Model.CurrentYear - 1))", tension: 0.4, borderColor: "#1cc88a", pointBackgroundColor: "#1cc88a",
+                        borderDash: [5, 5], borderWidth: 2, data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamTruoc))
                     }
-                ],
+                ]
             },
-            options: {
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'top' },
-                    tooltip: {
-                        mode: 'index', intersect: false,
-                        callbacks: { label: function(c) { return c.dataset.label + ": " + c.parsed.y.toLocaleString('vi-VN') + ' đ'; } }
-                    }
-                },
-                scales: {
-                    y: { beginAtZero: true, ticks: { callback: function(v) { return v/1000000 + 'M'; } } },
-                    x: { grid: { display: false } }
-                }
-            }
+            options: { maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true }, x: { grid: { display: false } } } }
+        });
+
+        // 2. Biểu đồ Tròn (Pie Chart)
+        var ctxPie = document.getElementById("pieChart");
+
+        // Logic chọn dữ liệu: Nếu Boss xem Tổng -> So sánh Store, ngược lại -> Danh mục
+        var pieLabels = [];
+        var pieData = [];
+        var pieColors = [];
+
+        @if (isBoss && Model.SelectedStoreId == null)
+        {
+            // Boss xem tổng: So sánh 3 Chi nhánh
+            <text>
+                pieLabels = ["Hà Nội", "Đà Nẵng", "TP.HCM"];
+                pieData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.StoreRevenueComparison));
+                pieColors = ["#4e73df", "#f6c23e", "#1cc88a"];
+            </text>
+        }
+        else
+        {
+            // Admin hoặc Boss xem chi nhánh: Tỷ trọng Danh mục
+            <text>
+                pieLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CategoryLabels));
+                pieData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CategoryValues));
+                pieColors = ["#4e73df", "#1cc88a", "#36b9cc", "#f6c23e", "#e74a3b", "#858796"];
+            </text>
+        }
+
+        new Chart(ctxPie, {
+            type: 'doughnut',
+            data: {
+                labels: pieLabels,
+                datasets: [{
+                    data: pieData,
+                    backgroundColor: pieColors,
+                    hoverOffset: 4
+                }]
+            },
+            options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
         });
     </script>
 }

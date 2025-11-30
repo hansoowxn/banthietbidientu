@@ -418,12 +418,16 @@ namespace banthietbidientu.Controllers
             return RedirectToAction("QuanLyTaiKhoan");
         }
 
-        // --- 7. BÁO CÁO NÂNG CAO (Updated) ---
+        // --- 7. BÁO CÁO NÂNG CAO ---
         public IActionResult BaoCao(int? storeId, int? month, int? year)
         {
             var now = DateTime.Now;
             int selectedYear = year ?? now.Year;
             int selectedMonth = month ?? now.Month;
+
+            // 1. Xác định thời gian tháng trước (để tính tăng trưởng)
+            int prevMonth = selectedMonth == 1 ? 12 : selectedMonth - 1;
+            int prevYearOfMonth = selectedMonth == 1 ? selectedYear - 1 : selectedYear;
 
             var user = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == User.Identity.Name);
             if (user.Role == "Admin") storeId = user.StoreId;
@@ -433,7 +437,35 @@ namespace banthietbidientu.Controllers
             else if (storeId == 2) storeName = "Chi nhánh Đà Nẵng";
             else if (storeId == 3) storeName = "Chi nhánh TP.HCM";
 
-            // 1. Dữ liệu Biểu đồ 3 năm (Giữ nguyên logic cũ)
+            // --- HÀM HELPER TÍNH TOÁN ---
+            (decimal DoanhThu, int DonHang, int SanPham, decimal LoiNhuan) CalculateKpi(int m, int y)
+            {
+                var queryDonHang = _context.DonHangs
+                    .Where(d => d.TrangThai == 3 && d.NgayDat.Value.Year == y && d.NgayDat.Value.Month == m
+                                && (!storeId.HasValue || d.StoreId == storeId));
+
+                decimal dt = queryDonHang.Sum(d => d.TongTien);
+                int dh = queryDonHang.Count();
+
+                var queryChiTiet = _context.ChiTietDonHangs
+                    .Where(ct => ct.DonHang.TrangThai == 3 && ct.DonHang.NgayDat.Value.Year == y && ct.DonHang.NgayDat.Value.Month == m
+                                 && (!storeId.HasValue || ct.DonHang.StoreId == storeId));
+
+                int sp = queryChiTiet.Sum(ct => (int?)ct.SoLuong) ?? 0;
+                decimal von = queryChiTiet.Sum(ct => ct.GiaGoc * ct.SoLuong);
+                decimal lai = dt - von;
+
+                return (dt, dh, sp, lai);
+            }
+
+            // 2. Tính KPI Tháng Này & Tháng Trước
+            var current = CalculateKpi(selectedMonth, selectedYear);
+            var previous = CalculateKpi(prevMonth, prevYearOfMonth);
+
+            // 3. Tính % Tăng trưởng (Growth)
+            double CalcGrowth(decimal cur, decimal prev) => prev > 0 ? (double)((cur - prev) / prev) * 100 : 100;
+
+            // 4. Dữ liệu Biểu đồ 3 năm
             List<decimal> GetMonthlyData(int y)
             {
                 var data = new List<decimal>();
@@ -447,41 +479,42 @@ namespace banthietbidientu.Controllers
                 }
                 return data;
             }
-            var dataNamHienTai = GetMonthlyData(selectedYear);
-            var dataNamTruoc = GetMonthlyData(selectedYear - 1);
-            var dataNamKia = GetMonthlyData(selectedYear - 2);
 
-            // 2. Tính KPI Tháng
-            var donHangThangQuery = _context.DonHangs
-                .Where(d => d.TrangThai == 3
-                            && d.NgayDat.Value.Year == selectedYear
-                            && d.NgayDat.Value.Month == selectedMonth
-                            && (!storeId.HasValue || d.StoreId == storeId));
-
-            decimal tongDoanhThuThuc = donHangThangQuery.Sum(d => d.TongTien); // Tiền thực thu (đã trừ KM)
-            int tongDonHang = donHangThangQuery.Count();
-
-            // Lấy chi tiết đơn hàng để tính giá vốn và doanh thu niêm yết
-            var chiTietQuery = _context.ChiTietDonHangs
+            // 5. Dữ liệu Biểu đồ Tròn (Danh mục) - Cho tháng hiện tại
+            var categoryData = _context.ChiTietDonHangs
                 .Include(ct => ct.SanPham)
                 .Where(ct => ct.DonHang.TrangThai == 3
                              && ct.DonHang.NgayDat.Value.Year == selectedYear
                              && ct.DonHang.NgayDat.Value.Month == selectedMonth
+                             && (!storeId.HasValue || ct.DonHang.StoreId == storeId))
+                .GroupBy(ct => ct.SanPham.Category)
+                .Select(g => new { Name = g.Key, Value = g.Sum(x => (decimal?)x.Gia * x.SoLuong) ?? 0 })
+                .OrderByDescending(x => x.Value)
+                .ToList();
+
+            // 6. Dữ liệu So sánh 3 Chi nhánh (Chỉ tính nếu Boss xem Toàn hệ thống)
+            var storeComparison = new List<decimal>();
+            if (!storeId.HasValue)
+            {
+                for (int i = 1; i <= 3; i++)
+                {
+                    var rev = _context.DonHangs
+                        .Where(d => d.TrangThai == 3 && d.NgayDat.Value.Year == selectedYear && d.NgayDat.Value.Month == selectedMonth && d.StoreId == i)
+                        .Sum(d => (decimal?)d.TongTien) ?? 0;
+                    storeComparison.Add(rev);
+                }
+            }
+
+            // 7. Chi tiết Lợi nhuận từng sản phẩm
+            // (Logic tính tỷ lệ thực thu như cũ)
+            var queryChiTietFull = _context.ChiTietDonHangs.Include(ct => ct.SanPham)
+                .Where(ct => ct.DonHang.TrangThai == 3 && ct.DonHang.NgayDat.Value.Year == selectedYear && ct.DonHang.NgayDat.Value.Month == selectedMonth
                              && (!storeId.HasValue || ct.DonHang.StoreId == storeId));
 
-            decimal tongDoanhThuNiemYet = chiTietQuery.Sum(ct => (ct.Gia ?? 0) * ct.SoLuong); // Tổng giá bán trên web chưa trừ KM
-            decimal tongGiaVon = chiTietQuery.Sum(ct => ct.GiaGoc * ct.SoLuong);
+            decimal tongDoanhThuNiemYet = queryChiTietFull.Sum(ct => (ct.Gia ?? 0) * ct.SoLuong);
+            decimal tyLeThucThu = tongDoanhThuNiemYet > 0 ? (current.DoanhThu / tongDoanhThuNiemYet) : 1;
 
-            // Tính Lợi Nhuận Thực = Thực Thu - Giá Vốn
-            decimal loiNhuanThuc = tongDoanhThuThuc - tongGiaVon;
-
-            int tongSanPhamBan = chiTietQuery.Sum(ct => (int?)ct.SoLuong) ?? 0;
-
-            // 3. Tính tỷ lệ thực thu (Discount Factor) để phân bổ lợi nhuận cho từng SP
-            // Ví dụ: Niêm yết 100tr, Thực thu 80tr -> Tỷ lệ 0.8
-            decimal tyLeThucThu = tongDoanhThuNiemYet > 0 ? (tongDoanhThuThuc / tongDoanhThuNiemYet) : 1;
-
-            var baoCaoLoiNhuan = chiTietQuery
+            var baoCaoLoiNhuan = queryChiTietFull
                 .GroupBy(ct => new { ct.SanPhamId, ct.SanPham.Name, ct.SanPham.ImageUrl })
                 .Select(g => new
                 {
@@ -491,7 +524,7 @@ namespace banthietbidientu.Controllers
                     DtNiemYet = g.Sum(x => (x.Gia ?? 0) * x.SoLuong),
                     Gv = g.Sum(x => x.GiaGoc * x.SoLuong)
                 })
-                .ToList() // Query về bộ nhớ để tính toán logic phức tạp
+                .ToList()
                 .Select(x => new LoiNhuanSanPham
                 {
                     TenSanPham = x.Ten,
@@ -499,57 +532,51 @@ namespace banthietbidientu.Controllers
                     SoLuongBan = x.Sl,
                     DoanhThuNiemYet = x.DtNiemYet,
                     GiaVon = x.Gv,
-                    // Phân bổ doanh thu thực theo tỷ lệ
                     DoanhThuThuc = x.DtNiemYet * tyLeThucThu,
-                    // Lợi nhuận = DoanhThuThuc - GiáVốn
                     LoiNhuan = (x.DtNiemYet * tyLeThucThu) - x.Gv
                 })
-                .OrderByDescending(x => x.LoiNhuan)
+                .OrderByDescending(x => x.DoanhThuThuc)
                 .ToList();
 
-            // 4. [MỚI] KHÁCH HÀNG TIỀM NĂNG (VIP USER)
-            // Logic: Role là User + Tổng chi tiêu (cả lịch sử) >= 100tr
+            // 8. Khách hàng tiềm năng (VIP)
             var vipUsers = _context.TaiKhoans
-                .Where(u => u.Role == "User") // Chỉ lấy khách thường
-                .Select(u => new
-                {
-                    User = u,
-                    TotalSpent = u.DonHangs.Where(d => d.TrangThai == 3).Sum(d => (decimal?)d.TongTien) ?? 0,
-                    OrderCount = u.DonHangs.Count(d => d.TrangThai == 3)
-                })
-                .Where(x => x.TotalSpent >= 100000000) // Điều kiện Kim Cương
-                .OrderByDescending(x => x.TotalSpent)
-                .Take(10) // Lấy top 10
-                .Select(x => new KhachHangTiemNang
-                {
-                    Id = x.User.Id,
-                    HoTen = x.User.FullName,
-                    Username = x.User.Username,
-                    SoDienThoai = x.User.PhoneNumber,
-                    TongChiTieu = x.TotalSpent,
-                    SoDonHang = x.OrderCount
-                })
+                .Where(u => u.Role == "User")
+                .Select(u => new { User = u, TotalSpent = u.DonHangs.Where(d => d.TrangThai == 3).Sum(d => (decimal?)d.TongTien) ?? 0, OrderCount = u.DonHangs.Count(d => d.TrangThai == 3) })
+                .Where(x => x.TotalSpent >= 100000000)
+                .OrderByDescending(x => x.TotalSpent).Take(10)
+                .Select(x => new KhachHangTiemNang { Id = x.User.Id, HoTen = x.User.FullName, Username = x.User.Username, SoDienThoai = x.User.PhoneNumber, TongChiTieu = x.TotalSpent, SoDonHang = x.OrderCount })
                 .ToList();
 
-            // Đóng gói ViewModel
             var model = new BaoCaoViewModel
             {
-                TongDoanhThu = tongDoanhThuThuc,
+                TongDoanhThu = current.DoanhThu,
                 TongDoanhThuGoc = tongDoanhThuNiemYet,
-                TongDonHang = tongDonHang,
-                TongSanPhamDaBan = tongSanPhamBan,
-                LoiNhuanUocTinh = loiNhuanThuc,
+                TongDonHang = current.DonHang,
+                TongSanPhamDaBan = current.SanPham,
+                LoiNhuanUocTinh = current.LoiNhuan,
+                SanPhamSapHet = _context.SanPhams.Count(s => s.SoLuong < 5),
 
-                DataNamHienTai = dataNamHienTai,
-                DataNamTruoc = dataNamTruoc,
-                DataNamKia = dataNamKia,
+                // Growth Data
+                GrowthDoanhThu = CalcGrowth(current.DoanhThu, previous.DoanhThu),
+                GrowthLoiNhuan = CalcGrowth(current.LoiNhuan, previous.LoiNhuan),
+                GrowthDonHang = CalcGrowth(current.DonHang, previous.DonHang),
+                GrowthSanPham = CalcGrowth(current.SanPham, previous.SanPham),
+
+                // Chart Data
+                DataNamHienTai = GetMonthlyData(selectedYear),
+                DataNamTruoc = GetMonthlyData(selectedYear - 1),
+                DataNamKia = GetMonthlyData(selectedYear - 2),
                 CurrentYear = selectedYear,
+
+                // Pie Chart & Store Chart Data
+                CategoryLabels = categoryData.Select(x => x.Name).ToList(),
+                CategoryValues = categoryData.Select(x => x.Value).ToList(),
+                StoreRevenueComparison = storeComparison,
 
                 SelectedStoreId = storeId,
                 StoreName = storeName,
-
                 BaoCaoLoiNhuan = baoCaoLoiNhuan,
-                KhachHangTiemNangs = vipUsers // Dữ liệu mới
+                KhachHangTiemNangs = vipUsers
             };
 
             ViewBag.SelectedMonth = selectedMonth;

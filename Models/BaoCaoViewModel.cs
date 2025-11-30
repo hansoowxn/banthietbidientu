@@ -5,12 +5,18 @@ namespace banthietbidientu.Models
     public class BaoCaoViewModel
     {
         // --- 1. KPI CARDS ---
-        public decimal TongDoanhThu { get; set; } // Doanh thu thực (đã trừ giảm giá)
-        public decimal TongDoanhThuGoc { get; set; } // Doanh thu niêm yết (chưa trừ giảm giá) - Để so sánh
+        public decimal TongDoanhThu { get; set; }
+        public decimal TongDoanhThuGoc { get; set; }
         public int TongDonHang { get; set; }
         public int TongSanPhamDaBan { get; set; }
         public int SanPhamSapHet { get; set; }
-        public decimal LoiNhuanUocTinh { get; set; } // Lợi nhuận thực tế
+        public decimal LoiNhuanUocTinh { get; set; }
+
+        // [MỚI] CHỈ SỐ TĂNG TRƯỞNG (So với tháng trước)
+        public double GrowthDoanhThu { get; set; }
+        public double GrowthLoiNhuan { get; set; }
+        public double GrowthDonHang { get; set; }
+        public double GrowthSanPham { get; set; }
 
         // --- 2. BIỂU ĐỒ ---
         public List<string> LabelsNgay { get; set; }
@@ -20,15 +26,19 @@ namespace banthietbidientu.Models
         public List<decimal> DataNamKia { get; set; }
         public int CurrentYear { get; set; }
 
-        // --- 3. TOP LIST ---
+        // [MỚI] BIỂU ĐỒ TRÒN (DANH MỤC)
+        public List<string> CategoryLabels { get; set; }
+        public List<decimal> CategoryValues { get; set; }
+
+        // [MỚI] BIỂU ĐỒ SO SÁNH CHI NHÁNH (HN, ĐN, HCM)
+        public List<decimal> StoreRevenueComparison { get; set; }
+
+        // --- 3. TOP LIST & FILTER ---
         public List<string> TopSanPhamTen { get; set; }
         public List<int> TopSanPhamSoLuong { get; set; }
         public List<TopKhachHang> TopKhachHangs { get; set; }
-
-        // [MỚI] KHÁCH HÀNG TIỀM NĂNG (VIP USER)
         public List<KhachHangTiemNang> KhachHangTiemNangs { get; set; }
 
-        // --- 4. FILTER & DETAILS ---
         public int? SelectedStoreId { get; set; }
         public string StoreName { get; set; }
         public List<LoiNhuanSanPham> BaoCaoLoiNhuan { get; set; }
@@ -43,7 +53,6 @@ namespace banthietbidientu.Models
         public decimal TongChiTieu { get; set; }
     }
 
-    // [MỚI] Class cho Khách tiềm năng
     public class KhachHangTiemNang
     {
         public int Id { get; set; }
@@ -59,12 +68,10 @@ namespace banthietbidientu.Models
         public string TenSanPham { get; set; }
         public string HinhAnh { get; set; }
         public int SoLuongBan { get; set; }
-
-        public decimal DoanhThuNiemYet { get; set; } // Giá bán trên web * Số lượng
-        public decimal DoanhThuThuc { get; set; }    // Sau khi phân bổ chiết khấu
+        public decimal DoanhThuNiemYet { get; set; }
+        public decimal DoanhThuThuc { get; set; }
         public decimal GiaVon { get; set; }
-        public decimal LoiNhuan { get; set; }        // DoanhThuThuc - GiaVon
-
+        public decimal LoiNhuan { get; set; }
         public double Margin => DoanhThuThuc > 0 ? (double)(LoiNhuan / DoanhThuThuc) * 100 : 0;
     }
 }
