@@ -1,7 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.EntityFrameworkCore;
 using banthietbidientu.Data;
-using banthietbidientu.Services; // Đảm bảo bạn đã có namespace này
+using banthietbidientu.Services; // Đảm bảo namespace này có chứa EmailSender
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -20,6 +20,11 @@ builder.Services.AddSession(options =>
 
 // 3. ĐĂNG KÝ CÁC SERVICES
 builder.Services.AddScoped<MemberService>();
+
+// --- [FIX LỖI] ĐĂNG KÝ DỊCH VỤ EMAIL ---
+// Dòng này bắt buộc phải có để AdminController và GioHangController hoạt động
+builder.Services.AddTransient<IEmailSender, EmailSender>();
+// ---------------------------------------
 
 // 4. CẤU HÌNH MVC & JSON
 builder.Services.AddControllersWithViews()
