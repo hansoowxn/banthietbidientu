@@ -23,6 +23,7 @@ namespace banthietbidientu.Data
         public DbSet<ChiTietDonHang> ChiTietDonHangs { get; set; }
         public DbSet<DanhGia> DanhGias { get; set; }
         public DbSet<YeuCauThuMua> YeuCauThuMuas { get; set; }
+        public DbSet<Banner> Banners { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

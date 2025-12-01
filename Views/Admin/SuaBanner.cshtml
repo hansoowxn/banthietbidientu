@@ -1,0 +1,73 @@
+﻿@model banthietbidientu.Models.Banner
+
+@{
+    ViewData["Title"] = "Cập nhật Banner";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm rounded-4 col-md-8 mx-auto">
+        <div class="card-header bg-white py-3">
+            <h5 class="mb-0 fw-bold text-primary"><i class="bi bi-pencil-square me-2"></i>Cập nhật Banner</h5>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="SuaBanner" method="post">
+                <input type="hidden" asp-for="Id" />
+                
+                <div class="mb-3">
+                    <label class="form-label fw-bold">URL Hình Ảnh</label>
+                    <input asp-for="ImageUrl" class="form-control" placeholder="Nhập link ảnh (https://...)" required />
+                    <span asp-validation-for="ImageUrl" class="text-danger small"></span>
+                    
+                    <div class="mt-2">
+                        <img src="@Model.ImageUrl" class="rounded border shadow-sm" style="height: 100px; object-fit: cover;" alt="Preview">
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tiêu đề</label>
+                    <input asp-for="Title" class="form-control" placeholder="Tiêu đề banner" required />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Mô tả ngắn</label>
+                    <input asp-for="Description" class="form-control" placeholder="Mô tả khuyến mãi..." />
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Nút bấm (Text)</label>
+                        <input asp-for="ButtonText" class="form-control" />
+                        <span asp-validation-for="ButtonText" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Link đích</label>
+                        <input asp-for="LinkUrl" class="form-control" />
+                        <span asp-validation-for="LinkUrl" class="text-danger small"></span>
+                    </div>
+                </div>
+
+                <div class="row align-items-center">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Thứ tự hiển thị</label>
+                        <input asp-for="DisplayOrder" type="number" class="form-control" />
+                        <span asp-validation-for="DisplayOrder" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check form-switch mt-4">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox">
+                            <label class="form-check-label">Kích hoạt hiển thị</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="text-end mt-3">
+                    <a asp-action="QuanLyBanner" class="btn btn-light border me-2">Hủy</a>
+                    <button type="submit" class="btn btn-primary fw-bold">Lưu Thay Đổi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

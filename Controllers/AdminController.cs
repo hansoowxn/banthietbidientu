@@ -872,5 +872,73 @@ namespace banthietbidientu.Controllers
             }
             return RedirectToAction("QuanLyThuMua");
         }
+
+        // --- 11. QUẢN LÝ BANNER (CHỈ BOSS) ---
+        [Authorize(Roles = "Boss")]
+        public IActionResult QuanLyBanner()
+        {
+            var banners = _context.Banners.OrderBy(b => b.DisplayOrder).ToList();
+            return View(banners);
+        }
+
+        [Authorize(Roles = "Boss")]
+        [HttpGet]
+        public IActionResult ThemBanner()
+        {
+            return View();
+        }
+
+        [Authorize(Roles = "Boss")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult ThemBanner(Banner model)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Banners.Add(model);
+                _context.SaveChanges();
+                TempData["Success"] = "Thêm banner mới thành công!";
+                return RedirectToAction("QuanLyBanner");
+            }
+            return View(model);
+        }
+
+        [Authorize(Roles = "Boss")]
+        [HttpGet]
+        public IActionResult SuaBanner(int id)
+        {
+            var banner = _context.Banners.Find(id);
+            if (banner == null) return NotFound();
+            return View(banner);
+        }
+
+        [Authorize(Roles = "Boss")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public IActionResult SuaBanner(Banner model)
+        {
+            if (ModelState.IsValid)
+            {
+                _context.Banners.Update(model);
+                _context.SaveChanges();
+                TempData["Success"] = "Cập nhật banner thành công!";
+                return RedirectToAction("QuanLyBanner");
+            }
+            return View(model);
+        }
+
+        [Authorize(Roles = "Boss")]
+        [HttpPost]
+        public IActionResult XoaBanner(int id)
+        {
+            var banner = _context.Banners.Find(id);
+            if (banner != null)
+            {
+                _context.Banners.Remove(banner);
+                _context.SaveChanges();
+                TempData["Success"] = "Đã xóa banner.";
+            }
+            return RedirectToAction("QuanLyBanner");
+        }
     }
 }

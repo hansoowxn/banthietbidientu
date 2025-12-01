@@ -1,0 +1,69 @@
+﻿@model IEnumerable<banthietbidientu.Models.Banner>
+
+@{
+    ViewData["Title"] = "Quản lý Banner";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h4 class="fw-bold text-primary"><i class="bi bi-images me-2"></i>Quản lý Banner & Slider</h4>
+        <a asp-action="ThemBanner" class="btn btn-primary shadow-sm"><i class="bi bi-plus-lg me-2"></i>Thêm Banner</a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success">@TempData["Success"]</div>
+    }
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="bg-light">
+                    <tr>
+                        <th class="ps-4">#</th>
+                        <th>Hình ảnh</th>
+                        <th>Tiêu đề & Mô tả</th>
+                        <th>Link</th>
+                        <th>Thứ tự</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end pe-4">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td class="ps-4">@item.Id</td>
+                            <td>
+                                <img src="@item.ImageUrl" class="rounded shadow-sm" style="width: 120px; height: 60px; object-fit: cover;">
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">@item.Title</div>
+                                <small class="text-muted">@item.Description</small>
+                            </td>
+                            <td><a href="@item.LinkUrl" target="_blank" class="text-decoration-none">@item.ButtonText</a></td>
+                            <td><span class="badge bg-secondary rounded-pill">@item.DisplayOrder</span></td>
+                            <td>
+                                @if (item.IsActive)
+                                {
+                                    <span class="badge bg-success bg-opacity-10 text-success">Hiển thị</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger bg-opacity-10 text-danger">Đang ẩn</span>
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                <a asp-action="SuaBanner" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary me-1"><i class="bi bi-pencil"></i></a>
+                                <form asp-action="XoaBanner" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Xóa banner này?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

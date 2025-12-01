@@ -1,0 +1,52 @@
+﻿@model banthietbidientu.Models.Banner
+@{
+    ViewData["Title"] = "Thêm Banner"; Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm rounded-4 col-md-8 mx-auto">
+        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold">Thêm Banner Mới</h5></div>
+        <div class="card-body p-4">
+            <form asp-action="ThemBanner" method="post">
+                <div class="mb-3">
+                    <label class="form-label fw-bold">URL Hình Ảnh</label>
+                    <input asp-for="ImageUrl" class="form-control" placeholder="Nhập link ảnh (https://...)" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Tiêu đề</label>
+                    <input asp-for="Title" class="form-control" placeholder="VD: iPhone 16 Pro Max" required />
+                </div>
+                <div class="mb-3">
+                    <label class="form-label fw-bold">Mô tả ngắn</label>
+                    <input asp-for="Description" class="form-control" placeholder="Mô tả khuyến mãi..." />
+                </div>
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Nút bấm (Text)</label>
+                        <input asp-for="ButtonText" class="form-control" value="Xem Ngay" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Link đích</label>
+                        <input asp-for="LinkUrl" class="form-control" value="#products" />
+                    </div>
+                </div>
+                <div class="row align-items-center">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label fw-bold">Thứ tự hiển thị</label>
+                        <input asp-for="DisplayOrder" type="number" class="form-control" value="1" />
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <div class="form-check form-switch mt-4">
+                            <input asp-for="IsActive" class="form-check-input" type="checkbox" checked>
+                            <label class="form-check-label">Kích hoạt hiển thị ngay</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="text-end mt-3">
+                    <a asp-action="QuanLyBanner" class="btn btn-light border me-2">Hủy</a>
+                    <button type="submit" class="btn btn-primary fw-bold">Lưu Banner</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
