@@ -2,15 +2,32 @@
 
 @{
     ViewData["Title"] = "Thanh toán - Electronic Store";
+    var cultureInfo = new System.Globalization.CultureInfo("vi-VN");
+
     decimal subtotal = Model.GioHangs.Sum(item => item.Price * item.Quantity);
 
+    // Lấy thông tin Hạng thành viên
     var tier = ViewBag.Tier as banthietbidientu.Services.MemberTier;
-    decimal totalSpent = tier?.TotalSpent ?? 0;
     string rankName = tier?.Name ?? "Thành Viên";
     int phanTramGiam = tier?.DiscountPercent ?? 0;
+    decimal giamGiaHang = (subtotal * phanTramGiam) / 100;
 
-    decimal soTienGiam = (subtotal * phanTramGiam) / 100;
-    decimal tongThanhToan = subtotal - soTienGiam;
+    // [MỚI] Lấy thông tin Voucher từ ViewBag
+    decimal giamGiaVoucher = ViewBag.GiamGiaVoucher != null ? (decimal)ViewBag.GiamGiaVoucher : 0;
+    string maVoucher = ViewBag.MaVoucher as string;
+
+    // Tổng giảm giá (Chỉ 1 trong 2: Hạng hoặc Voucher - Logic này khớp với Controller)
+    decimal tongGiam = giamGiaHang + giamGiaVoucher;
+
+    // [MỚI] Lấy tiền thuế từ Controller gửi sang (để cộng vào tổng nhưng không hiện chi tiết)
+    decimal thueVAT = ViewBag.ThueVAT != null ? (decimal)ViewBag.ThueVAT : 0;
+
+    // Tổng thanh toán cuối cùng = (Hàng - Giảm) + Thuế
+    decimal tongThanhToan = (subtotal - tongGiam) + thueVAT;
+    if (tongThanhToan < 0) { tongThanhToan = 0; }
+
+    // Biến tổng chi tiêu để tính freeship (dùng logic cũ của bạn)
+    decimal totalSpent = tier?.TotalSpent ?? 0;
 }
 
 <link rel="stylesheet" href="~/css/leaflet.css" />
@@ -178,7 +195,7 @@
                                     <tr>
                                         <td class="ps-3"><img src="@(item.Image ?? "/image/logo.png")" class="rounded border" style="width: 50px;"></td>
                                         <td><div class="fw-bold small">@item.Name</div><div class="text-muted small">x @item.Quantity</div></td>
-                                        <td class="text-end pe-3 small fw-bold">@((item.Price * item.Quantity).ToString("#,##0")) ₫</td>
+                                        <td class="text-end pe-3 small fw-bold">@((item.Price * item.Quantity).ToString("#,##0", cultureInfo)) ₫</td>
                                     </tr>
                                 }
                             </tbody>
@@ -192,16 +209,33 @@
                     <div class="card-header bg-success text-white"><h4 class="mb-0">Thanh toán</h4></div>
                     <div class="card-body">
                         <h5 class="fw-bold mb-3 border-bottom pb-2">Chi tiết thanh toán</h5>
-                        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tiền hàng:</span><span class="fw-bold">@subtotal.ToString("#,##0").Replace(",", ".") ₫</span></div>
+                        <div class="d-flex justify-content-between mb-2"><span class="text-muted">Tiền hàng:</span><span class="fw-bold">@subtotal.ToString("#,##0", cultureInfo) ₫</span></div>
 
                         @if (phanTramGiam > 0)
                         {
-                            <div class="d-flex justify-content-between mb-2 text-danger"><span><i class="bi bi-ticket-perforated-fill me-1"></i>Ưu đãi @rankName (@phanTramGiam%):</span><span class="fw-bold">- @soTienGiam.ToString("#,##0").Replace(",", ".") ₫</span></div>
+                            <div class="d-flex justify-content-between mb-2 text-danger"><span><i class="bi bi-crown-fill me-1"></i>Ưu đãi @rankName (@phanTramGiam%):</span><span class="fw-bold">- @giamGiaHang.ToString("#,##0", cultureInfo) ₫</span></div>
+                        }
+
+                        @* [MỚI] Hiển thị Voucher *@
+                        @if (giamGiaVoucher > 0)
+                        {
+                            <div class="d-flex justify-content-between mb-2 text-success">
+                                <span><i class="bi bi-ticket-perforated-fill me-1"></i>Voucher (@maVoucher):</span>
+                                <span class="fw-bold">- @giamGiaVoucher.ToString("#,##0", cultureInfo) ₫</span>
+                            </div>
                         }
 
                         <div class="d-flex justify-content-between mb-2 text-success"><span><i class="bi bi-truck"></i> Phí vận chuyển:</span><span id="shippingFeeDisplay">0 ₫</span></div>
                         <div class="mb-3 small text-muted text-end fst-italic" id="warehouseDisplay">(Đang xác định vị trí...)</div>
-                        <div class="d-flex justify-content-between border-top pt-3 mb-4"><span class="h5 fw-bold">Tổng cộng:</span><span class="h4 fw-bold text-danger" id="totalDisplay">@tongThanhToan.ToString("#,##0").Replace(",", ".") ₫</span></div>
+
+                        @* [ĐÃ SỬA] Hiển thị Tổng cộng và chú thích VAT (không hiện dòng thuế riêng) *@
+                        <div class="d-flex justify-content-between border-top pt-3 mb-4">
+                            <span class="h5 fw-bold">Tổng cộng:</span>
+                            <div class="text-end">
+                                <span class="h4 fw-bold text-danger" id="totalDisplay">@tongThanhToan.ToString("#,##0", cultureInfo) ₫</span>
+                                <div class="small text-muted fst-italic">(Đã bao gồm VAT)</div>
+                            </div>
+                        </div>
 
                         <div class="mb-4">
                             <label class="form-label fw-bold">Hình thức thanh toán</label>
@@ -234,6 +268,11 @@
         ];
 
         const subtotal = @(subtotal.ToString("0", System.Globalization.CultureInfo.InvariantCulture));
+
+        // [QUAN TRỌNG] Logic JS cập nhật lại để cộng đúng ship vào tổng cuối cùng
+        // baseTotal là tổng tiền hàng sau khi trừ khuyến mãi và CỘNG THUẾ (đã tính ở Server)
+        let baseTotal = @(tongThanhToan.ToString("0", System.Globalization.CultureInfo.InvariantCulture));
+
         let discountPercent = @(phanTramGiam) / 100.0;
         const shippingRate = 5000;
         let freeShipDistance = (discountPercent >= 0.25) ? 99999 : (@totalSpent >= 100000000 ? 99999 : (@totalSpent >= 50000000 ? 99999 : (@totalSpent >= 20000000 ? 300 : (@totalSpent >= 10000000 ? 15 : 0))));
@@ -242,15 +281,8 @@
         var map = L.map('map').setView([21.0362, 105.7829], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
 
-        // [THAY ĐỔI] Marker tĩnh, không cho kéo (draggable: false)
         var userMarker = L.marker([21.0362, 105.7829], {draggable: false}).addTo(map);
-
-        // Biến lưu đường vẽ (Routing Control)
         var routeControl = null;
-
-        // [THAY ĐỔI] Bỏ hết sự kiện click và drag trên map
-        // userMarker.on('dragend', ...); -> DELETE
-        // map.on('click', ...); -> DELETE
 
         // --- API HÀNH CHÍNH VIỆT NAM ---
         var provinces = [];
@@ -280,7 +312,7 @@
                         option.value = d.code; option.text = d.name;
                         districtSelect.add(option);
                     });
-                    autoLocateOnMap(); // Gọi tự động ngay khi chọn Tỉnh
+                    autoLocateOnMap();
                 });
             }
         }
@@ -298,12 +330,11 @@
                         option.value = w.name; option.text = w.name;
                         wardSelect.add(option);
                     });
-                    autoLocateOnMap(); // Gọi tự động ngay khi chọn Huyện
+                    autoLocateOnMap();
                 });
             }
         }
 
-        // --- HÀM TÌM ĐỊA CHỈ THÔNG MINH (Auto Locate) ---
         function autoLocateOnMap() {
             let p = document.getElementById('province').options[document.getElementById('province').selectedIndex]?.text;
             let d = document.getElementById('district').options[document.getElementById('district').selectedIndex]?.text;
@@ -318,7 +349,7 @@
             if (d && d != "Chọn Quận/Huyện") queries.push(`${d}, ${p}, Vietnam`);
             queries.push(`${p}, Vietnam`);
 
-            document.getElementById('locatingStatus').classList.remove('d-none'); // Hiện badge "Đang tìm..."
+            document.getElementById('locatingStatus').classList.remove('d-none');
             searchLocationRecursive(queries, 0);
         }
 
@@ -339,7 +370,7 @@
 
                     map.setView([lat, lon], 15);
                     userMarker.setLatLng([lat, lon]);
-                    calculateShipping(lat, lon); // Tự động tính phí luôn
+                    calculateShipping(lat, lon);
 
                     document.getElementById('locatingStatus').classList.add('d-none');
                 } else {
@@ -349,7 +380,6 @@
             .catch(() => { searchLocationRecursive(queries, index + 1); });
         }
 
-        // --- HÀM TÍNH SHIP & VẼ ĐƯỜNG ---
         function calculateShipping(lat, lng) {
             currentLat = lat; currentLng = lng;
             let minDistance = Infinity; let nearestShop = null;
@@ -359,7 +389,6 @@
                 if (dist < minDistance) { minDistance = dist; nearestShop = shop; }
             });
 
-            // --- [VẼ ĐƯỜNG ĐI - Routing] ---
             if (map && nearestShop) {
                 if (routeControl) { map.removeControl(routeControl); }
                 routeControl = L.Routing.control({
@@ -371,7 +400,7 @@
                     createMarker: function() { return null; },
                     addWaypoints: false,
                     draggableWaypoints: false,
-                    fitSelectedRoutes: true, // Tự zoom để thấy cả đường đi
+                    fitSelectedRoutes: true,
                     show: false
                 }).addTo(map);
             }
@@ -391,8 +420,9 @@
         }
 
         function updateTotalDisplay(shipFee) {
-            let discountAmount = Math.round(subtotal * discountPercent);
-            let total = subtotal - discountAmount + shipFee;
+            // [FIX] Cập nhật tổng tiền = (Hàng + Thuế - Giảm) + Ship
+            let total = baseTotal + shipFee;
+            if(total < 0) total = 0;
             document.getElementById('totalDisplay').innerText = total.toLocaleString('vi-VN') + ' ₫';
         }
 

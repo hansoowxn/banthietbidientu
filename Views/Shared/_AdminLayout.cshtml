@@ -197,7 +197,8 @@
                 <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Quản lý</li>
 
                 <li>
-                    <a href="@Url.Action("QuanLySanPham", "Admin")" class="@(currentAction == "QuanLySanPham" || currentAction == "ThemSanPham" || currentAction == "SuaSanPham" ? "active" : "")">
+                    <a href="@Url.Action("QuanLySanPham", "Admin")" class="@(currentAction == "QuanLySanPham" ||
+                                                                            currentAction == "ThemSanPham" || currentAction == "SuaSanPham" ? "active" : "")">
                         <i class="bi bi-box-seam-fill"></i> Kho hàng
                     </a>
                 </li>
@@ -222,11 +223,28 @@
                         <i class="bi bi-phone-flip"></i> Thu cũ đổi mới
                     </a>
                 </li>
+
                 <li>
-                    <a href="@Url.Action("QuanLyDanhGia", "Admin")" class="@(currentAction == "QuanLyDanhGia" ? "active" : "")">
+                    <a href="@Url.Action("QuanLyDanhGia", "Admin")" class="@(currentAction == "QuanLyDanhGia" ?
+                                                                             "active" : "")">
                         <i class="bi bi-star-half"></i> Đánh giá
                     </a>
                 </li>
+
+                @if (isBoss)
+                {
+                    <li>
+                        <a href="@Url.Action("QuanLyBanner", "Admin")" class="@(currentAction == "QuanLyBanner" || currentAction == "ThemBanner" || currentAction == "SuaBanner" ? "active" : "")">
+                            <i class="bi bi-images"></i> Banner
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="@Url.Action("QuanLyVoucher", "Admin")" class="@(currentAction == "QuanLyVoucher" ? "active" : "")">
+                            <i class="bi bi-ticket-perforated-fill text-danger"></i> Mã Giảm Giá (Voucher)
+                        </a>
+                    </li>
+                }
 
                 @if (isBoss)
                 {
@@ -239,8 +257,15 @@
                     </li>
 
                     <li>
-                        <a href="@Url.Action("QuanLyBanner", "Admin")" class="@(currentAction == "QuanLyBanner" ? "active" : "")">
-                            <i class="bi bi-images"></i> Quản lý Banner
+                        <a href="@Url.Action("NhatKyHoatDong", "Admin")" class="@(currentAction == "NhatKyHoatDong" ? "active" : "")">
+                            <i class="bi bi-journal-medical"></i> Nhật ký hoạt động
+                        </a>
+                    </li>
+
+                    @* [MỚI] Mục Quản lý Thuế nằm cuối cùng *@
+                    <li>
+                        <a href="@Url.Action("QuanLyThue", "Admin")" class="@(currentAction == "QuanLyThue" ? "active" : "")">
+                            <i class="bi bi-bank2 text-warning"></i> Kiểm soát Thuế (VAT)
                         </a>
                     </li>
                 }
@@ -263,7 +288,8 @@
                             </span>
                         </a>
 
-                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="bellDropdown" style="width: 320px; max-height: 400px; overflow-y: auto;">
+                        <ul class="dropdown-menu dropdown-menu-end shadow border-0" aria-labelledby="bellDropdown" style="width: 320px;
+                                                                                                                          max-height: 400px; overflow-y: auto;">
                             <li class="dropdown-header fw-bold border-bottom bg-light text-dark d-flex justify-content-between align-items-center">
                                 <span>Thông báo mới</span>
                                 <a href="javascript:void(0)" onclick="danhDauDaDoc()" class="small text-decoration-none">Đọc tất cả</a>
@@ -351,9 +377,9 @@
             }
 
             loadThongBao();
-            setInterval(loadThongBao, 10000); // Auto reload sau 10s
+            setInterval(loadThongBao, 10000);
+            // Auto reload sau 10s
         });
-
         function loadThongBao() {
             fetch('/Admin/GetThongBao')
                 .then(response => response.json())
@@ -385,28 +411,26 @@
                                     : (item.loaiThongBao == 2
                                         ? '<div class="bg-light-warning text-warning rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-recycle"></i></div>'
                                         : '<div class="bg-light-info text-info rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-info-circle-fill"></i></div>');
-
                                 let bgClass = item.daDoc ? '' : 'bg-unread';
 
                                 let linkUrl = item.redirectAction
                                     ? `/Admin/${item.redirectAction}?highlightId=${item.redirectId}`
                                     : '/Admin/Index';
-
                                 let html = `
-                                    <li>
-                                         <a class="dropdown-item d-flex align-items-start p-2 border-bottom ${bgClass}"
-                                           href="javascript:void(0)"
-                                           onclick="markAndGo(${item.id}, '${linkUrl}')">
-                                            ${icon}
-                                            <div>
-                                                <div class="small fw-bold text-wrap mb-1" style="line-height: 1.3;">
-                                                    ${item.tieuDe ? item.tieuDe : 'Thông báo'}: ${item.noiDung}
-                                                </div>
-                                                <div class="text-muted fst-italic" style="font-size: 10px;">${finalDate}</div>
-                                            </div>
-                                        </a>
-                                    </li>
-                                `;
+                                            <li>
+                                                 <a class="dropdown-item d-flex align-items-start p-2 border-bottom ${bgClass}"
+                                                     href="javascript:void(0)"
+                                                   onclick="markAndGo(${item.id}, '${linkUrl}')">
+                                                     ${icon}
+                                                    <div>
+                                                        <div class="small fw-bold text-wrap mb-1" style="line-height: 1.3;">
+                                                            ${item.tieuDe ? item.tieuDe : 'Thông báo'}: ${item.noiDung}
+                                                        </div>
+                                                        <div class="text-muted fst-italic" style="font-size: 10px;">${finalDate}</div>
+                                                    </div>
+                                                </a>
+                                            </li>
+                                        `;
                                 listContainer.insertAdjacentHTML('beforeend', html);
                             });
                         }
@@ -427,9 +451,8 @@
 
         function danhDauDaDoc() {
             fetch('/Admin/MarkAsRead', { method: 'POST' });
-
             const badge = document.getElementById('notif-badge');
-            if(badge) badge.classList.add('d-none');
+            if (badge) badge.classList.add('d-none');
 
             setTimeout(loadThongBao, 500);
         }

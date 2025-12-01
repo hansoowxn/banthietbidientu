@@ -23,13 +23,16 @@ namespace banthietbidientu.Controllers
         private readonly ILogger<GioHangController> _logger;
         private readonly MemberService _memberService;
         private readonly IConfiguration _configuration;
+        private readonly IEmailSender _emailSender; // [MỚI]
 
-        public GioHangController(ApplicationDbContext context, ILogger<GioHangController> logger, MemberService memberService, IConfiguration configuration)
+        // [CẬP NHẬT] Thêm IEmailSender vào Constructor
+        public GioHangController(ApplicationDbContext context, ILogger<GioHangController> logger, MemberService memberService, IConfiguration configuration, IEmailSender emailSender)
         {
             _context = context ?? throw new ArgumentNullException(nameof(context));
             _logger = logger;
             _memberService = memberService;
             _configuration = configuration;
+            _emailSender = emailSender;
         }
 
         // --- 1. HÀM LẤY GIỎ HÀNG ---
@@ -51,7 +54,6 @@ namespace banthietbidientu.Controllers
             return cart;
         }
 
-        // --- 2. HÀM LƯU GIỎ HÀNG ---
         private void SaveCart(List<CartItem> cart)
         {
             try
@@ -64,14 +66,12 @@ namespace banthietbidientu.Controllers
             }
         }
 
-        // --- 3. TRANG GIỎ HÀNG ---
         public IActionResult Index()
         {
             var cart = GetCart();
             return View(cart);
         }
 
-        // --- 4. THÊM VÀO GIỎ ---
         [HttpPost]
         public IActionResult Add(int id, int quantity = 1, string? capacity = null, string? color = null)
         {
@@ -124,12 +124,8 @@ namespace banthietbidientu.Controllers
             return !string.IsNullOrEmpty(referer) ? Redirect(referer) : RedirectToAction("Index", "Home");
         }
 
-        public IActionResult ThemVaoGio(int id, int quantity = 1)
-        {
-            return Add(id, quantity);
-        }
+        public IActionResult ThemVaoGio(int id, int quantity = 1) => Add(id, quantity);
 
-        // --- 5. XÓA KHỎI GIỎ ---
         public IActionResult Remove(int id)
         {
             var cart = GetCart();
@@ -144,7 +140,6 @@ namespace banthietbidientu.Controllers
 
         public IActionResult XoaKhoiGio(int id) => Remove(id);
 
-        // --- 6. CẬP NHẬT SỐ LƯỢNG ---
         public IActionResult Update(int id, int quantity)
         {
             var cart = GetCart();
@@ -174,7 +169,6 @@ namespace banthietbidientu.Controllers
             return RedirectToAction("Index");
         }
 
-        // --- 7. TRANG THANH TOÁN ---
         [HttpGet]
         public IActionResult ThanhToan()
         {
@@ -194,6 +188,34 @@ namespace banthietbidientu.Controllers
             var tier = _memberService.GetUserTier(user.Username);
             ViewBag.Tier = tier;
 
+            string maVoucher = HttpContext.Session.GetString("VoucherCode");
+            string strVoucherGiam = HttpContext.Session.GetString("VoucherGiam");
+            decimal giamGiaVoucher = 0;
+
+            if (!string.IsNullOrEmpty(strVoucherGiam))
+            {
+                decimal.TryParse(strVoucherGiam, out giamGiaVoucher);
+            }
+
+            if (tier.DiscountPercent > 0)
+            {
+                giamGiaVoucher = 0;
+                maVoucher = null;
+            }
+
+            decimal tongTienHang = cart.Sum(x => x.Total);
+            decimal giamGiaHang = (tongTienHang * tier.DiscountPercent) / 100;
+            decimal tongGiam = giamGiaHang + giamGiaVoucher;
+
+            decimal tienTruocThue = tongTienHang - tongGiam;
+            if (tienTruocThue < 0) tienTruocThue = 0;
+
+            decimal thueVAT = tienTruocThue * 0.10m;
+
+            ViewBag.MaVoucher = maVoucher;
+            ViewBag.GiamGiaVoucher = giamGiaVoucher;
+            ViewBag.ThueVAT = thueVAT;
+
             var model = new ThanhToanViewModel
             {
                 GioHangs = cart,
@@ -207,7 +229,66 @@ namespace banthietbidientu.Controllers
             return View(model);
         }
 
-        // --- 8. XÁC NHẬN THANH TOÁN (COD & VNPAY) ---
+        [HttpGet]
+        public IActionResult GetVoucherList()
+        {
+            var today = DateTime.Now;
+            var vouchers = _context.Vouchers
+                .Where(v => v.IsActive && v.NgayBatDau <= today && v.NgayKetThuc >= today && v.DaDung < v.SoLuong)
+                .OrderBy(v => v.DonToiThieu)
+                .Select(v => new { v.MaVoucher, v.TenVoucher, v.LoaiGiamGia, v.GiaTri, v.GiamToiDa, v.DonToiThieu, HanSuDung = v.NgayKetThuc.ToString("dd/MM/yyyy") })
+                .ToList();
+            return Json(new { success = true, data = vouchers });
+        }
+
+        [HttpPost]
+        public IActionResult ApDungVoucher(string maVoucher)
+        {
+            if (User.Identity?.IsAuthenticated != true)
+            {
+                return Json(new { success = false, message = "Bạn cần đăng nhập để dùng mã!" });
+            }
+
+            var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == User.Identity.Name);
+            var tier = _memberService.GetUserTier(user.Username);
+
+            if (tier.Name.Contains("KIM CƯƠNG") || tier.Name.Contains("BẠCH KIM"))
+            {
+                return Json(new { success = false, message = $"Hạng {tier.Name} đã có ưu đãi riêng, không thể dùng thêm Voucher!" });
+            }
+
+            var voucher = _context.Vouchers.FirstOrDefault(v => v.MaVoucher == maVoucher && v.IsActive);
+
+            if (voucher == null) return Json(new { success = false, message = "Mã không tồn tại hoặc đã bị khóa!" });
+
+            if (DateTime.Now < voucher.NgayBatDau || DateTime.Now > voucher.NgayKetThuc)
+                return Json(new { success = false, message = "Mã này chưa bắt đầu hoặc đã hết hạn!" });
+
+            if (voucher.DaDung >= voucher.SoLuong)
+                return Json(new { success = false, message = "Mã này đã hết lượt sử dụng!" });
+
+            var cart = GetCart();
+            decimal tongTienHang = cart.Sum(x => x.Total);
+
+            if (tongTienHang < voucher.DonToiThieu)
+                return Json(new { success = false, message = $"Đơn hàng phải từ {voucher.DonToiThieu:N0}đ mới được dùng mã này!" });
+
+            decimal soTienGiam = 0;
+            if (voucher.LoaiGiamGia == 0) soTienGiam = voucher.GiaTri;
+            else
+            {
+                soTienGiam = (tongTienHang * voucher.GiaTri) / 100;
+                if (voucher.GiamToiDa > 0 && soTienGiam > voucher.GiamToiDa) soTienGiam = voucher.GiamToiDa;
+            }
+
+            if (soTienGiam > tongTienHang) soTienGiam = tongTienHang;
+
+            HttpContext.Session.SetString("VoucherCode", voucher.MaVoucher);
+            HttpContext.Session.SetString("VoucherGiam", soTienGiam.ToString());
+
+            return Json(new { success = true, discount = soTienGiam, message = "Áp dụng mã thành công!" });
+        }
+
         [HttpPost]
         public async Task<IActionResult> XacNhanThanhToan(ThanhToanViewModel model, string paymentMethod)
         {
@@ -217,54 +298,66 @@ namespace banthietbidientu.Controllers
             var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == User.Identity.Name);
             if (user == null) return RedirectToAction("DangNhap", "Login");
 
-            // --- 1. TÍNH TOÁN GIẢM GIÁ ---
             decimal tongTienHang = cart.Sum(x => x.Total);
             var tier = _memberService.GetUserTier(user.Username);
-            decimal giamGia = (tongTienHang * tier.DiscountPercent) / 100;
-            decimal tongTienSauGiam = tongTienHang - giamGia;
+            decimal giamGiaHang = (tongTienHang * tier.DiscountPercent) / 100;
 
-            // --- 2. XÁC ĐỊNH STORE ID & ĐỊA CHỈ ---
+            decimal giamGiaVoucher = 0;
+            string maVoucher = HttpContext.Session.GetString("VoucherCode");
+            string strVoucherGiam = HttpContext.Session.GetString("VoucherGiam");
+            if (!string.IsNullOrEmpty(maVoucher) && !string.IsNullOrEmpty(strVoucherGiam))
+            {
+                decimal.TryParse(strVoucherGiam, out giamGiaVoucher);
+            }
+
+            if (tier.DiscountPercent > 0)
+            {
+                giamGiaVoucher = 0;
+                maVoucher = null;
+            }
+
+            decimal tongGiamGia = giamGiaHang + giamGiaVoucher;
+            decimal tienTruocThue = tongTienHang - tongGiamGia;
+            if (tienTruocThue < 0) tienTruocThue = 0;
+
+            decimal thueVAT = tienTruocThue * 0.10m;
+            decimal tongTienSauThue = tienTruocThue + thueVAT;
+
             int? storeId = null;
-
             if (model.DeliveryType == "Store" && model.StoreId.HasValue)
             {
                 storeId = model.StoreId.Value;
             }
             else
             {
-                // 1. Ưu tiên lấy Tỉnh từ Dropdown
                 string tinh = (model.TinhThanh ?? "").Trim();
-
-                // 2. Nếu Dropdown rỗng (do dùng địa chỉ cũ), lấy từ chuỗi Địa chỉ đầy đủ
                 string diaChiFull = (model.DiaChi ?? "").ToLower();
-
                 string[] mienBac = { "hà nội", "hải phòng", "quảng ninh", "bắc ninh", "hải dương", "hưng yên", "nam định", "thái bình", "vĩnh phúc", "phú thọ", "bắc giang", "thái nguyên", "cao bằng", "bắc kạn", "lạng sơn", "tuyên quang", "hà giang", "yên bái", "lào cai", "điện biên", "lai châu", "sơn la", "hòa bình", "hà nam", "ninh bình" };
                 string[] mienTrung = { "đà nẵng", "huế", "thừa thiên huế", "quảng nam", "quảng ngãi", "bình định", "phú yên", "khánh hòa", "quảng bình", "quảng trị", "nghệ an", "hà tĩnh", "thanh hóa", "ninh thuận", "bình thuận", "kon tum", "gia lai", "đắk lắk", "đắk nông", "lâm đồng" };
 
-                // Logic kiểm tra kết hợp
-                bool isMienTrung = mienTrung.Any(x => tinh.Contains(x, StringComparison.OrdinalIgnoreCase) || diaChiFull.Contains(x));
-                bool isMienBac = mienBac.Any(x => tinh.Contains(x, StringComparison.OrdinalIgnoreCase) || diaChiFull.Contains(x));
+                bool isMienTrung = false;
+                bool isMienBac = false;
 
-                if (isMienTrung)
+                if (!string.IsNullOrEmpty(tinh))
                 {
-                    storeId = 2; // Kho Đà Nẵng
-                }
-                else if (isMienBac)
-                {
-                    storeId = 1; // Kho Hà Nội
+                    isMienTrung = mienTrung.Any(x => tinh.Contains(x, StringComparison.OrdinalIgnoreCase));
+                    isMienBac = mienBac.Any(x => tinh.Contains(x, StringComparison.OrdinalIgnoreCase));
                 }
                 else
                 {
-                    storeId = 3; // Mặc định còn lại về Kho HCM
+                    isMienTrung = mienTrung.Any(x => diaChiFull.Contains(x));
+                    isMienBac = mienBac.Any(x => diaChiFull.Contains(x));
                 }
 
-                // Gộp địa chỉ nếu chưa có Tỉnh trong chuỗi (chỉ áp dụng khi chọn mới)
+                if (isMienTrung) storeId = 2;
+                else if (isMienBac) storeId = 1;
+                else storeId = 3;
+
                 if (!string.IsNullOrEmpty(model.TinhThanh) && !model.DiaChi.Contains(model.TinhThanh))
                 {
                     model.DiaChi = $"{model.DiaChi}, {model.TinhThanh}";
                 }
             }
-            // -------------------------------------
 
             var tempOrder = new DonHang
             {
@@ -275,12 +368,14 @@ namespace banthietbidientu.Controllers
                 NguoiNhan = model.NguoiNhan ?? user.FullName ?? string.Empty,
                 SDT = model.SoDienThoai ?? user.PhoneNumber ?? string.Empty,
                 DiaChi = model.DiaChi ?? user.Address ?? string.Empty,
-                PhiShip = 0, // Mặc định FreeShip
-                TongTien = tongTienSauGiam, // Lưu giá đã giảm
-                StoreId = storeId // Lưu StoreId
+                PhiShip = 0,
+                TienThue = thueVAT,
+                TongTien = tongTienSauThue,
+                StoreId = storeId,
+                MaVoucher = maVoucher,
+                GiamGia = tongGiamGia
             };
 
-            // A. THANH TOÁN VNPAY
             if (paymentMethod == "VNPAY")
             {
                 var vnpay = new VnPayLibrary();
@@ -302,7 +397,6 @@ namespace banthietbidientu.Controllers
                 HttpContext.Session.SetString("PendingOrder", JsonConvert.SerializeObject(tempOrder));
                 return Redirect(paymentUrl);
             }
-            // B. THANH TOÁN COD
             else
             {
                 await ProcessOrderSuccess(tempOrder, cart, "COD");
@@ -310,7 +404,6 @@ namespace banthietbidientu.Controllers
             }
         }
 
-        // --- 9. CALLBACK TỪ VNPAY ---
         [HttpGet]
         public async Task<IActionResult> PaymentCallback()
         {
@@ -362,10 +455,16 @@ namespace banthietbidientu.Controllers
             return RedirectToAction("Index");
         }
 
-        // --- 10. HÀM XỬ LÝ CHUNG ---
+        // --- 11. HÀM XỬ LÝ CHUNG (ĐÃ THÊM GỬI EMAIL) ---
         private async Task<IActionResult> ProcessOrderSuccess(DonHang order, List<CartItem> cart, string method)
         {
             _context.DonHangs.Add(order);
+
+            if (!string.IsNullOrEmpty(order.MaVoucher))
+            {
+                var v = _context.Vouchers.FirstOrDefault(x => x.MaVoucher == order.MaVoucher);
+                if (v != null) { v.DaDung++; }
+            }
 
             var thongBao = new ThongBao
             {
@@ -376,8 +475,6 @@ namespace banthietbidientu.Controllers
                 LoaiThongBao = 0,
                 RedirectId = order.MaDon,
                 RedirectAction = "QuanLyDonHang",
-
-                // [MỚI] Gán StoreId từ đơn hàng sang thông báo
                 StoreId = order.StoreId
             };
             _context.ThongBaos.Add(thongBao);
@@ -387,7 +484,6 @@ namespace banthietbidientu.Controllers
             foreach (var item in cart)
             {
                 var sanPham = await _context.SanPhams.FindAsync(item.Id);
-
                 var chiTiet = new ChiTietDonHang
                 {
                     MaDon = order.MaDon,
@@ -398,15 +494,40 @@ namespace banthietbidientu.Controllers
                 };
                 _context.ChiTietDonHangs.Add(chiTiet);
 
-                if (sanPham != null)
-                {
-                    sanPham.SoLuong -= item.Quantity;
-                }
+                if (sanPham != null) { sanPham.SoLuong -= item.Quantity; }
             }
             await _context.SaveChangesAsync();
 
+            // --- [MỚI] GỬI EMAIL XÁC NHẬN ---
+            try
+            {
+                var userEmail = _context.TaiKhoans.Where(u => u.Id == order.TaiKhoanId).Select(u => u.Email).FirstOrDefault();
+                if (!string.IsNullOrEmpty(userEmail))
+                {
+                    string subject = $"[SmartTech] Xác nhận đơn hàng #{order.MaDon}";
+                    string body = $@"
+                        <h3>Cảm ơn bạn đã đặt hàng tại SmartTech!</h3>
+                        <p>Mã đơn hàng: <strong>{order.MaDon}</strong></p>
+                        <p>Tổng thanh toán: <strong>{order.TongTien:N0} đ</strong></p>
+                        <p>Trạng thái: Đang xử lý</p>
+                        <p>Chúng tôi sẽ sớm liên hệ để giao hàng.</p>
+                        <hr>
+                        <small>Đây là email tự động, vui lòng không trả lời.</small>
+                    ";
+                    await _emailSender.SendEmailAsync(userEmail, subject, body);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Ghi log lỗi gửi mail nhưng không chặn quy trình đặt hàng
+                _logger.LogError(ex, "Lỗi gửi email xác nhận đơn hàng.");
+            }
+            // --------------------------------
+
             HttpContext.Session.Remove("GioHang");
             HttpContext.Session.Remove("Cart");
+            HttpContext.Session.Remove("VoucherCode");
+            HttpContext.Session.Remove("VoucherGiam");
 
             return Ok();
         }

@@ -24,10 +24,14 @@ namespace banthietbidientu.Data
         public DbSet<DanhGia> DanhGias { get; set; }
         public DbSet<YeuCauThuMua> YeuCauThuMuas { get; set; }
         public DbSet<Banner> Banners { get; set; }
+        public DbSet<Voucher> Vouchers { get; set; }
+        public DbSet<LichSuHoatDong> LichSuHoatDongs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Cấu hình mối quan hệ GioHang - SanPham
+            base.OnModelCreating(modelBuilder);
+
+            // 1. Cấu hình mối quan hệ GioHang - SanPham
             modelBuilder.Entity<GioHang>()
                 .HasOne(g => g.SanPham)
                 .WithMany(s => s.GioHangs)
@@ -37,7 +41,23 @@ namespace banthietbidientu.Data
                 .Property(g => g.UserId)
                 .IsRequired(false);
 
-            // --- GIỮ NGUYÊN DỮ LIỆU SẢN PHẨM MẪU CỦA BẠN ---
+            // 2. [CẬP NHẬT] Cấu hình Đơn Hàng (Dùng MaDon làm Khóa Chính)
+            modelBuilder.Entity<DonHang>()
+                .HasKey(d => d.MaDon); // Xác nhận MaDon là Khóa Chính (Primary Key)
+
+            // Cấu hình mối quan hệ ChiTietDonHang - DonHang
+            modelBuilder.Entity<ChiTietDonHang>()
+                .HasOne(ct => ct.DonHang)
+                .WithMany(d => d.ChiTietDonHangs)
+                .HasForeignKey(ct => ct.MaDon); // Link qua MaDon
+
+            // Cấu hình mối quan hệ DanhGia - DonHang
+            modelBuilder.Entity<DanhGia>()
+                .HasOne(dg => dg.DonHang)
+                .WithMany() // DonHang không cần list DanhGia ngược lại
+                .HasForeignKey(dg => dg.MaDon); // Link qua MaDon
+
+            // --- SEED DATA (Dữ liệu mẫu) ---
             modelBuilder.Entity<SanPham>().HasData(
                 new SanPham
                 {
@@ -63,193 +83,24 @@ namespace banthietbidientu.Data
                     Description = "Laptop hiệu năng cao cho công việc chuyên nghiệp.",
                     MoTa = "Laptop Pro 15 được trang bị chip xử lý mới nhất..."
                 },
-                new SanPham
-                {
-                    Id = 3,
-                    Name = "Wireless Headphones Elite",
-                    Price = 199.99m,
-                    SoLuong = 1000,
-                    ImageUrl = "https://via.placeholder.com/300x200?text=Headphones",
-                    Category = "Phụ kiện",
-                    GiaNhap = 150.00m,
-                    Description = "Tai nghe không dây chống ồn chủ động.",
-                    MoTa = "Trải nghiệm âm thanh đỉnh cao với Wireless Headphones Elite..."
-                },
-                new SanPham
-                {
-                    Id = 4,
-                    Name = "Smartwatch Series 7",
-                    Price = 399.99m,
-                    SoLuong = 1000,
-                    ImageUrl = "https://via.placeholder.com/300x200?text=Smartwatch",
-                    Category = "Đồng hồ",
-                    GiaNhap = 300.00m,
-                    Description = "Đồng hồ thông minh theo dõi sức khỏe toàn diện.",
-                    MoTa = "Smartwatch Series 7 hỗ trợ đo nhịp tim, SpO2..."
-                },
-                new SanPham
-                {
-                    Id = 5,
-                    Name = "4K Smart TV 55\"",
-                    Price = 799.99m,
-                    SoLuong = 1000,
-                    ImageUrl = "https://via.placeholder.com/300x200?text=Smart+TV",
-                    Category = "TV",
-                    GiaNhap = 600.00m,
-                    Description = "TV 4K sắc nét, trải nghiệm điện ảnh tại gia.",
-                    MoTa = "Màn hình 55 inch độ phân giải 4K HDR..."
-                },
-                new SanPham
-                {
-                    Id = 6,
-                    Name = "Bluetooth Speaker",
-                    Price = 149.99m,
-                    SoLuong = 1000,
-                    ImageUrl = "https://via.placeholder.com/300x200?text=Speaker",
-                    Category = "Phụ kiện",
-                    GiaNhap = 100.00m,
-                    Description = "Loa Bluetooth di động âm bass mạnh mẽ.",
-                    MoTa = "Bluetooth Speaker nhỏ gọn, pin trâu..."
-                },
-                new SanPham
-                {
-                    Id = 7,
-                    Name = "Gaming Console X",
-                    Price = 499.99m,
-                    SoLuong = 1000,
-                    ImageUrl = "https://via.placeholder.com/300x200?text=Console",
-                    Category = "Console",
-                    GiaNhap = 400.00m,
-                    Description = "Máy chơi game thế hệ mới, đồ họa đỉnh cao.",
-                    MoTa = "Gaming Console X hỗ trợ chơi game 4K 120fps..."
-                },
-                new SanPham
-                {
-                    Id = 8,
-                    Name = "Wireless Mouse",
-                    Price = 49.99m,
-                    SoLuong = 1000,
-                    ImageUrl = "https://via.placeholder.com/300x200?text=Mouse",
-                    Category = "Phụ kiện",
-                    GiaNhap = 30.00m,
-                    Description = "Chuột không dây tiện lợi, độ nhạy cao.",
-                    MoTa = "Thiết kế Ergonomic giúp cầm nắm thoải mái..."
-                },
-                new SanPham
-                {
-                    Id = 9,
-                    Name = "Portable Charger 10000mAh",
-                    Price = 29.99m,
-                    SoLuong = 1000,
-                    ImageUrl = "https://via.placeholder.com/300x200?text=Charger",
-                    Category = "Phụ kiện",
-                    GiaNhap = 20.00m,
-                    Description = "Sạc dự phòng dung lượng lớn, sạc nhanh.",
-                    MoTa = "Dung lượng 10000mAh sạc được nhiều lần..."
-                },
-                new SanPham
-                {
-                    Id = 10,
-                    Name = "Tablet Air 10",
-                    Price = 499.99m,
-                    SoLuong = 1000,
-                    ImageUrl = "https://via.placeholder.com/300x200?text=Tablet",
-                    Category = "Tablet",
-                    GiaNhap = 350.00m,
-                    Description = "Máy tính bảng mỏng nhẹ, hiệu năng tốt.",
-                    MoTa = "Màn hình Retina sắc nét, chip xử lý mạnh mẽ..."
-                },
-                new SanPham
-                {
-                    Id = 11,
-                    Name = "Wireless Keyboard",
-                    Price = 79.99m,
-                    SoLuong = 1000,
-                    ImageUrl = "https://via.placeholder.com/300x200?text=Keyboard",
-                    Category = "Phụ kiện",
-                    GiaNhap = 50.00m,
-                    Description = "Bàn phím không dây gõ êm, kết nối ổn định.",
-                    MoTa = "Tương thích nhiều thiết bị, hành trình phím tốt..."
-                },
-                new SanPham
-                {
-                    Id = 12,
-                    Name = "Action Camera 4K",
-                    Price = 249.99m,
-                    SoLuong = 1000,
-                    ImageUrl = "https://via.placeholder.com/300x200?text=Camera",
-                    Category = "Camera",
-                    GiaNhap = 200.00m,
-                    Description = "Camera hành trình quay 4K chống rung.",
-                    MoTa = "Quay video 4K 60fps, chống nước..."
-                }
+                new SanPham { Id = 3, Name = "Wireless Headphones Elite", Price = 199.99m, SoLuong = 1000, ImageUrl = "https://via.placeholder.com/300x200?text=Headphones", Category = "Phụ kiện", GiaNhap = 150.00m, Description = "Tai nghe không dây chống ồn chủ động.", MoTa = "Mô tả..." },
+                new SanPham { Id = 4, Name = "Smartwatch Series 7", Price = 399.99m, SoLuong = 1000, ImageUrl = "https://via.placeholder.com/300x200?text=Smartwatch", Category = "Đồng hồ", GiaNhap = 300.00m, Description = "Đồng hồ thông minh.", MoTa = "Mô tả..." },
+                new SanPham { Id = 5, Name = "4K Smart TV 55\"", Price = 799.99m, SoLuong = 1000, ImageUrl = "https://via.placeholder.com/300x200?text=Smart+TV", Category = "TV", GiaNhap = 600.00m, Description = "TV 4K sắc nét.", MoTa = "Mô tả..." },
+                new SanPham { Id = 6, Name = "Bluetooth Speaker", Price = 149.99m, SoLuong = 1000, ImageUrl = "https://via.placeholder.com/300x200?text=Speaker", Category = "Phụ kiện", GiaNhap = 100.00m, Description = "Loa Bluetooth.", MoTa = "Mô tả..." },
+                new SanPham { Id = 7, Name = "Gaming Console X", Price = 499.99m, SoLuong = 1000, ImageUrl = "https://via.placeholder.com/300x200?text=Console", Category = "Console", GiaNhap = 400.00m, Description = "Máy chơi game.", MoTa = "Mô tả..." },
+                new SanPham { Id = 8, Name = "Wireless Mouse", Price = 49.99m, SoLuong = 1000, ImageUrl = "https://via.placeholder.com/300x200?text=Mouse", Category = "Phụ kiện", GiaNhap = 30.00m, Description = "Chuột không dây.", MoTa = "Mô tả..." },
+                new SanPham { Id = 9, Name = "Portable Charger 10000mAh", Price = 29.99m, SoLuong = 1000, ImageUrl = "https://via.placeholder.com/300x200?text=Charger", Category = "Phụ kiện", GiaNhap = 20.00m, Description = "Sạc dự phòng.", MoTa = "Mô tả..." },
+                new SanPham { Id = 10, Name = "Tablet Air 10", Price = 499.99m, SoLuong = 1000, ImageUrl = "https://via.placeholder.com/300x200?text=Tablet", Category = "Tablet", GiaNhap = 350.00m, Description = "Máy tính bảng.", MoTa = "Mô tả..." },
+                new SanPham { Id = 11, Name = "Wireless Keyboard", Price = 79.99m, SoLuong = 1000, ImageUrl = "https://via.placeholder.com/300x200?text=Keyboard", Category = "Phụ kiện", GiaNhap = 50.00m, Description = "Bàn phím.", MoTa = "Mô tả..." },
+                new SanPham { Id = 12, Name = "Action Camera 4K", Price = 249.99m, SoLuong = 1000, ImageUrl = "https://via.placeholder.com/300x200?text=Camera", Category = "Camera", GiaNhap = 200.00m, Description = "Camera hành trình.", MoTa = "Mô tả..." }
             );
 
-            // --- [CẬP NHẬT] SEED DATA TÀI KHOẢN (BOSS + ADMIN CHI NHÁNH) ---
+            // SEED DATA TÀI KHOẢN
             modelBuilder.Entity<TaiKhoan>().HasData(
-                // 1. BOSS TỔNG
-                new TaiKhoan
-                {
-                    Id = 1,
-                    Username = "boss",
-                    Password = "123", // Mật khẩu mẫu
-                    Role = "Boss",
-                    StoreId = null, // Boss không thuộc chi nhánh nào, quản lý ALL
-                    FullName = "Chủ Tịch (CEO)",
-                    Email = "boss@smarttech.com",
-                    PhoneNumber = "0999999999",
-                    Address = "Trụ sở chính - Sky Tower",
-                    Gender = "Nam",
-                    DateOfBirth = new DateTime(1980, 1, 1)
-                },
-
-                // 2. ADMIN HÀ NỘI (StoreId = 1)
-                new TaiKhoan
-                {
-                    Id = 2,
-                    Username = "admin_hn",
-                    Password = "123",
-                    Role = "Admin",
-                    StoreId = 1, // Mã 1: Hà Nội
-                    FullName = "Quản Lý Hà Nội",
-                    Email = "admin.hn@smarttech.com",
-                    PhoneNumber = "0988111222",
-                    Address = "120 Xuân Thủy, Cầu Giấy, HN",
-                    Gender = "Nam",
-                    DateOfBirth = new DateTime(1990, 1, 1)
-                },
-
-                // 3. ADMIN ĐÀ NẴNG (StoreId = 2)
-                new TaiKhoan
-                {
-                    Id = 3,
-                    Username = "admin_dn",
-                    Password = "123",
-                    Role = "Admin",
-                    StoreId = 2, // Mã 2: Đà Nẵng
-                    FullName = "Quản Lý Đà Nẵng",
-                    Email = "admin.dn@smarttech.com",
-                    PhoneNumber = "0988333444",
-                    Address = "78 Bạch Đằng, Hải Châu, ĐN",
-                    Gender = "Nữ",
-                    DateOfBirth = new DateTime(1992, 2, 2)
-                },
-
-                // 4. ADMIN SÀI GÒN (StoreId = 3)
-                new TaiKhoan
-                {
-                    Id = 4,
-                    Username = "admin_sg",
-                    Password = "123",
-                    Role = "Admin",
-                    StoreId = 3, // Mã 3: TP.HCM
-                    FullName = "Quản Lý Sài Gòn",
-                    Email = "admin.sg@smarttech.com",
-                    PhoneNumber = "0988555666",
-                    Address = "55 Nguyễn Huệ, Quận 1, TP.HCM",
-                    Gender = "Nam",
-                    DateOfBirth = new DateTime(1995, 3, 3)
-                }
+                new TaiKhoan { Id = 1, Username = "boss", Password = "123", Role = "Boss", StoreId = null, FullName = "Chủ Tịch (CEO)", Email = "boss@smarttech.com", PhoneNumber = "0999999999", Address = "Trụ sở chính", Gender = "Nam", DateOfBirth = new DateTime(1980, 1, 1) },
+                new TaiKhoan { Id = 2, Username = "admin_hn", Password = "123", Role = "Admin", StoreId = 1, FullName = "Quản Lý Hà Nội", Email = "admin.hn@smarttech.com", PhoneNumber = "0988111222", Address = "Hà Nội", Gender = "Nam", DateOfBirth = new DateTime(1990, 1, 1) },
+                new TaiKhoan { Id = 3, Username = "admin_dn", Password = "123", Role = "Admin", StoreId = 2, FullName = "Quản Lý Đà Nẵng", Email = "admin.dn@smarttech.com", PhoneNumber = "0988333444", Address = "Đà Nẵng", Gender = "Nữ", DateOfBirth = new DateTime(1992, 2, 2) },
+                new TaiKhoan { Id = 4, Username = "admin_sg", Password = "123", Role = "Admin", StoreId = 3, FullName = "Quản Lý Sài Gòn", Email = "admin.sg@smarttech.com", PhoneNumber = "0988555666", Address = "TP.HCM", Gender = "Nam", DateOfBirth = new DateTime(1995, 3, 3) }
             );
         }
     }

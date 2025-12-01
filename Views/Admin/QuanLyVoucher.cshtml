@@ -1,0 +1,84 @@
+﻿@model IEnumerable<banthietbidientu.Models.Voucher>
+@{
+    ViewData["Title"] = "Quản lý Mã giảm giá"; Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold text-primary">Quản Lý Mã Giảm Giá</h4>
+        <a asp-action="ThemVoucher" class="btn btn-primary"><i class="bi bi-plus-lg me-2"></i>Tạo Mã Mới</a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body">
+            <table class="table table-hover align-middle">
+                <thead class="bg-light">
+                    <tr>
+                        <th>Mã Code</th>
+                        <th>Loại giảm</th>
+                        <th>Điều kiện</th>
+                        <th>Số lượng</th>
+                        <th>Thời hạn</th>
+                        <th>Trạng thái</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr>
+                            <td>
+                                <span class="badge bg-primary fs-6">@item.MaVoucher</span><br>
+                                <small class="text-muted">@item.TenVoucher</small>
+                            </td>
+                            <td>
+                                @if (item.LoaiGiamGia == 0)
+                                {
+                                    <span class="fw-bold text-success">-@item.GiaTri.ToString("N0")đ</span>
+                                }
+                                else
+                                {
+                                    <span class="fw-bold text-danger">-@item.GiaTri%</span>
+                                    <small class="d-block text-muted">(Tối đa: @item.GiamToiDa.ToString("N0")đ)</small>
+                                }
+                            </td>
+                            <td>
+                                @(item.DonToiThieu > 0 ? "Đơn từ " + item.DonToiThieu.ToString("N0") + "đ" : "Không giới hạn")
+                            </td>
+                            <td>
+                                <b>@item.DaDung</b> / @item.SoLuong
+                            </td>
+                            <td>
+                                <small>@item.NgayBatDau.ToString("dd/MM") - @item.NgayKetThuc.ToString("dd/MM/yyyy")</small>
+                            </td>
+                            <td>
+                                @if (!item.IsActive)
+                                {
+                                    <span class="badge bg-secondary">Đã ẩn</span>
+                                }
+                                else if (DateTime.Now > item.NgayKetThuc)
+                                {
+                                    <span class="badge bg-danger">Hết hạn</span>
+                                }
+                                else if (item.DaDung >= item.SoLuong)
+                                {
+                                    <span class="badge bg-warning text-dark">Hết mã</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-success">Đang chạy</span>
+                                }
+                            </td>
+                            <td>
+                                <a asp-action="SuaVoucher" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></a>
+                                <form asp-action="XoaVoucher" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Xóa mã này?');">
+                                    <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

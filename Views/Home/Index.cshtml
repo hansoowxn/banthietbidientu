@@ -1,6 +1,15 @@
-﻿@{
+﻿@using banthietbidientu.Data
+@using banthietbidientu.Models
+@inject ApplicationDbContext _context
+@{
     ViewData["Title"] = "Trang chủ - SmartTech";
     var cultureInfo = new System.Globalization.CultureInfo("vi-VN");
+
+    // Lấy danh sách Banner đang hoạt động từ CSDL, sắp xếp theo thứ tự hiển thị
+    var listBanners = _context.Banners
+                        .Where(b => b.IsActive)
+                        .OrderBy(b => b.DisplayOrder)
+                        .ToList();
 }
 @model IEnumerable<banthietbidientu.Models.SanPham>
 
@@ -214,59 +223,56 @@
     </style>
 }
 
-<!-- CAROUSEL SLIDER -->
 <div class="container-fluid p-0 mb-5">
     <div id="smartTechCarousel" class="carousel slide carousel-fade" data-bs-ride="carousel" data-bs-interval="5000">
 
-        <!-- Indicators -->
         <div class="carousel-indicators">
-            <button type="button" data-bs-target="#smartTechCarousel" data-bs-slide-to="0" class="active"></button>
-            <button type="button" data-bs-target="#smartTechCarousel" data-bs-slide-to="1"></button>
-            <button type="button" data-bs-target="#smartTechCarousel" data-bs-slide-to="2"></button>
+            @if (listBanners != null && listBanners.Any())
+            {
+                for (int i = 0; i < listBanners.Count; i++)
+                {
+                    <button type="button" data-bs-target="#smartTechCarousel" data-bs-slide-to="@i" class="@(i == 0 ? "active" : "")"></button>
+                }
+            }
         </div>
 
-        <!-- Slides -->
         <div class="carousel-inner rounded-bottom-5 shadow-sm overflow-hidden" style="border-radius: 0 0 50px 50px;">
+            @if (listBanners != null && listBanners.Any())
+            {
+                for (int i = 0; i < listBanners.Count; i++)
+                {
+                    var banner = listBanners[i];
+                    <div class="carousel-item @(i == 0 ? "active" : "")">
+                        <img src="@banner.ImageUrl" alt="@banner.Title">
+                        <div class="carousel-overlay"></div>
 
-            <!-- Slide 1: Chào mừng & Thương hiệu -->
-            <div class="carousel-item active">
-                <img src="https://images.unsplash.com/photo-1519389950473-47ba0277781c?q=80&w=1600&auto=format&fit=crop" alt="Tech World">
-                <div class="carousel-overlay"></div>
-
-                <div class="carousel-caption">
-                    <h1 class="text-white">Chào mừng đến với SmartTech</h1>
-                    <p>Thiên đường công nghệ chính hãng. Nơi cập nhật những xu hướng mới nhất 2025.</p>
-                    <a href="#products" class="btn btn-primary btn-hero text-white">Khám Phá Ngay</a>
+                        <div class="carousel-caption">
+                            <h1 class="text-white">@banner.Title</h1>
+                            @if (!string.IsNullOrEmpty(banner.Description))
+                            {
+                                <p>@banner.Description</p>
+                            }
+                            <a href="@(string.IsNullOrEmpty(banner.LinkUrl) ? "#products" : banner.LinkUrl)"
+                               class="btn btn-primary btn-hero text-white">
+                                @(string.IsNullOrEmpty(banner.ButtonText) ? "Xem ngay" : banner.ButtonText)
+                            </a>
+                        </div>
+                    </div>
+                }
+            }
+            else
+            {
+                <div class="carousel-item active">
+                    <img src="https://via.placeholder.com/1600x600?text=No+Banner+Available" alt="Default">
+                    <div class="carousel-overlay"></div>
+                    <div class="carousel-caption">
+                        <h1 class="text-white">Chào mừng đến với SmartTech</h1>
+                        <p>Hiện chưa có banner nào được kích hoạt.</p>
+                    </div>
                 </div>
-            </div>
-
-            <!-- Slide 2: iPhone 16 / Flagship -->
-            <div class="carousel-item">
-                <img src="https://images.unsplash.com/photo-1696446701796-da61225697cc?q=80&w=1600&auto=format&fit=crop" alt="iPhone 15">
-                <div class="carousel-overlay"></div>
-
-                <div class="carousel-caption">
-                    <h1 class="text-warning">iPhone 16 Series</h1>
-                    <p>Thiết kế Titan đẳng cấp. Hiệu năng vượt trội. <br>Sẵn hàng giao ngay trong 1 giờ.</p>
-                    <a href="#products" class="btn btn-warning text-dark btn-hero">Đặt Hàng Ngay</a>
-                </div>
-            </div>
-
-            <!-- Slide 3: Thu cũ đổi mới -->
-            <div class="carousel-item">
-                <img src="https://images.unsplash.com/photo-1531297461136-82lw82b2e0d1?q=80&w=1600&auto=format&fit=crop" alt="Trade In">
-                <div class="carousel-overlay"></div>
-
-                <div class="carousel-caption">
-                    <h1 class="text-success">Thu Cũ Đổi Mới</h1>
-                    <p>Trợ giá lên đời tới <strong>2.000.000đ</strong>. <br>Định giá online nhanh chóng chỉ trong 5 phút.</p>
-                    <a asp-controller="Home" asp-action="ThuMuaMayCu" class="btn btn-success text-white btn-hero">Định giá ngay</a>
-                </div>
-            </div>
-
+            }
         </div>
 
-        <!-- Controls -->
         <button class="carousel-control-prev" type="button" data-bs-target="#smartTechCarousel" data-bs-slide="prev">
             <span class="carousel-control-prev-icon" aria-hidden="true"></span>
             <span class="visually-hidden">Previous</span>
@@ -278,7 +284,6 @@
     </div>
 </div>
 
-<!-- DANH SÁCH TẤT CẢ SẢN PHẨM -->
 <div class="container my-5" id="products">
     <div class="d-flex justify-content-between align-items-center mb-4 border-start border-5 border-primary ps-3">
         <h2 class="fw-bold text-dark m-0">Tất cả sản phẩm</h2>
@@ -340,7 +345,6 @@
                                 <div class="d-grid gap-2 card-actions" style="position: relative; z-index: 20;">
                                     @if (product.SoLuong > 0)
                                     {
-                                        <!-- Truyền thêm tham số @product.Category vào hàm openOptionModal -->
                                         <button type="button" class="btn btn-primary w-100 rounded-pill fw-bold position-relative"
                                                 style="z-index: 100;"
                                                 onclick="event.stopPropagation(); openOptionModal(@product.Id, '@product.Name', @product.Price, '@(product.ImageUrl ?? "/images/default.jpg")', '@product.Category')">
@@ -361,7 +365,6 @@
     </div>
 </div>
 
-<!-- DỊCH VỤ TIỆN ÍCH -->
 <div class="container my-5">
     <div class="row g-3">
         <div class="col-md-4">
@@ -394,7 +397,6 @@
     </div>
 </div>
 
-<!-- Modal Thêm Nhanh -->
 <div class="modal fade" id="productOptionModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content border-0 shadow-lg rounded-4">
@@ -411,20 +413,17 @@
                 </div>
                 <hr class="opacity-25">
 
-                <!-- PHẦN CHỌN BIẾN THỂ -->
                 <div class="mb-3" id="storageSection">
                     <label class="fw-bold mb-2 text-muted small text-uppercase" id="storageLabel">Chọn phiên bản:</label>
                     <div class="d-flex flex-wrap gap-2" id="storageOptions"></div>
                 </div>
 
-                <!-- PHẦN CHỌN MÀU -->
                 <div class="mb-4" id="colorSection">
                     <label class="fw-bold mb-2 text-muted small text-uppercase">Chọn màu sắc:</label>
                     <div class="d-flex gap-3" id="colorOptions"></div>
                     <div id="colorName" class="small text-muted mt-1"></div>
                 </div>
 
-                <!-- PHẦN CHỌN SỐ LƯỢNG (MỚI THÊM) -->
                 <div class="mb-4">
                     <label class="fw-bold mb-2 text-muted small text-uppercase">Số lượng:</label>
                     <div class="input-group" style="width: 140px;">
@@ -438,7 +437,6 @@
                     <input type="hidden" name="id" id="inputProductId" />
                     <input type="hidden" name="capacity" id="inputCapacity" />
                     <input type="hidden" name="color" id="inputColor" />
-                    <!-- Input ẩn để gửi số lượng chính xác về server -->
                     <input type="hidden" name="quantity" id="inputQuantity" value="1" />
 
                     <button type="submit" class="btn btn-primary w-100 py-2 fw-bold rounded-pill shadow-sm">XÁC NHẬN THÊM VÀO GIỎ</button>

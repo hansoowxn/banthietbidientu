@@ -121,6 +121,9 @@
             <div class="card kpi-card bg-gradient-primary h-100 p-3">
                 <div class="text-white-50 small text-uppercase fw-bold">Doanh thu thực</div>
                 <div class="h2 fw-bold mb-0 mt-1">@Model.TongDoanhThu.ToString("N0") đ</div>
+
+                <div class="small text-white-50 fst-italic" style="font-size: 0.75rem; margin-bottom: 5px;">(Đã trừ thuế VAT)</div>
+
                 <div class="growth-badge">
                     @if (Model.GrowthDoanhThu >= 0)
                     {
@@ -323,7 +326,6 @@
                         data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.DataNamTruoc)),
                     },
                     {
-                        // [ĐÃ BỔ SUNG] Đường thứ 3: Năm kia
                         label: "Năm kia (@(Model.CurrentYear - 2))",
                         tension: 0.4,
                         borderColor: "#e74a3b", // Màu đỏ
@@ -360,17 +362,17 @@
         @if (isBoss && Model.SelectedStoreId == null)
         {
             <text>
-                pieLabels = ["Hà Nội", "Đà Nẵng", "TP.HCM"];
-                pieData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.StoreRevenueComparison));
-                pieColors = ["#4e73df", "#f6c23e", "#1cc88a"];
+                    pieLabels = ["Hà Nội", "Đà Nẵng", "TP.HCM"];
+                    pieData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.StoreRevenueComparison));
+                    pieColors = ["#4e73df", "#f6c23e", "#1cc88a"];
             </text>
         }
         else
         {
             <text>
-                pieLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CategoryLabels));
-                pieData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CategoryValues));
-                pieColors = ["#4e73df", "#1cc88a", "#36b9cc", "#f6c23e", "#e74a3b", "#858796"];
+                    pieLabels = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CategoryLabels));
+                    pieData = @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(Model.CategoryValues));
+                    pieColors = ["#4e73df", "#1cc88a", "#36b9cc", "#f6c23e", "#e74a3b", "#858796"];
             </text>
         }
 

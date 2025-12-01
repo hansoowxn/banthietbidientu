@@ -1,0 +1,86 @@
+﻿@model banthietbidientu.Models.Voucher
+@{
+    ViewData["Title"] = "Thêm Voucher"; Layout = "~/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container py-4">
+    <div class="card border-0 shadow-sm rounded-4 col-md-8 mx-auto">
+        <div class="card-header bg-white py-3"><h5 class="mb-0 fw-bold">Tạo Mã Giảm Giá Mới</h5></div>
+        <div class="card-body p-4">
+            <form asp-action="ThemVoucher" method="post">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Mã Voucher (Code)</label>
+                        <input asp-for="MaVoucher" class="form-control text-uppercase" placeholder="VD: TET2025" required />
+                        <span asp-validation-for="MaVoucher" class="text-danger small"></span>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label fw-bold">Tên chương trình</label>
+                        <input asp-for="TenVoucher" class="form-control" placeholder="VD: Khuyến mãi tết" required />
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Loại giảm giá</label>
+                        <select asp-for="LoaiGiamGia" class="form-select" id="loaiGiamGia">
+                            <option value="0">Giảm tiền mặt (VNĐ)</option>
+                            <option value="1">Giảm theo phần trăm (%)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold">Giá trị giảm</label>
+                        <input asp-for="GiaTri" type="number" class="form-control" required />
+                        <span class="text-muted small">Nhập số tiền hoặc số %</span>
+                    </div>
+                    <div class="col-md-4" id="divGiamToiDa" style="display:none;">
+                        <label class="form-label fw-bold">Giảm tối đa (VNĐ)</label>
+                        <input asp-for="GiamToiDa" type="number" class="form-control" value="0" />
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Đơn tối thiểu (VNĐ)</label>
+                        <input asp-for="DonToiThieu" type="number" class="form-control" value="0" />
+                        <span class="text-muted small">Nhập 0 nếu không yêu cầu</span>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Số lượng phát hành</label>
+                        <input asp-for="SoLuong" type="number" class="form-control" value="100" />
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Ngày bắt đầu</label>
+                        <input asp-for="NgayBatDau" type="datetime-local" class="form-control" />
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label fw-bold">Ngày kết thúc</label>
+                        <input asp-for="NgayKetThuc" type="datetime-local" class="form-control" />
+                    </div>
+                </div>
+
+                <div class="form-check form-switch mb-4">
+                    <input asp-for="IsActive" class="form-check-input" type="checkbox" checked>
+                    <label class="form-check-label">Kích hoạt ngay</label>
+                </div>
+
+                <div class="text-end">
+                    <a asp-action="QuanLyVoucher" class="btn btn-light border me-2">Hủy</a>
+                    <button type="submit" class="btn btn-primary fw-bold">Tạo Mã</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.getElementById('loaiGiamGia').addEventListener('change', function() {
+        var divMax = document.getElementById('divGiamToiDa');
+        // Nếu chọn % (value = 1) thì hiện ô Giảm tối đa
+        if(this.value == '1') divMax.style.display = 'block';
+        else divMax.style.display = 'none';
+    });
+</script>

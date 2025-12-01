@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using banthietbidientu.Data;
 
@@ -11,9 +12,11 @@ using banthietbidientu.Data;
 namespace TestDoAn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251201114837_FixDonHangRelationship")]
+    partial class FixDonHangRelationship
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -212,17 +215,23 @@ namespace TestDoAn.Migrations
                     b.Property<decimal>("GiamGia")
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
                     b.Property<string>("MaVoucher")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime?>("NgayDat")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("NgayGiao")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("NguoiNhan")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal?>("PhiShip")
+                    b.Property<decimal>("PhiShip")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("SDT")
@@ -234,9 +243,6 @@ namespace TestDoAn.Migrations
 
                     b.Property<int?>("TaiKhoanId")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("TienThue")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TongTien")
                         .HasColumnType("decimal(18,2)");

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using banthietbidientu.Data;
 
@@ -11,9 +12,11 @@ using banthietbidientu.Data;
 namespace TestDoAn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251201112607_AddVoucherTable")]
+    partial class AddVoucherTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -209,12 +212,6 @@ namespace TestDoAn.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<decimal>("GiamGia")
-                        .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("MaVoucher")
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime?>("NgayDat")
                         .HasColumnType("datetime2");
 
@@ -234,9 +231,6 @@ namespace TestDoAn.Migrations
 
                     b.Property<int?>("TaiKhoanId")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("TienThue")
-                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("TongTien")
                         .HasColumnType("decimal(18,2)");
@@ -507,7 +501,7 @@ namespace TestDoAn.Migrations
                             Description = "Tai nghe không dây chống ồn chủ động.",
                             GiaNhap = 150.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Headphones",
-                            MoTa = "Mô tả...",
+                            MoTa = "Trải nghiệm âm thanh đỉnh cao với Wireless Headphones Elite...",
                             Name = "Wireless Headphones Elite",
                             Price = 199.99m,
                             SoLuong = 1000
@@ -516,10 +510,10 @@ namespace TestDoAn.Migrations
                         {
                             Id = 4,
                             Category = "Đồng hồ",
-                            Description = "Đồng hồ thông minh.",
+                            Description = "Đồng hồ thông minh theo dõi sức khỏe toàn diện.",
                             GiaNhap = 300.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Smartwatch",
-                            MoTa = "Mô tả...",
+                            MoTa = "Smartwatch Series 7 hỗ trợ đo nhịp tim, SpO2...",
                             Name = "Smartwatch Series 7",
                             Price = 399.99m,
                             SoLuong = 1000
@@ -528,10 +522,10 @@ namespace TestDoAn.Migrations
                         {
                             Id = 5,
                             Category = "TV",
-                            Description = "TV 4K sắc nét.",
+                            Description = "TV 4K sắc nét, trải nghiệm điện ảnh tại gia.",
                             GiaNhap = 600.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Smart+TV",
-                            MoTa = "Mô tả...",
+                            MoTa = "Màn hình 55 inch độ phân giải 4K HDR...",
                             Name = "4K Smart TV 55\"",
                             Price = 799.99m,
                             SoLuong = 1000
@@ -540,10 +534,10 @@ namespace TestDoAn.Migrations
                         {
                             Id = 6,
                             Category = "Phụ kiện",
-                            Description = "Loa Bluetooth.",
+                            Description = "Loa Bluetooth di động âm bass mạnh mẽ.",
                             GiaNhap = 100.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Speaker",
-                            MoTa = "Mô tả...",
+                            MoTa = "Bluetooth Speaker nhỏ gọn, pin trâu...",
                             Name = "Bluetooth Speaker",
                             Price = 149.99m,
                             SoLuong = 1000
@@ -552,10 +546,10 @@ namespace TestDoAn.Migrations
                         {
                             Id = 7,
                             Category = "Console",
-                            Description = "Máy chơi game.",
+                            Description = "Máy chơi game thế hệ mới, đồ họa đỉnh cao.",
                             GiaNhap = 400.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Console",
-                            MoTa = "Mô tả...",
+                            MoTa = "Gaming Console X hỗ trợ chơi game 4K 120fps...",
                             Name = "Gaming Console X",
                             Price = 499.99m,
                             SoLuong = 1000
@@ -564,10 +558,10 @@ namespace TestDoAn.Migrations
                         {
                             Id = 8,
                             Category = "Phụ kiện",
-                            Description = "Chuột không dây.",
+                            Description = "Chuột không dây tiện lợi, độ nhạy cao.",
                             GiaNhap = 30.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Mouse",
-                            MoTa = "Mô tả...",
+                            MoTa = "Thiết kế Ergonomic giúp cầm nắm thoải mái...",
                             Name = "Wireless Mouse",
                             Price = 49.99m,
                             SoLuong = 1000
@@ -576,10 +570,10 @@ namespace TestDoAn.Migrations
                         {
                             Id = 9,
                             Category = "Phụ kiện",
-                            Description = "Sạc dự phòng.",
+                            Description = "Sạc dự phòng dung lượng lớn, sạc nhanh.",
                             GiaNhap = 20.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Charger",
-                            MoTa = "Mô tả...",
+                            MoTa = "Dung lượng 10000mAh sạc được nhiều lần...",
                             Name = "Portable Charger 10000mAh",
                             Price = 29.99m,
                             SoLuong = 1000
@@ -588,10 +582,10 @@ namespace TestDoAn.Migrations
                         {
                             Id = 10,
                             Category = "Tablet",
-                            Description = "Máy tính bảng.",
+                            Description = "Máy tính bảng mỏng nhẹ, hiệu năng tốt.",
                             GiaNhap = 350.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Tablet",
-                            MoTa = "Mô tả...",
+                            MoTa = "Màn hình Retina sắc nét, chip xử lý mạnh mẽ...",
                             Name = "Tablet Air 10",
                             Price = 499.99m,
                             SoLuong = 1000
@@ -600,10 +594,10 @@ namespace TestDoAn.Migrations
                         {
                             Id = 11,
                             Category = "Phụ kiện",
-                            Description = "Bàn phím.",
+                            Description = "Bàn phím không dây gõ êm, kết nối ổn định.",
                             GiaNhap = 50.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Keyboard",
-                            MoTa = "Mô tả...",
+                            MoTa = "Tương thích nhiều thiết bị, hành trình phím tốt...",
                             Name = "Wireless Keyboard",
                             Price = 79.99m,
                             SoLuong = 1000
@@ -612,10 +606,10 @@ namespace TestDoAn.Migrations
                         {
                             Id = 12,
                             Category = "Camera",
-                            Description = "Camera hành trình.",
+                            Description = "Camera hành trình quay 4K chống rung.",
                             GiaNhap = 200.00m,
                             ImageUrl = "https://via.placeholder.com/300x200?text=Camera",
-                            MoTa = "Mô tả...",
+                            MoTa = "Quay video 4K 60fps, chống nước...",
                             Name = "Action Camera 4K",
                             Price = 249.99m,
                             SoLuong = 1000
@@ -677,7 +671,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 1,
-                            Address = "Trụ sở chính",
+                            Address = "Trụ sở chính - Sky Tower",
                             DateOfBirth = new DateTime(1980, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Email = "boss@smarttech.com",
                             FullName = "Chủ Tịch (CEO)",
@@ -690,7 +684,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 2,
-                            Address = "Hà Nội",
+                            Address = "120 Xuân Thủy, Cầu Giấy, HN",
                             DateOfBirth = new DateTime(1990, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Email = "admin.hn@smarttech.com",
                             FullName = "Quản Lý Hà Nội",
@@ -704,7 +698,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 3,
-                            Address = "Đà Nẵng",
+                            Address = "78 Bạch Đằng, Hải Châu, ĐN",
                             DateOfBirth = new DateTime(1992, 2, 2, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Email = "admin.dn@smarttech.com",
                             FullName = "Quản Lý Đà Nẵng",
@@ -718,7 +712,7 @@ namespace TestDoAn.Migrations
                         new
                         {
                             Id = 4,
-                            Address = "TP.HCM",
+                            Address = "55 Nguyễn Huệ, Quận 1, TP.HCM",
                             DateOfBirth = new DateTime(1995, 3, 3, 0, 0, 0, 0, DateTimeKind.Unspecified),
                             Email = "admin.sg@smarttech.com",
                             FullName = "Quản Lý Sài Gòn",
