@@ -375,7 +375,10 @@ namespace banthietbidientu.Controllers
                 DaDoc = false,
                 LoaiThongBao = 0,
                 RedirectId = order.MaDon,
-                RedirectAction = "QuanLyDonHang"
+                RedirectAction = "QuanLyDonHang",
+
+                // [MỚI] Gán StoreId từ đơn hàng sang thông báo
+                StoreId = order.StoreId
             };
             _context.ThongBaos.Add(thongBao);
 

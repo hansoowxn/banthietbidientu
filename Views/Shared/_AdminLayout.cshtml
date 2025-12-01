@@ -1,4 +1,6 @@
-﻿<!DOCTYPE html>
+﻿@inject banthietbidientu.Services.MemberService MemberService
+
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
@@ -167,21 +169,34 @@
                 @{
                     string currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
                     string currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
+                    bool isBoss = User.IsInRole("Boss");
                 }
 
-                <li><a href="@Url.Action("NhapHang", "Admin")" class="@(currentAction == "NhapHang" ? "active" : "")"><i class="bi bi-box-arrow-in-down text-success"></i> Nhập hàng</a></li>
-                <li><a href="@Url.Action("QuanLyNhapHang", "Admin")" class="@(currentAction == "QuanLyNhapHang" ? "active" : "")"><i class="bi bi-journal-text"></i> Lịch sử nhập</a></li>
+                @if (isBoss)
+                {
+                    <li><a href="@Url.Action("NhapHang", "Admin")" class="@(currentAction == "NhapHang" ? "active" : "")"><i class="bi bi-box-arrow-in-down text-success"></i> Nhập hàng</a></li>
+                    <li><a href="@Url.Action("QuanLyNhapHang", "Admin")" class="@(currentAction == "QuanLyNhapHang" ? "active" : "")"><i class="bi bi-journal-text"></i> Lịch sử nhập</a></li>
+                }
+
                 <li><a href="@Url.Action("Index", "Admin")" class="@(currentAction == "Index" ? "active" : "")"><i class="bi bi-grid-fill"></i> Tổng quan</a></li>
 
                 <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Quản lý</li>
                 <li><a href="@Url.Action("QuanLySanPham", "Admin")" class="@(currentAction == "QuanLySanPham" || currentAction == "ThemSanPham" || currentAction == "SuaSanPham" ? "active" : "")"><i class="bi bi-box-seam-fill"></i> Kho hàng</a></li>
                 <li><a href="@Url.Action("QuanLyDonHang", "Admin")" class="@(currentAction == "QuanLyDonHang" ? "active" : "")"><i class="bi bi-receipt"></i> Đơn hàng</a></li>
-                <li><a href="@Url.Action("QuanLyTaiKhoan", "Admin")" class="@(currentAction == "QuanLyTaiKhoan" || currentAction == "ThemTaiKhoan" ? "active" : "")"><i class="bi bi-people-fill"></i> Tài khoản</a></li>
+
+                @if (isBoss)
+                {
+                    <li><a href="@Url.Action("QuanLyTaiKhoan", "Admin")" class="@(currentAction == "QuanLyTaiKhoan" || currentAction == "ThemTaiKhoan" ? "active" : "")"><i class="bi bi-people-fill"></i> Tài khoản</a></li>
+                }
+
                 <li><a href="@Url.Action("QuanLyThuMua", "Admin")" class="@(currentAction == "QuanLyThuMua" ? "active" : "")"><i class="bi bi-phone-flip"></i> Thu cũ đổi mới</a></li>
                 <li><a href="@Url.Action("QuanLyDanhGia", "Admin")" class="@(currentAction == "QuanLyDanhGia" ? "active" : "")"><i class="bi bi-star-half"></i> Đánh giá</a></li>
-                <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Thống kê</li>
 
-                <li><a href="@Url.Action("BaoCao", "Admin")" class="@(currentAction == "BaoCao" ? "active" : "")"><i class="bi bi-bar-chart-line-fill"></i> Báo cáo doanh thu</a></li>
+                @if (isBoss)
+                {
+                    <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Thống kê</li>
+                    <li><a href="@Url.Action("BaoCao", "Admin")" class="@(currentAction == "BaoCao" ? "active" : "")"><i class="bi bi-bar-chart-line-fill"></i> Báo cáo doanh thu</a></li>
+                }
             </ul>
         </nav>
 
@@ -217,14 +232,18 @@
 
                 <div class="dropdown">
                     <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-dark" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">A</div>
-                        <div><span class="fw-bold d-block small">Admin</span><span class="text-muted d-block" style="font-size: 11px;">Quản trị viên</span></div>
+                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
+                                @User.Identity.Name?.Substring(0, 1).ToUpper()
+                        </div>
+                        <div>
+                            <span class="fw-bold d-block small">@User.Identity.Name</span>
+                            <span class="text-muted d-block" style="font-size: 11px;">@(isBoss ? "Chủ tịch (Boss)" : "Quản lý (Admin)")</span>
+                        </div>
                     </a>
 
                     <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownUser1">
                         <li><a class="dropdown-item" href="/"><i class="bi bi-shop me-2 text-secondary"></i> Xem trang chủ</a></li>
                         <li><a class="dropdown-item" asp-controller="Login" asp-action="Profile"><i class="bi bi-person me-2 text-secondary"></i> Thông tin cá nhân</a></li>
-                        <li><a class="dropdown-item" asp-controller="Login" asp-action="LichSuMuaHang"><i class="bi bi-clock-history me-2 text-secondary"></i> Lịch sử đơn hàng</a></li>
                         <li><hr class="dropdown-divider"></li>
                         <li>
                             <form asp-controller="Login" asp-action="Logout" method="post" class="m-0">
@@ -299,6 +318,7 @@
                                 let linkUrl = item.redirectAction
                                     ? `/Admin/${item.redirectAction}?highlightId=${item.redirectId}`
                                     : '/Admin/Index';
+
                                 let html = `
                                     <li>
                                          <a class="dropdown-item d-flex align-items-start p-2 border-bottom ${bgClass}"

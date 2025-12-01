@@ -9,19 +9,19 @@ namespace banthietbidientu.Models
     {
         [Key]
         public int Id { get; set; }
+
         public string TieuDe { get; set; }
         public string NoiDung { get; set; }
-        public DateTime NgayTao { get; set; } = DateTime.Now;
-        public bool DaDoc { get; set; } = false;
+        public DateTime NgayTao { get; set; }
+        public bool DaDoc { get; set; }
 
-        // 0: Đơn hàng mới, 1: Hệ thống, 2: Thu cũ đổi mới
+        // 0: Đơn hàng mới, 1: Đánh giá, 2: Thu cũ, 3: Hủy đơn
         public int LoaiThongBao { get; set; }
 
-        // --- CÁC TRƯỜNG MỚI THÊM (QUAN TRỌNG) ---
-        // Lưu ID đích (Ví dụ: Mã đơn hàng "DH001" hoặc ID yêu cầu "5")
-        public string RedirectId { get; set; }
+        public string RedirectAction { get; set; } // Action để chuyển hướng (VD: QuanLyDonHang)
+        public string RedirectId { get; set; }     // ID của đối tượng (VD: Mã đơn hàng)
 
-        // Lưu tên Action cần chuyển tới (Ví dụ: "QuanLyDonHang" hoặc "QuanLyThuMua")
-        public string RedirectAction { get; set; }
+        // [MỚI] StoreId: Null = Thông báo chung (Boss), 1=HN, 2=ĐN, 3=HCM
+        public int? StoreId { get; set; }
     }
 }
