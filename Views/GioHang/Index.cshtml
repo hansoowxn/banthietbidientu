@@ -7,6 +7,7 @@
 
 @section Styles {
     <style>
+        /* CSS cũ giữ nguyên */
         .cart-table th {
             background-color: #f8f9fa;
             border-bottom-width: 2px;
@@ -68,7 +69,7 @@
             margin-top: 1rem;
         }
 
-        /* CSS cho Voucher Item trong Modal */
+        /* CSS cho Voucher Item */
         .voucher-item {
             border: 1px dashed #ced4da;
             border-radius: 8px;
@@ -105,6 +106,15 @@
             font-weight: bold;
             color: #d63384;
             font-size: 1.1rem;
+        }
+
+        /* [FIX LỖI MÀN HÌNH ĐEN] Đảm bảo Modal luôn nổi lên trên cùng */
+        .modal-backdrop {
+            z-index: 1050 !important;
+        }
+
+        .modal {
+            z-index: 1060 !important;
         }
     </style>
 }
@@ -297,12 +307,17 @@
                 var toast = new bootstrap.Toast(toastEl, { delay: 3000 });
                 toast.show();
             }
+
+            // [FIX QUAN TRỌNG] Di chuyển Modal ra ngoài cùng body để tránh bị lớp màn đen che khuất
+            // Do Modal đang nằm trong container của Giỏ hàng (có z-index/sticky), nên Bootstrap bị lỗi hiển thị
+            var modalEl = document.getElementById('voucherModal');
+            if(modalEl) {
+                document.body.appendChild(modalEl);
+            }
         });
 
-        // Tổng tiền hiện tại của giỏ hàng
         const currentCartTotal = @totalPrice.ToString("0", System.Globalization.CultureInfo.InvariantCulture);
 
-        // Hàm mở Modal và tải danh sách
         function openVoucherModal() {
             var myModal = new bootstrap.Modal(document.getElementById('voucherModal'));
             myModal.show();
@@ -324,7 +339,6 @@
                 html = '<div class="text-center py-4 text-muted"><i class="bi bi-inbox fs-1"></i><br>Hiện chưa có mã giảm giá nào.</div>';
             } else {
                 vouchers.forEach(v => {
-                    // Logic kiểm tra điều kiện
                     let isEligible = currentCartTotal >= v.donToiThieu;
                     let discountText = v.loaiGiamGia == 0 ?
                         '-' + v.giaTri.toLocaleString() + 'đ' :
@@ -363,12 +377,9 @@
 
         function selectVoucher(code) {
             document.getElementById('voucherInput').value = code;
-            // Đóng modal
             var modalEl = document.getElementById('voucherModal');
             var modal = bootstrap.Modal.getInstance(modalEl);
             modal.hide();
-
-            // Tự động bấm áp dụng
             applyVoucher();
         }
 

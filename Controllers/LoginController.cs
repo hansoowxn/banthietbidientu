@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using banthietbidientu.Data;
 using banthietbidientu.Models;
+using banthietbidientu.Services;
 using Newtonsoft.Json;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
@@ -17,10 +18,12 @@ namespace banthietbidientu.Controllers
     public class LoginController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IEmailSender _emailSender;
 
-        public LoginController(ApplicationDbContext context)
+        public LoginController(ApplicationDbContext context, IEmailSender emailSender)
         {
             _context = context;
+            _emailSender = emailSender;
         }
 
         [HttpGet]
@@ -46,7 +49,6 @@ namespace banthietbidientu.Controllers
                     new Claim("Email", user.Email ?? "")
                 };
 
-                // [MỚI] Lưu StoreId vào Claim (nếu có) để dùng cho việc lọc dữ liệu sau này
                 if (user.StoreId.HasValue)
                 {
                     claims.Add(new Claim("StoreId", user.StoreId.Value.ToString()));
@@ -57,17 +59,6 @@ namespace banthietbidientu.Controllers
 
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
-                // Xử lý giỏ hàng (Chuyển từ Session sang Database nếu có)
-                var cartJson = HttpContext.Session.GetString("GioHang"); // Sửa lại key thành "GioHang" cho đồng bộ
-                if (!string.IsNullOrEmpty(cartJson))
-                {
-                    var cart = JsonConvert.DeserializeObject<List<GioHang>>(cartJson); // Lưu ý: Model GioHang của bạn khác CartItem, đoạn này giữ nguyên logic cũ của bạn
-                    // (Logic cũ của bạn đang dùng List<GioHang> nhưng Session lại lưu List<CartItem>, 
-                    // tạm thời tôi giữ nguyên cấu trúc đăng nhập để tránh lỗi compile, 
-                    // nhưng logic merge giỏ hàng nên được review lại sau).
-                }
-
-                // [QUAN TRỌNG] Điều hướng dựa trên Role
                 if (user.Role == "Admin" || user.Role == "Boss")
                 {
                     return RedirectToAction("Index", "Admin");
@@ -91,7 +82,6 @@ namespace banthietbidientu.Controllers
         [HttpPost]
         public IActionResult DangKy(TaiKhoan model)
         {
-
             ModelState.Remove("DonHangs");
             ModelState.Remove("DanhGias");
             ModelState.Remove("YeuCauThuMuas");
@@ -114,8 +104,8 @@ namespace banthietbidientu.Controllers
                 {
                     Username = model.Username,
                     Password = model.Password,
-                    Role = "User", // Mặc định là User
-                    StoreId = null, // Khách không thuộc Store nào
+                    Role = "User",
+                    StoreId = null,
                     FullName = model.FullName,
                     DateOfBirth = model.DateOfBirth ?? DateTime.Now,
                     Address = model.Address,
@@ -133,6 +123,158 @@ namespace banthietbidientu.Controllers
             return View(model);
         }
 
+        // --- [MỚI] CÁC CHỨC NĂNG QUÊN MẬT KHẨU ---
+
+        // 1. Trang nhập Email để lấy OTP
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ForgotPassword(string email)
+        {
+            if (string.IsNullOrEmpty(email))
+            {
+                ViewBag.Error = "Vui lòng nhập email!";
+                return View();
+            }
+
+            var user = _context.TaiKhoans.FirstOrDefault(u => u.Email == email);
+            if (user == null)
+            {
+                ViewBag.Error = "Email này chưa được đăng ký trong hệ thống!";
+                return View();
+            }
+
+            // Tạo OTP ngẫu nhiên 6 số
+            Random rand = new Random();
+            string otp = rand.Next(100000, 999999).ToString();
+
+            // Lưu OTP và Email vào Session để check ở bước sau
+            HttpContext.Session.SetString("ResetOTP", otp);
+            HttpContext.Session.SetString("ResetEmail", email);
+
+            // Gửi Email
+            string subject = "[SmartTech] Mã xác thực OTP Quên Mật Khẩu";
+            string body = $@"
+                <div style='font-family:Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2'>
+                    <div style='margin:50px auto;width:70%;padding:20px 0'>
+                        <div style='border-bottom:1px solid #eee'>
+                            <a href='' style='font-size:1.4em;color: #00466a;text-decoration:none;font-weight:600'>SmartTech Store</a>
+                        </div>
+                        <p style='font-size:1.1em'>Xin chào,</p>
+                        <p>Bạn vừa yêu cầu đặt lại mật khẩu. Vui lòng nhập mã OTP sau để tiếp tục. Mã có hiệu lực trong 5 phút.</p>
+                        <h2 style='background: #00466a;margin: 0 auto;width: max-content;padding: 0 10px;color: #fff;border-radius: 4px;'>{otp}</h2>
+                        <p style='font-size:0.9em;'>Xin cảm ơn,<br />Đội ngũ SmartTech</p>
+                    </div>
+                </div>";
+
+            try
+            {
+                await _emailSender.SendEmailAsync(email, subject, body);
+                return RedirectToAction("VerifyOtp");
+            }
+            catch (Exception ex)
+            {
+                ViewBag.Error = "Lỗi gửi mail: " + ex.Message;
+                return View();
+            }
+        }
+
+        // 2. Trang nhập mã OTP
+        [HttpGet]
+        public IActionResult VerifyOtp()
+        {
+            if (HttpContext.Session.GetString("ResetEmail") == null)
+            {
+                return RedirectToAction("ForgotPassword");
+            }
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult VerifyOtp(string otp1, string otp2, string otp3, string otp4, string otp5, string otp6)
+        {
+            string inputOtp = (otp1 + otp2 + otp3 + otp4 + otp5 + otp6)?.Trim();
+
+            string sessionOtp = HttpContext.Session.GetString("ResetOTP");
+
+            Console.WriteLine($"DEBUG OTP: Khách nhập=[{inputOtp}] - Server lưu=[{sessionOtp}]");
+            // ----------------------------
+
+            if (string.IsNullOrEmpty(sessionOtp))
+            {
+                ViewBag.Error = "Phiên làm việc đã hết hạn (Session Null). Vui lòng gửi lại mã!";
+                return View();
+            }
+
+            if (inputOtp == sessionOtp)
+            {
+
+                HttpContext.Session.SetString("CanResetPassword", "true");
+                return RedirectToAction("ResetPassword");
+            }
+
+            ViewBag.Error = $"Mã sai! (Bạn nhập: {inputOtp})";
+            return View();
+        }
+
+        // 3. Trang Đặt lại mật khẩu mới
+        [HttpGet]
+        public IActionResult ResetPassword()
+        {
+            // Chặn truy cập nếu chưa qua bước Verify
+            if (HttpContext.Session.GetString("CanResetPassword") != "true")
+            {
+                return RedirectToAction("ForgotPassword");
+            }
+
+            string email = HttpContext.Session.GetString("ResetEmail");
+            if (!string.IsNullOrEmpty(email))
+            {
+                var user = _context.TaiKhoans.FirstOrDefault(u => u.Email == email);
+                if (user != null)
+                {
+                    // Truyền tên đăng nhập sang View
+                    ViewBag.Username = user.Username;
+                }
+            }
+
+            return View();
+        }
+
+        [HttpPost]
+        public IActionResult ResetPassword(string newPassword, string confirmPassword)
+        {
+            if (newPassword != confirmPassword)
+            {
+                ViewBag.Error = "Mật khẩu xác nhận không khớp!";
+                return View();
+            }
+
+            string email = HttpContext.Session.GetString("ResetEmail");
+            var user = _context.TaiKhoans.FirstOrDefault(u => u.Email == email);
+
+            if (user != null)
+            {
+                user.Password = newPassword;
+                _context.SaveChanges();
+
+                // Xóa Session để bảo mật
+                HttpContext.Session.Remove("ResetOTP");
+                HttpContext.Session.Remove("ResetEmail");
+                HttpContext.Session.Remove("CanResetPassword");
+
+                TempData["Success"] = "Đổi mật khẩu thành công! Vui lòng đăng nhập lại.";
+                return RedirectToAction("DangNhap");
+            }
+
+            return RedirectToAction("ForgotPassword");
+        }
+
+        // --- CÁC CHỨC NĂNG KHÁC (PROFILE, ĐỔI PASS, LOGOUT...) GIỮ NGUYÊN ---
         [HttpGet]
         public IActionResult Profile()
         {
@@ -170,7 +312,7 @@ namespace banthietbidientu.Controllers
                     Address = user.Address,
                     Gender = user.Gender,
                     Email = user.Email,
-                    PhoneNumber = user.PhoneNumber // [MỚI] Lấy SĐT hiện tại
+                    PhoneNumber = user.PhoneNumber
                 };
                 return View(model);
             }
@@ -193,7 +335,6 @@ namespace banthietbidientu.Controllers
 
                 if (ModelState.IsValid)
                 {
-                    // Kiểm tra email trùng (trừ chính mình)
                     if (_context.TaiKhoans.Any(u => u.Id != userId && u.Email == model.Email))
                     {
                         ModelState.AddModelError("Email", "Email đã tồn tại với tài khoản khác.");
@@ -205,7 +346,7 @@ namespace banthietbidientu.Controllers
                     user.Address = model.Address;
                     user.Gender = model.Gender;
                     user.Email = model.Email;
-                    user.PhoneNumber = model.PhoneNumber; // [MỚI] Lưu SĐT mới
+                    user.PhoneNumber = model.PhoneNumber;
 
                     try
                     {
@@ -345,9 +486,8 @@ namespace banthietbidientu.Controllers
 
             if (order.TrangThai == 0 || order.TrangThai == 1)
             {
-                order.TrangThai = -1; // Đã hủy
+                order.TrangThai = -1;
 
-                // Hoàn lại kho
                 foreach (var item in order.ChiTietDonHangs)
                 {
                     var sanPham = await _context.SanPhams.FindAsync(item.SanPhamId);

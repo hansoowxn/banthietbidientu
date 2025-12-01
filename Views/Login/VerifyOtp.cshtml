@@ -1,0 +1,63 @@
+﻿@{
+    ViewData["Title"] = "Xác thực OTP";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card border-0 shadow-lg rounded-4">
+                <div class="card-body p-4 text-center">
+                    <div class="mb-4">
+                        <div class="bg-success bg-opacity-10 text-success rounded-circle d-inline-flex align-items-center justify-content-center" style="width: 70px; height: 70px;">
+                            <i class="bi bi-shield-check fs-1"></i>
+                        </div>
+                    </div>
+                    <h4 class="fw-bold mb-2">Nhập mã xác thực</h4>
+                    <p class="text-muted mb-4 small">Mã OTP 6 số đã được gửi đến email của bạn.</p>
+
+                    @if (ViewBag.Error != null)
+                    {
+                        <div class="alert alert-danger small">@ViewBag.Error</div>
+                    }
+
+                    <form asp-action="VerifyOtp" method="post" class="mt-4" id="otpForm">
+                        <div class="d-flex justify-content-between mb-4 gap-2">
+                            @for (int i = 1; i <= 6; i++)
+                            {
+                                <input type="text" class="form-control text-center fw-bold fs-4 p-2 otp-input"
+                                       maxlength="1"
+                                       name="otp@(i)"
+                                       required
+                                       style="width: 50px; height: 50px; border-radius: 10px;">
+                            }
+                        </div>
+
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-success fw-bold py-2 rounded-pill shadow-sm">Xác thực ngay</button>
+                        </div>
+                    </form>
+
+                    <div class="mt-3">
+                        <a asp-action="ForgotPassword" class="small text-decoration-none">Gửi lại mã?</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const inputs = document.querySelectorAll('.otp-input');
+        inputs.forEach((input, index) => {
+            input.addEventListener('keyup', (e) => {
+                if (e.key >= 0 && e.key <= 9) {
+                    if (index < inputs.length - 1) inputs[index + 1].focus();
+                } else if (e.key === 'Backspace') {
+                    if (index > 0) inputs[index - 1].focus();
+                }
+            });
+        });
+    </script>
+}
