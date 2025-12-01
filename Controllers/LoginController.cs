@@ -79,8 +79,9 @@ namespace banthietbidientu.Controllers
             return View();
         }
 
+        // [CẬP NHẬT] Đăng ký gửi OTP thay vì lưu luôn
         [HttpPost]
-        public IActionResult DangKy(TaiKhoan model)
+        public async Task<IActionResult> DangKy(TaiKhoan model)
         {
             ModelState.Remove("DonHangs");
             ModelState.Remove("DanhGias");
@@ -100,6 +101,7 @@ namespace banthietbidientu.Controllers
                     return View(model);
                 }
 
+                // 1. Tạo thông tin User tạm (Chưa có ID)
                 var newUser = new TaiKhoan
                 {
                     Username = model.Username,
@@ -114,18 +116,85 @@ namespace banthietbidientu.Controllers
                     PhoneNumber = model.PhoneNumber
                 };
 
-                _context.TaiKhoans.Add(newUser);
-                _context.SaveChanges();
+                // 2. Tạo OTP
+                Random rand = new Random();
+                string otp = rand.Next(100000, 999999).ToString();
 
-                return RedirectToAction("DangNhap");
+                // 3. Lưu User tạm và OTP vào Session
+                HttpContext.Session.SetString("RegisterUser", JsonConvert.SerializeObject(newUser));
+                HttpContext.Session.SetString("RegisterOTP", otp);
+
+                // 4. Gửi Email
+                string subject = "[SmartTech] Xác thực đăng ký tài khoản";
+                string body = $@"
+                    <div style='font-family:Arial,sans-serif; padding:20px; border:1px solid #eee; border-radius:5px;'>
+                        <h3 style='color:#0d6efd'>Chào mừng bạn đến với SmartTech!</h3>
+                        <p>Cảm ơn bạn đã đăng ký. Để hoàn tất, vui lòng nhập mã xác thực sau:</p>
+                        <h1 style='background:#f8f9fa; padding:10px; border-radius:5px; display:inline-block; letter-spacing:5px;'>{otp}</h1>
+                        <p>Mã này có hiệu lực trong 5 phút.</p>
+                    </div>";
+
+                try
+                {
+                    await _emailSender.SendEmailAsync(model.Email, subject, body);
+                    return RedirectToAction("VerifyRegisterOtp");
+                }
+                catch (Exception ex)
+                {
+                    ModelState.AddModelError("", "Lỗi gửi email: " + ex.Message);
+                    return View(model);
+                }
             }
 
             return View(model);
         }
 
-        // --- [MỚI] CÁC CHỨC NĂNG QUÊN MẬT KHẨU ---
+        // --- [MỚI] TRANG XÁC THỰC ĐĂNG KÝ ---
+        [HttpGet]
+        public IActionResult VerifyRegisterOtp()
+        {
+            if (HttpContext.Session.GetString("RegisterUser") == null)
+            {
+                return RedirectToAction("DangKy");
+            }
+            return View();
+        }
 
-        // 1. Trang nhập Email để lấy OTP
+        [HttpPost]
+        public IActionResult VerifyRegisterOtp(string otp1, string otp2, string otp3, string otp4, string otp5, string otp6)
+        {
+            string inputOtp = (otp1 + otp2 + otp3 + otp4 + otp5 + otp6)?.Trim();
+            string sessionOtp = HttpContext.Session.GetString("RegisterOTP");
+            string userJson = HttpContext.Session.GetString("RegisterUser");
+
+            if (string.IsNullOrEmpty(sessionOtp) || string.IsNullOrEmpty(userJson))
+            {
+                ViewBag.Error = "Phiên đăng ký đã hết hạn. Vui lòng đăng ký lại!";
+                return View();
+            }
+
+            if (inputOtp == sessionOtp)
+            {
+                // OTP Đúng -> Lưu vào Database thật
+                var newUser = JsonConvert.DeserializeObject<TaiKhoan>(userJson);
+
+                _context.TaiKhoans.Add(newUser);
+                _context.SaveChanges();
+
+                // Xóa Session
+                HttpContext.Session.Remove("RegisterUser");
+                HttpContext.Session.Remove("RegisterOTP");
+
+                TempData["Success"] = "Đăng ký thành công! Vui lòng đăng nhập.";
+                return RedirectToAction("DangNhap");
+            }
+
+            ViewBag.Error = "Mã OTP không chính xác!";
+            return View();
+        }
+
+        // --- CÁC CHỨC NĂNG QUÊN MẬT KHẨU (GIỮ NGUYÊN) ---
+
         [HttpGet]
         public IActionResult ForgotPassword()
         {
@@ -148,15 +217,12 @@ namespace banthietbidientu.Controllers
                 return View();
             }
 
-            // Tạo OTP ngẫu nhiên 6 số
             Random rand = new Random();
             string otp = rand.Next(100000, 999999).ToString();
 
-            // Lưu OTP và Email vào Session để check ở bước sau
             HttpContext.Session.SetString("ResetOTP", otp);
             HttpContext.Session.SetString("ResetEmail", email);
 
-            // Gửi Email
             string subject = "[SmartTech] Mã xác thực OTP Quên Mật Khẩu";
             string body = $@"
                 <div style='font-family:Helvetica,Arial,sans-serif;min-width:1000px;overflow:auto;line-height:2'>
@@ -183,7 +249,6 @@ namespace banthietbidientu.Controllers
             }
         }
 
-        // 2. Trang nhập mã OTP
         [HttpGet]
         public IActionResult VerifyOtp()
         {
@@ -198,34 +263,27 @@ namespace banthietbidientu.Controllers
         public IActionResult VerifyOtp(string otp1, string otp2, string otp3, string otp4, string otp5, string otp6)
         {
             string inputOtp = (otp1 + otp2 + otp3 + otp4 + otp5 + otp6)?.Trim();
-
             string sessionOtp = HttpContext.Session.GetString("ResetOTP");
-
-            Console.WriteLine($"DEBUG OTP: Khách nhập=[{inputOtp}] - Server lưu=[{sessionOtp}]");
-            // ----------------------------
 
             if (string.IsNullOrEmpty(sessionOtp))
             {
-                ViewBag.Error = "Phiên làm việc đã hết hạn (Session Null). Vui lòng gửi lại mã!";
+                ViewBag.Error = "Phiên làm việc đã hết hạn. Vui lòng gửi lại mã!";
                 return View();
             }
 
             if (inputOtp == sessionOtp)
             {
-
                 HttpContext.Session.SetString("CanResetPassword", "true");
                 return RedirectToAction("ResetPassword");
             }
 
-            ViewBag.Error = $"Mã sai! (Bạn nhập: {inputOtp})";
+            ViewBag.Error = $"Mã OTP không chính xác!";
             return View();
         }
 
-        // 3. Trang Đặt lại mật khẩu mới
         [HttpGet]
         public IActionResult ResetPassword()
         {
-            // Chặn truy cập nếu chưa qua bước Verify
             if (HttpContext.Session.GetString("CanResetPassword") != "true")
             {
                 return RedirectToAction("ForgotPassword");
@@ -237,7 +295,6 @@ namespace banthietbidientu.Controllers
                 var user = _context.TaiKhoans.FirstOrDefault(u => u.Email == email);
                 if (user != null)
                 {
-                    // Truyền tên đăng nhập sang View
                     ViewBag.Username = user.Username;
                 }
             }
@@ -262,7 +319,6 @@ namespace banthietbidientu.Controllers
                 user.Password = newPassword;
                 _context.SaveChanges();
 
-                // Xóa Session để bảo mật
                 HttpContext.Session.Remove("ResetOTP");
                 HttpContext.Session.Remove("ResetEmail");
                 HttpContext.Session.Remove("CanResetPassword");
@@ -274,7 +330,7 @@ namespace banthietbidientu.Controllers
             return RedirectToAction("ForgotPassword");
         }
 
-        // --- CÁC CHỨC NĂNG KHÁC (PROFILE, ĐỔI PASS, LOGOUT...) GIỮ NGUYÊN ---
+        // --- CÁC CHỨC NĂNG KHÁC (PROFILE, EDIT...) ---
         [HttpGet]
         public IActionResult Profile()
         {
