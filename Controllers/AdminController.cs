@@ -25,52 +25,69 @@ namespace banthietbidientu.Controllers
         // --- 1. DASHBOARD ---
         public IActionResult Index()
         {
-            // Lấy thông tin User hiện tại để lọc dữ liệu
+            // 1. Lấy User & StoreId (Phân quyền)
             var user = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == User.Identity.Name);
-            int? storeId = user?.StoreId; // Nếu là Admin chi nhánh -> có StoreId
+            int? storeId = user?.StoreId;
 
-            // Tạo Query cơ bản cho Đơn hàng
             var queryDonHang = _context.DonHangs.AsQueryable();
+            if (storeId.HasValue) queryDonHang = queryDonHang.Where(d => d.StoreId == storeId);
 
-            // Nếu là Admin chi nhánh (StoreId != null) -> Lọc đơn hàng của Store đó
-            if (storeId.HasValue)
-            {
-                queryDonHang = queryDonHang.Where(d => d.StoreId == storeId);
-            }
+            // 2. KPI Hôm nay
+            var today = DateTime.Today;
+            ViewBag.DoanhThuHomNay = queryDonHang.Where(d => d.TrangThai == 3 && d.NgayDat.Value.Date == today).Sum(x => x.TongTien);
+            ViewBag.DonHangHomNay = queryDonHang.Count(d => d.NgayDat.Value.Date == today);
+            ViewBag.DonChoXuLy = queryDonHang.Count(d => d.TrangThai == 0 || d.TrangThai == 1);
 
-            // Tính toán các chỉ số
-            var tongDoanhThu = queryDonHang.Where(d => d.TrangThai == 3).Sum(x => x.TongTien);
-            var donHangMoi = queryDonHang.Count(x => x.NgayDat.Value.Date == DateTime.Today);
-            var tongKhachHang = _context.TaiKhoans.Count(x => x.Role == "User");
+            // 3. KPI Tổng quan
+            ViewBag.TongDoanhThu = queryDonHang.Where(d => d.TrangThai == 3).Sum(x => x.TongTien);
+            ViewBag.TongDonHang = queryDonHang.Count();
+            ViewBag.TongKhachHang = _context.TaiKhoans.Count(x => x.Role == "User");
 
-            // Tạm thời tính tổng sản phẩm sắp hết (chưa tách kho)
-            var sapHetHang = _context.SanPhams.Count(x => x.SoLuong < 5);
+            // 4. Dữ liệu Biểu đồ 7 ngày (Doanh thu & Số đơn)
+            var chartLabels = new List<string>();
+            var chartRevenue = new List<decimal>();
+            var chartOrders = new List<int>();
 
-            var sttHoanThanh = queryDonHang.Count(x => x.TrangThai == 3);
-            var sttDangGiao = queryDonHang.Count(x => x.TrangThai == 2);
-            var sttChoXuLy = queryDonHang.Count(x => x.TrangThai == 0 || x.TrangThai == 1);
-            var sttDaHuy = queryDonHang.Count(x => x.TrangThai == -1);
-
-            ViewBag.ChartData = new List<int> { sttHoanThanh, sttDangGiao, sttChoXuLy, sttDaHuy };
-
-            // Biểu đồ doanh thu 7 ngày (đã lọc theo Store)
-            var revenueWeek = new List<decimal>();
             for (int i = 6; i >= 0; i--)
             {
-                var day = DateTime.Today.AddDays(-i);
-                var total = queryDonHang
-                    .Where(x => x.NgayDat.Value.Date == day && x.TrangThai == 3)
-                    .Sum(x => (decimal?)x.TongTien) ?? 0;
-                revenueWeek.Add(total);
+                var day = today.AddDays(-i);
+                chartLabels.Add(day.ToString("dd/MM"));
+
+                var dailyData = queryDonHang.Where(x => x.NgayDat.Value.Date == day);
+
+                // Doanh thu (chỉ tính đơn thành công)
+                chartRevenue.Add(dailyData.Where(x => x.TrangThai == 3).Sum(x => (decimal?)x.TongTien) ?? 0);
+
+                // Số đơn (tính tất cả đơn đặt)
+                chartOrders.Add(dailyData.Count());
             }
-            ViewBag.RevenueWeek = revenueWeek;
 
-            ViewBag.TongDoanhThu = tongDoanhThu;
-            ViewBag.DonHangMoi = donHangMoi;
-            ViewBag.TongKhachHang = tongKhachHang;
-            ViewBag.SapHetHang = sapHetHang;
+            ViewBag.ChartLabels = chartLabels;
+            ViewBag.ChartRevenue = chartRevenue;
+            ViewBag.ChartOrders = chartOrders;
 
-            return View();
+            // 5. Dữ liệu Biểu đồ Tròn (Trạng thái đơn hàng)
+            ViewBag.PieCompleted = queryDonHang.Count(x => x.TrangThai == 3);
+            ViewBag.PieShipping = queryDonHang.Count(x => x.TrangThai == 2);
+            ViewBag.PiePending = queryDonHang.Count(x => x.TrangThai == 0 || x.TrangThai == 1);
+            ViewBag.PieCancelled = queryDonHang.Count(x => x.TrangThai == -1);
+
+            // 6. Top 5 Đơn hàng mới nhất
+            var recentOrders = queryDonHang
+                .Include(d => d.TaiKhoan)
+                .OrderByDescending(d => d.NgayDat)
+                .Take(5)
+                .Select(d => new DonHangViewModel
+                {
+                    MaDon = d.MaDon,
+                    TenKhachHang = d.NguoiNhan,
+                    NgayDat = d.NgayDat,
+                    TongTien = d.TongTien,
+                    TrangThai = d.TrangThai == 1 ? "Đã xác nhận" : d.TrangThai == 2 ? "Đang giao" : d.TrangThai == 3 ? "Hoàn thành" : d.TrangThai == -1 ? "Đã hủy" : "Chờ xử lý"
+                })
+                .ToList();
+
+            return View(recentOrders); // Truyền danh sách đơn mới sang View
         }
 
         // --- 2. QUẢN LÝ ĐƠN HÀNG (CÓ LỌC THEO STORE) ---

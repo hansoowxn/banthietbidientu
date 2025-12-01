@@ -228,23 +228,41 @@ namespace banthietbidientu.Controllers
 
             if (model.DeliveryType == "Store" && model.StoreId.HasValue)
             {
-                // Khách tự chọn đến cửa hàng lấy
                 storeId = model.StoreId.Value;
             }
             else
             {
-                // Khách chọn Ship -> Định tuyến theo Tỉnh Thành
+                // 1. Ưu tiên lấy Tỉnh từ Dropdown
                 string tinh = (model.TinhThanh ?? "").Trim();
 
-                string[] mienBac = { "Hà Nội", "Hải Phòng", "Quảng Ninh", "Bắc Ninh", "Hải Dương", "Hưng Yên", "Nam Định", "Thái Bình", "Vĩnh Phúc", "Phú Thọ", "Bắc Giang", "Thái Nguyên", "Cao Bằng", "Bắc Kạn", "Lạng Sơn", "Tuyên Quang", "Hà Giang", "Yên Bái", "Lào Cai", "Điện Biên", "Lai Châu", "Sơn La", "Hòa Bình", "Hà Nam", "Ninh Bình" };
-                string[] mienTrung = { "Đà Nẵng", "Huế", "Thừa Thiên Huế", "Quảng Nam", "Quảng Ngãi", "Bình Định", "Phú Yên", "Khánh Hòa", "Quảng Bình", "Quảng Trị", "Nghệ An", "Hà Tĩnh", "Thanh Hóa", "Ninh Thuận", "Bình Thuận", "Kon Tum", "Gia Lai", "Đắk Lắk", "Đắk Nông", "Lâm Đồng" };
+                // 2. Nếu Dropdown rỗng (do dùng địa chỉ cũ), lấy từ chuỗi Địa chỉ đầy đủ
+                string diaChiFull = (model.DiaChi ?? "").ToLower();
 
-                if (mienTrung.Contains(tinh)) storeId = 2; // Kho Đà Nẵng
-                else if (mienBac.Contains(tinh)) storeId = 1; // Kho Hà Nội
-                else storeId = 3; // Kho HCM (Miền Nam)
+                string[] mienBac = { "hà nội", "hải phòng", "quảng ninh", "bắc ninh", "hải dương", "hưng yên", "nam định", "thái bình", "vĩnh phúc", "phú thọ", "bắc giang", "thái nguyên", "cao bằng", "bắc kạn", "lạng sơn", "tuyên quang", "hà giang", "yên bái", "lào cai", "điện biên", "lai châu", "sơn la", "hòa bình", "hà nam", "ninh bình" };
+                string[] mienTrung = { "đà nẵng", "huế", "thừa thiên huế", "quảng nam", "quảng ngãi", "bình định", "phú yên", "khánh hòa", "quảng bình", "quảng trị", "nghệ an", "hà tĩnh", "thanh hóa", "ninh thuận", "bình thuận", "kon tum", "gia lai", "đắk lắk", "đắk nông", "lâm đồng" };
 
-                // Gộp địa chỉ đầy đủ
-                model.DiaChi = $"{model.DiaChi}, {model.TinhThanh}";
+                // Logic kiểm tra kết hợp
+                bool isMienTrung = mienTrung.Any(x => tinh.Contains(x, StringComparison.OrdinalIgnoreCase) || diaChiFull.Contains(x));
+                bool isMienBac = mienBac.Any(x => tinh.Contains(x, StringComparison.OrdinalIgnoreCase) || diaChiFull.Contains(x));
+
+                if (isMienTrung)
+                {
+                    storeId = 2; // Kho Đà Nẵng
+                }
+                else if (isMienBac)
+                {
+                    storeId = 1; // Kho Hà Nội
+                }
+                else
+                {
+                    storeId = 3; // Mặc định còn lại về Kho HCM
+                }
+
+                // Gộp địa chỉ nếu chưa có Tỉnh trong chuỗi (chỉ áp dụng khi chọn mới)
+                if (!string.IsNullOrEmpty(model.TinhThanh) && !model.DiaChi.Contains(model.TinhThanh))
+                {
+                    model.DiaChi = $"{model.DiaChi}, {model.TinhThanh}";
+                }
             }
             // -------------------------------------
 

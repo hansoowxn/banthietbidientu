@@ -1,301 +1,312 @@
-﻿@{
-    ViewData["Title"] = "Dashboard";
-    ViewData["PageTitle"] = "Tổng quan hệ thống";
+﻿@model IEnumerable<banthietbidientu.Models.DonHangViewModel>
+
+@{
+    ViewData["Title"] = "Tổng quan hệ thống";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-
-    // Lấy dữ liệu thống kê chung
-    decimal tongDoanhThu = ViewBag.TongDoanhThu ?? 0;
-    int donHangMoi = ViewBag.DonHangMoi ?? 0;
-    int tongKhachHang = ViewBag.TongKhachHang ?? 0;
-    int sapHetHang = ViewBag.SapHetHang ?? 0;
-
-    // Lấy dữ liệu cho biểu đồ tròn từ Controller
-    var statusData = ViewBag.ChartData as List<int> ?? new List<int> { 0, 0, 0, 0 };
 }
 
-<div class="row g-3 mb-4">
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center">
-                <div class="bg-primary bg-opacity-10 text-primary rounded p-3 me-3">
-                    <i class="bi bi-currency-dollar fs-3"></i>
+<style>
+    /* Dashboard Cards */
+    .dash-card {
+        border: none;
+        border-radius: 16px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        transition: transform 0.2s;
+    }
+
+        .dash-card:hover {
+            transform: translateY(-5px);
+        }
+
+    .dash-icon {
+        position: absolute;
+        right: 15px;
+        bottom: 15px;
+        font-size: 4rem;
+        opacity: 0.15;
+        transform: rotate(-10deg);
+    }
+
+    /* Gradients */
+    .bg-g-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
+    .bg-g-success {
+        background: linear-gradient(135deg, #2af598 0%, #009efd 100%);
+    }
+
+    .bg-g-warning {
+        background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+    }
+
+    .bg-g-danger {
+        background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 99%, #fecfef 100%);
+        color: #555;
+    }
+
+    .bg-g-info {
+        background: linear-gradient(135deg, #a18cd1 0%, #fbc2eb 100%);
+    }
+
+    /* Table & Chart Containers */
+    .chart-box {
+        background: white;
+        border-radius: 16px;
+        padding: 20px;
+        box-shadow: 0 2px 15px rgba(0,0,0,0.03);
+        height: 100%;
+    }
+
+    .chart-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+
+    .chart-title {
+        font-weight: 700;
+        color: #444;
+        font-size: 1.1rem;
+        margin: 0;
+    }
+</style>
+
+<div class="container-fluid p-4">
+
+    <div class="row g-4 mb-4">
+        <div class="col-xl-3 col-md-6">
+            <div class="card dash-card bg-g-success h-100 p-3">
+                <div class="text-uppercase small fw-bold opacity-75">Doanh thu hôm nay</div>
+                <div class="h2 fw-bold mb-0 mt-1">
+                    @(((decimal)ViewBag.DoanhThuHomNay).ToString("N0")) đ
                 </div>
-                <div>
-                    <h6 class="text-muted mb-1 small text-uppercase fw-bold">Tổng Doanh Thu</h6>
-                    <h4 class="fw-bold mb-0">@tongDoanhThu.ToString("#,##0") đ</h4>
-                    <small class="text-success fw-bold"><i class="bi bi-arrow-up"></i> Tăng trưởng</small>
+                <div class="small mt-2">
+                    <i class="bi bi-cart-check"></i> @ViewBag.DonHangHomNay đơn hàng mới
+                </div>
+                <i class="bi bi-currency-dollar dash-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card dash-card bg-g-warning h-100 p-3 text-white">
+                <div class="text-uppercase small fw-bold opacity-75">Đơn chờ xử lý</div>
+                <div class="h2 fw-bold mb-0 mt-1">@ViewBag.DonChoXuLy</div>
+                <div class="small mt-2">Cần duyệt ngay</div>
+                <i class="bi bi-hourglass-split dash-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card dash-card bg-g-primary h-100 p-3">
+                <div class="text-uppercase small fw-bold opacity-75">Tổng doanh thu</div>
+                <div class="h2 fw-bold mb-0 mt-1">
+                    @(((decimal)ViewBag.TongDoanhThu).ToString("N0")) đ
+                </div>
+                <div class="small mt-2">Toàn thời gian</div>
+                <i class="bi bi-graph-up-arrow dash-icon"></i>
+            </div>
+        </div>
+
+        <div class="col-xl-3 col-md-6">
+            <div class="card dash-card bg-g-info h-100 p-3">
+                <div class="text-uppercase small fw-bold opacity-75">Khách hàng</div>
+                <div class="h2 fw-bold mb-0 mt-1">@ViewBag.TongKhachHang</div>
+                <div class="small mt-2">Thành viên đăng ký</div>
+                <i class="bi bi-people-fill dash-icon"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="chart-box">
+                <div class="chart-header">
+                    <h6 class="chart-title">
+                        <i class="bi bi-bar-chart-line-fill text-primary me-2"></i>Hiệu quả kinh doanh (7 ngày qua)
+                    </h6>
+                </div>
+                <canvas id="weekChart" height="300"></canvas>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="chart-box">
+                <div class="chart-header">
+                    <h6 class="chart-title">
+                        <i class="bi bi-pie-chart-fill text-info me-2"></i>Tỷ lệ đơn hàng
+                    </h6>
+                </div>
+                <div style="position: relative; height: 250px; display: flex; justify-content: center;">
+                    <canvas id="statusChart"></canvas>
+                </div>
+                <div class="mt-3 text-center small text-muted">
+                    Phân bố trạng thái đơn hàng hiện tại
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center">
-                <div class="bg-success bg-opacity-10 text-success rounded p-3 me-3">
-                    <i class="bi bi-bag-check fs-3"></i>
-                </div>
-                <div>
-                    <h6 class="text-muted mb-1 small text-uppercase fw-bold">Đơn Hàng Mới</h6>
-                    <h4 class="fw-bold mb-0">@donHangMoi</h4>
-                    <small class="text-muted small">Trong ngày hôm nay</small>
-                </div>
-            </div>
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white py-3 border-bottom-0 d-flex justify-content-between align-items-center">
+            <h6 class="m-0 fw-bold text-dark">
+                <i class="bi bi-clock-history text-secondary me-2"></i>Đơn hàng mới nhất
+            </h6>
+            <a href="@Url.Action("QuanLyDonHang", "Admin")" class="btn btn-sm btn-outline-primary rounded-pill px-3">
+                Xem tất cả
+            </a>
         </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center">
-                <div class="bg-warning bg-opacity-10 text-warning rounded p-3 me-3">
-                    <i class="bi bi-people fs-3"></i>
-                </div>
-                <div>
-                    <h6 class="text-muted mb-1 small text-uppercase fw-bold">Khách Hàng</h6>
-                    <h4 class="fw-bold mb-0">@tongKhachHang</h4>
-                    <small class="text-success fw-bold">Tài khoản User</small>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-12 col-sm-6 col-xl-3">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-body d-flex align-items-center">
-                <div class="bg-danger bg-opacity-10 text-danger rounded p-3 me-3">
-                    <i class="bi bi-box-seam fs-3"></i>
-                </div>
-                <div>
-                    <h6 class="text-muted mb-1 small text-uppercase fw-bold">Sắp Hết Hàng</h6>
-                    <h4 class="fw-bold mb-0 text-danger">@sapHetHang</h4>
-                    <small class="text-muted small">SL tồn kho < 5</small>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row g-3">
-    <div class="col-lg-8">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center">
-                <h6 class="fw-bold mb-0 text-primary">
-                    <i class="bi bi-graph-up-arrow me-2"></i>Biểu đồ doanh thu
-                </h6>
-                <select id="revenueFilter" class="form-select form-select-sm border-0 bg-light fw-bold text-secondary shadow-none" style="width: auto; cursor: pointer;">
-                    <option value="week">7 ngày gần nhất</option>
-                    <option value="month">Theo tháng (Năm nay)</option>
-                    <option value="year">Theo năm (5 năm qua)</option>
-                </select>
-            </div>
-            <div class="card-body">
-                <div style="height: 350px;">
-                    <canvas id="revenueChart"></canvas>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-4">
-        <div class="card border-0 shadow-sm h-100">
-            <div class="card-header bg-white border-0 py-3">
-                <h6 class="fw-bold mb-0 text-primary">
-                    <i class="bi bi-pie-chart-fill me-2"></i>Trạng thái đơn hàng
-                </h6>
-            </div>
-            <div class="card-body d-flex justify-content-center align-items-center position-relative">
-                <div style="height: 280px; width: 100%;">
-                    <canvas id="orderStatusChart"></canvas>
-                </div>
-
-                @if (statusData.Sum() == 0)
-                {
-                    <div class="position-absolute text-center text-muted" style="pointer-events: none;">
-                        <i class="bi bi-inbox fs-1 opacity-50"></i>
-                        <p class="small m-0">Chưa có dữ liệu</p>
-                    </div>
-                }
-            </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0 table-hover">
+                <thead class="bg-light small text-uppercase text-muted">
+                    <tr>
+                        <th class="ps-4">Mã đơn</th>
+                        <th>Khách hàng</th>
+                        <th>Ngày đặt</th>
+                        <th>Tổng tiền</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (Model != null && Model.Any())
+                    {
+                        foreach (var item in Model)
+                        {
+                            <tr>
+                                <td class="ps-4 fw-bold text-primary">#@item.MaDon</td>
+                                <td>@item.TenKhachHang</td>
+                                <td class="text-muted small">
+                                    @(item.NgayDat.HasValue ? item.NgayDat.Value.ToString("dd/MM HH:mm") : "")
+                                </td>
+                                <td class="fw-bold">@item.TongTien.ToString("N0") đ</td>
+                                <td>
+                                    @if (item.TrangThai == "Hoàn thành")
+                                    {
+                                        <span class="badge bg-success bg-opacity-10 text-success rounded-pill">Hoàn thành</span>
+                                    }
+                                    else if (item.TrangThai == "Đã hủy")
+                                    {
+                                        <span class="badge bg-danger bg-opacity-10 text-danger rounded-pill">Đã hủy</span>
+                                    }
+                                    else if (item.TrangThai == "Đang giao")
+                                    {
+                                        <span class="badge bg-primary bg-opacity-10 text-primary rounded-pill">Đang giao</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-warning bg-opacity-10 text-warning rounded-pill">@item.TrangThai</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-4 text-muted">Chưa có đơn hàng nào.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
 @section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
-        document.addEventListener("DOMContentLoaded", function () {
-
-            // --- 1. HÀM TẠO NHÃN NGÀY TỰ ĐỘNG (Cho 7 ngày gần nhất) ---
-            function getLast7DaysLabels() {
-                let labels = [];
-                for (let i = 6; i >= 0; i--) {
-                    let d = new Date();
-                    d.setDate(d.getDate() - i);
-                    labels.push(d.getDate() + '/' + (d.getMonth() + 1));
-                }
-                return labels;
-            }
-
-            // --- 2. DỮ LIỆU GIẢ LẬP (MOCK DATA) ---
-            // Sau này bạn sẽ thay phần data: [...] bằng ViewBag từ C# truyền sang
-            
-            // Dữ liệu 7 ngày qua
-            const dataWeek = {
-                labels: getLast7DaysLabels(),
-                data: [15000000, 22000000, 18500000, 30000000, 25000000, 42000000, 38000000] // VNĐ
-            };
-
-            // Dữ liệu 12 tháng trong năm
-            const dataMonth = {
-                labels: ['Thg 1', 'Thg 2', 'Thg 3', 'Thg 4', 'Thg 5', 'Thg 6', 'Thg 7', 'Thg 8', 'Thg 9', 'Thg 10', 'Thg 11', 'Thg 12'],
-                data: [120, 150, 180, 210, 250, 300, 280, 320, 400, 450, 500, 600].map(x => x * 1000000) // Đơn vị triệu
-            };
-
-            // Dữ liệu 5 năm gần nhất
-            const currentYear = new Date().getFullYear();
-            const dataYear = {
-                labels: [currentYear - 4, currentYear - 3, currentYear - 2, currentYear - 1, currentYear],
-                data: [2500, 3200, 4100, 5600, 7200].map(x => x * 1000000) // Đơn vị triệu
-            };
-
-            // --- 3. CẤU HÌNH BIỂU ĐỒ DOANH THU (CHUYÊN NGHIỆP) ---
-            const ctxRevenue = document.getElementById('revenueChart').getContext('2d');
-            
-            // Tạo màu gradient (bóng đổ đẹp)
-            let gradient = ctxRevenue.createLinearGradient(0, 0, 0, 400);
-            gradient.addColorStop(0, 'rgba(13, 110, 253, 0.4)'); // Màu xanh đậm ở trên
-            gradient.addColorStop(1, 'rgba(13, 110, 253, 0.0)'); // Nhạt dần xuống dưới
-
-            let revenueChart = new Chart(ctxRevenue, {
-                type: 'line',
-                data: {
-                    labels: dataWeek.labels,
-                    datasets: [{
-                        label: 'Doanh thu',
-                        data: dataWeek.data,
-                        backgroundColor: gradient,
-                        borderColor: '#0d6efd',
-                        borderWidth: 3,
-                        pointBackgroundColor: '#ffffff',
-                        pointBorderColor: '#0d6efd',
-                        pointBorderWidth: 2,
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
-                        fill: true,
-                        tension: 0.4 // Độ cong mềm mại của đường (0 = thẳng đuột)
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            padding: 12,
-                            titleFont: { size: 14 },
-                            bodyFont: { size: 14, weight: 'bold' },
-                            callbacks: {
-                                label: function(context) {
-                                    let value = context.raw;
-                                    // Format tiền Việt: 10.000.000 ₫
-                                    return new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(value);
-                                }
-                            }
-                        }
+        // 1. Biểu đồ Đường (7 Ngày)
+        var ctxWeek = document.getElementById("weekChart");
+        new Chart(ctxWeek, {
+            type: 'bar',
+            data: {
+                labels: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.ChartLabels)),
+                datasets: [
+                    {
+                        label: "Doanh thu (VNĐ)",
+                        type: "bar",
+                        backgroundColor: "#4e73df",
+                        borderRadius: 5,
+                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.ChartRevenue)),
+                        yAxisID: 'y',
+                        order: 2
                     },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { borderDash: [5, 5], color: '#e9ecef' },
-                            ticks: {
-                                callback: function(value) {
-                                    // Rút gọn số hiển thị trục Y (1tr, 2tr...)
-                                    if(value >= 1000000000) return (value/1000000000) + ' Tỷ';
-                                    if(value >= 1000000) return (value/1000000) + ' Tr';
-                                    return value;
-                                },
-                                font: { size: 11 }
-                            }
-                        },
-                        x: {
-                            grid: { display: false },
-                            ticks: { font: { size: 11 } }
-                        }
-                    },
-                    interaction: {
-                        mode: 'index',
-                        intersect: false,
-                    },
-                }
-            });
-
-            // --- 4. SỰ KIỆN LỌC BIỂU ĐỒ ---
-            document.getElementById('revenueFilter').addEventListener('change', function() {
-                const selectedValue = this.value;
-                let newData;
-
-                if (selectedValue === 'month') newData = dataMonth;
-                else if (selectedValue === 'year') newData = dataYear;
-                else newData = dataWeek;
-
-                // Cập nhật dữ liệu và vẽ lại
-                revenueChart.data.labels = newData.labels;
-                revenueChart.data.datasets[0].data = newData.data;
-                
-                // Reset animation để tạo hiệu ứng vẽ lại
-                revenueChart.update('active');
-            });
-
-            // --- 5. BIỂU ĐỒ TRÒN TRẠNG THÁI (DỮ LIỆU THẬT) ---
-            const ctxStatus = document.getElementById('orderStatusChart').getContext('2d');
-            const realData = @Html.Raw(Json.Serialize(statusData));
-
-            new Chart(ctxStatus, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Hoàn thành', 'Đang giao', 'Chờ xử lý', 'Đã hủy'],
-                    datasets: [{
-                        data: realData,
-                        backgroundColor: [
-                            '#198754', // Xanh lá
-                            '#0d6efd', // Xanh dương
-                            '#ffc107', // Vàng
-                            '#dc3545'  // Đỏ
-                        ],
-                        hoverOffset: 10,
-                        borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            position: 'bottom',
-                            labels: {
-                                usePointStyle: true,
-                                padding: 20,
-                                font: { size: 12 }
-                            }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function(context) {
-                                    let value = context.raw || 0;
-                                    let total = context.chart._metasets[context.datasetIndex].total;
-                                    let percentage = Math.round((value / total) * 100) + '%';
-                                    return context.label + ': ' + value + ' đơn (' + percentage + ')';
-                                }
-                            }
-                        }
-                    },
-                    cutout: '75%', // Độ mỏng của vòng tròn
-                    animation: {
-                        animateScale: true,
-                        animateRotate: true
+                    {
+                        label: "Số đơn hàng",
+                        type: "line",
+                        borderColor: "#1cc88a",
+                        backgroundColor: "#1cc88a",
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        borderWidth: 2,
+                        data: @Html.Raw(Newtonsoft.Json.JsonConvert.SerializeObject(ViewBag.ChartOrders)),
+                        yAxisID: 'y1',
+                        order: 1
                     }
+                ]
+            },
+            options: {
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                scales: {
+                    x: {
+                        grid: { display: false }
+                    },
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        ticks: {
+                            callback: function(value) { return value.toLocaleString('vi-VN') + 'đ'; }
+                        },
+                        grid: { borderDash: [2] }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        grid: { drawOnChartArea: false },
+                        ticks: { stepSize: 1 }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'top' }
                 }
-            });
+            }
+        });
+
+        // 2. Biểu đồ Tròn (Trạng thái)
+        var ctxStatus = document.getElementById("statusChart");
+        new Chart(ctxStatus, {
+            type: 'doughnut',
+            data: {
+                labels: ["Hoàn thành", "Đang giao", "Chờ xử lý", "Đã hủy"],
+                datasets: [{
+                    data: [
+        @ViewBag.PieCompleted,
+        @ViewBag.PieShipping,
+        @ViewBag.PiePending,
+        @ViewBag.PieCancelled
+                    ],
+                    backgroundColor: ["#1cc88a", "#4e73df", "#f6c23e", "#e74a3b"],
+                    hoverOffset: 4,
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'right' }
+                },
+                cutout: '70%'
+            }
         });
     </script>
 }
