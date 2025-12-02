@@ -484,6 +484,55 @@ namespace banthietbidientu.Controllers
             foreach (var item in cart)
             {
                 var sanPham = await _context.SanPhams.FindAsync(item.Id);
+
+                // --- [MỚI] LOGIC TRỪ KHO CHI TIẾT THEO STORE ---
+                if (sanPham != null)
+                {
+                    // 1. Trừ tổng số lượng chung
+                    sanPham.SoLuong -= item.Quantity;
+
+                    // 2. Trừ số lượng chi tiết trong chuỗi MoTa (LOC:HN-DN-HCM)
+                    // Chỉ trừ khi đơn hàng có StoreId cụ thể (1, 2 hoặc 3)
+                    if (order.StoreId.HasValue && !string.IsNullOrEmpty(sanPham.MoTa) && sanPham.MoTa.Contains("||LOC:"))
+                    {
+                        try
+                        {
+                            // Tách chuỗi để lấy phần số lượng: "LOC:10-20-30"
+                            var parts = sanPham.MoTa.Split(new[] { "||LOC:", "||" }, StringSplitOptions.RemoveEmptyEntries);
+                            string locPart = parts.FirstOrDefault(p => p.Contains("-") && p.Any(char.IsDigit));
+
+                            if (locPart != null)
+                            {
+                                var nums = locPart.Split('-').Select(int.Parse).ToArray();
+                                // nums[0]: Hà Nội, nums[1]: Đà Nẵng, nums[2]: HCM
+
+                                int indexToUpdate = -1;
+                                if (order.StoreId == 1) indexToUpdate = 0; // HN
+                                else if (order.StoreId == 2) indexToUpdate = 1; // DN
+                                else if (order.StoreId == 3) indexToUpdate = 2; // HCM
+
+                                if (indexToUpdate != -1 && nums.Length == 3)
+                                {
+                                    // Trừ số lượng tại kho tương ứng
+                                    nums[indexToUpdate] -= item.Quantity;
+                                    if (nums[indexToUpdate] < 0) nums[indexToUpdate] = 0; // Không để âm
+
+                                    // Ghép lại chuỗi mới
+                                    string newLoc = $"{nums[0]}-{nums[1]}-{nums[2]}";
+
+                                    // Cập nhật lại vào MoTa
+                                    sanPham.MoTa = sanPham.MoTa.Replace(locPart, newLoc);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            // Nếu lỗi parse chuỗi thì bỏ qua, chỉ trừ tổng
+                            Console.WriteLine("Lỗi cập nhật kho chi tiết: " + ex.Message);
+                        }
+                    }
+                }
+
                 var chiTiet = new ChiTietDonHang
                 {
                     MaDon = order.MaDon,
@@ -493,8 +542,6 @@ namespace banthietbidientu.Controllers
                     GiaGoc = sanPham != null ? sanPham.GiaNhap : 0
                 };
                 _context.ChiTietDonHangs.Add(chiTiet);
-
-                if (sanPham != null) { sanPham.SoLuong -= item.Quantity; }
             }
             await _context.SaveChangesAsync();
 

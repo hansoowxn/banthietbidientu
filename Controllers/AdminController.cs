@@ -238,7 +238,7 @@ namespace banthietbidientu.Controllers
             }
         }
 
-        // --- 3. QUẢN LÝ NHẬP HÀNG ---
+        // --- 3. QUẢN LÝ NHẬP HÀNG (CHỈ BOSS) ---
         [Authorize(Roles = "Boss")]
         public IActionResult QuanLyNhapHang()
         {
@@ -318,7 +318,9 @@ namespace banthietbidientu.Controllers
 
                 if (!isBoss && storeId.HasValue)
                 {
-                    query = query.Where(t => t.StoreId == storeId || t.StoreId == null);
+                    // [SỬA LỖI] Admin con chỉ thấy thông báo của đúng Store mình
+                    // Bỏ đoạn "|| t.StoreId == null" đi để họ không thấy thông báo của Boss
+                    query = query.Where(t => t.StoreId == storeId);
                 }
 
                 var thongBaos = query
@@ -412,7 +414,9 @@ namespace banthietbidientu.Controllers
         {
             var sp = _context.SanPhams.Find(id);
             if (sp == null) return NotFound();
+
             int hn = 0, dn = 0, hcm = 0;
+
             if (!string.IsNullOrEmpty(sp.MoTa) && sp.MoTa.Contains("||LOC:"))
             {
                 try
@@ -435,7 +439,10 @@ namespace banthietbidientu.Controllers
                 }
                 catch { }
             }
-            ViewBag.SlHaNoi = hn; ViewBag.SlDaNang = dn; ViewBag.SlHCM = hcm;
+
+            ViewBag.SlHaNoi = hn;
+            ViewBag.SlDaNang = dn;
+            ViewBag.SlHCM = hcm;
             return View(sp);
         }
 
@@ -977,6 +984,192 @@ namespace banthietbidientu.Controllers
             return File(fileContent, "text/csv", fileName);
         }
 
+        // --- 15. QUẢN LÝ LUÂN CHUYỂN HÀNG HÓA (KHO VẬN) ---
+
+        public IActionResult QuanLyChuyenKho()
+        {
+            var user = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == User.Identity.Name);
+            int? storeId = user?.StoreId;
+            bool isBoss = user?.Role == "Boss";
+
+            var query = _context.PhieuChuyenKhos.Include(p => p.SanPham).AsQueryable();
+
+            if (!isBoss && storeId.HasValue)
+            {
+                // Admin chỉ thấy phiếu liên quan đến mình
+                query = query.Where(p => p.TuKhoId == storeId || p.DenKhoId == storeId);
+            }
+
+            return View(query.OrderByDescending(p => p.NgayTao).ToList());
+        }
+
+        [HttpGet]
+        public IActionResult TaoLenhChuyenKho()
+        {
+            ViewBag.SanPhams = _context.SanPhams.Where(p => p.SoLuong > 0).ToList();
+            var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == User.Identity.Name);
+
+            // Truyền Role và StoreId sang View để ẩn/hiện ô nhập
+            ViewBag.CurrentStoreId = user?.StoreId;
+            ViewBag.IsBoss = user?.Role == "Boss";
+
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> TaoLenhChuyenKho(PhieuChuyenKho model)
+        {
+            var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == User.Identity.Name);
+            if (user == null) return RedirectToAction("DangNhap", "Login");
+            bool isBoss = user.Role == "Boss";
+
+            var sp = _context.SanPhams.Find(model.SanPhamId);
+
+            // --- LOGIC PHÂN QUYỀN ---
+            if (!isBoss)
+            {
+                // Admin con: Bắt buộc Kho Đích là chính mình, Kho Nguồn = 0 (Chờ Boss chọn)
+                model.DenKhoId = user.StoreId ?? 0;
+                model.TuKhoId = 0; // 0 nghĩa là chưa xác định nguồn
+            }
+            else
+            {
+                // Boss: Phải chọn đủ 2 kho
+                if (model.TuKhoId == 0 || model.DenKhoId == 0)
+                {
+                    ModelState.AddModelError("", "Vui lòng chọn đủ Kho đi và Kho đến!");
+                }
+            }
+
+            if (model.TuKhoId != 0 && model.TuKhoId == model.DenKhoId)
+            {
+                ModelState.AddModelError("", "Kho đi và Kho đến không được trùng nhau!");
+            }
+
+            if (!ModelState.IsValid)
+            {
+                ViewBag.SanPhams = _context.SanPhams.Where(p => p.SoLuong > 0).ToList();
+                ViewBag.CurrentStoreId = user.StoreId;
+                ViewBag.IsBoss = isBoss;
+                return View(model);
+            }
+
+            // Tạo phiếu
+            model.MaPhieu = "CK" + DateTime.Now.ToString("yyyyMMddHHmm");
+            model.NguoiTao = user.Username;
+            model.NgayTao = DateTime.Now;
+            model.TrangThai = 0; // Mới tạo
+            if (string.IsNullOrEmpty(model.GhiChu)) model.GhiChu = "";
+
+            _context.PhieuChuyenKhos.Add(model);
+            await _context.SaveChangesAsync();
+
+            // --- THÔNG BÁO THÔNG MINH ---
+            if (!isBoss)
+            {
+                // Admin tạo -> Báo cho Boss duyệt
+                TaoThongBaoHeThong("Yêu cầu điều hàng",
+                    $"Admin kho {GetStoreName(model.DenKhoId)} xin cấp {model.SoLuong} {sp.Name}. Vui lòng chọn kho nguồn cấp hàng.",
+                    model.Id.ToString(), "QuanLyChuyenKho", null); // Null = Gửi Boss
+            }
+            else
+            {
+                // Boss tạo -> Báo cho Kho Nguồn chuẩn bị xuất
+                TaoThongBaoHeThong("Lệnh điều phối từ Boss",
+                    $"Boss yêu cầu chuyển {model.SoLuong} {sp.Name} sang Kho {GetStoreName(model.DenKhoId)}. Vui lòng xuất kho.",
+                    model.Id.ToString(), "QuanLyChuyenKho", model.TuKhoId);
+            }
+
+            TempData["Success"] = "Đã tạo lệnh chuyển kho thành công!";
+            return RedirectToAction("QuanLyChuyenKho");
+        }
+
+        // [MỚI] Hàm cho Boss duyệt và chọn nguồn cấp cho các phiếu Admin tạo
+        [HttpPost]
+        public async Task<IActionResult> DuyetYeuCau(int id, int tuKhoId)
+        {
+            if (!User.IsInRole("Boss")) return Json(new { success = false, message = "Chỉ Boss mới được duyệt!" });
+
+            var phieu = _context.PhieuChuyenKhos.Include(p => p.SanPham).FirstOrDefault(p => p.Id == id);
+            if (phieu == null) return Json(new { success = false, message = "Phiếu không tồn tại" });
+
+            if (tuKhoId == phieu.DenKhoId) return Json(new { success = false, message = "Kho nguồn trùng kho đích!" });
+
+            // Cập nhật Kho Nguồn
+            phieu.TuKhoId = tuKhoId;
+            await _context.SaveChangesAsync();
+
+            // Báo cho Kho Nguồn biết để xuất hàng
+            TaoThongBaoHeThong("Lệnh xuất hàng",
+                $"Boss đã duyệt yêu cầu #{phieu.MaPhieu}. Vui lòng chuyển hàng đi Kho {GetStoreName(phieu.DenKhoId)}.",
+                phieu.Id.ToString(), "QuanLyChuyenKho", tuKhoId);
+
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DuyetXuatKho(int id)
+        {
+            var phieu = _context.PhieuChuyenKhos.Include(p => p.SanPham).FirstOrDefault(p => p.Id == id);
+            if (phieu == null || phieu.TrangThai != 0) return Json(new { success = false, message = "Phiếu không hợp lệ" });
+
+            if (phieu.TuKhoId == 0) return Json(new { success = false, message = "Chưa chọn kho nguồn! Boss cần duyệt trước." });
+
+            bool result = UpdateStockDetail(phieu.SanPham, phieu.TuKhoId, -phieu.SoLuong);
+            if (!result) return Json(new { success = false, message = "Kho đi không đủ hàng thực tế!" });
+
+            phieu.TrangThai = 1; // Đang chuyển
+            await _context.SaveChangesAsync();
+
+            // Báo cho Kho Đích chuẩn bị nhận
+            TaoThongBaoHeThong("Hàng đang đến",
+                $"Kho {GetStoreName(phieu.TuKhoId)} đã xuất hàng theo phiếu #{phieu.MaPhieu}. Chuẩn bị nhận hàng.",
+                phieu.Id.ToString(), "QuanLyChuyenKho", phieu.DenKhoId);
+
+            GhiNhatKy("Xuất kho", $"Phiếu {phieu.MaPhieu}: Xuất {phieu.SoLuong} {phieu.SanPham.Name} từ {GetStoreName(phieu.TuKhoId)}");
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> XacNhanNhanHang(int id)
+        {
+            var phieu = _context.PhieuChuyenKhos.Include(p => p.SanPham).FirstOrDefault(p => p.Id == id);
+            if (phieu == null || phieu.TrangThai != 1) return Json(new { success = false });
+
+            UpdateStockDetail(phieu.SanPham, phieu.DenKhoId, phieu.SoLuong);
+            phieu.TrangThai = 2; // Hoàn tất
+            phieu.NgayHoanThanh = DateTime.Now;
+            await _context.SaveChangesAsync();
+
+            // [THÔNG BÁO RIÊNG BIỆT]
+            // 1. Báo cáo Boss
+            TaoThongBaoHeThong("Hoàn tất điều phối",
+                $"Phiếu {phieu.MaPhieu} hoàn tất. Kho {GetStoreName(phieu.DenKhoId)} đã nhận đủ hàng.",
+                phieu.Id.ToString(), "QuanLyChuyenKho", null);
+
+            // 2. Báo người gửi (Kho Nguồn)
+            TaoThongBaoHeThong("Đã nhận hàng",
+                $"Kho {GetStoreName(phieu.DenKhoId)} xác nhận đã nhận lô hàng bạn gửi (Phiếu {phieu.MaPhieu}).",
+                phieu.Id.ToString(), "QuanLyChuyenKho", phieu.TuKhoId);
+
+            GhiNhatKy("Nhập kho", $"Phiếu {phieu.MaPhieu}: Nhập {phieu.SoLuong} {phieu.SanPham.Name} vào {GetStoreName(phieu.DenKhoId)}");
+            return Json(new { success = true });
+        }
+
+        [HttpPost]
+        public IActionResult HuyChuyenKho(int id)
+        {
+            var phieu = _context.PhieuChuyenKhos.Find(id);
+            if (phieu != null && phieu.TrangThai == 0)
+            {
+                phieu.TrangThai = -1;
+                _context.SaveChanges();
+                GhiNhatKy("Hủy chuyển kho", $"Đã hủy phiếu {phieu.MaPhieu}");
+                return Json(new { success = true });
+            }
+            return Json(new { success = false, message = "Không thể hủy phiếu này" });
+        }
+
         private void GhiNhatKy(string hanhDong, string noiDung)
         {
             try
@@ -990,6 +1183,88 @@ namespace banthietbidientu.Controllers
                 }
             }
             catch (Exception ex) { Console.WriteLine("Lỗi ghi nhật ký: " + ex.Message); }
+        }
+
+        // Helper lấy tên kho cho thông báo sinh động
+        private string GetStoreName(int storeId)
+        {
+            return storeId switch { 1 => "Hà Nội", 2 => "Đà Nẵng", 3 => "TP.HCM", _ => "Kho ?" };
+        }
+
+        // --- CÁC HÀM BỔ TRỢ XỬ LÝ CHUỖI LOC ---
+
+        private int GetStockByStore(SanPham sp, int storeId)
+        {
+            if (string.IsNullOrEmpty(sp.MoTa) || !sp.MoTa.Contains("||LOC:")) return 0;
+            try
+            {
+                var parts = sp.MoTa.Split(new[] { "||LOC:", "||" }, StringSplitOptions.RemoveEmptyEntries);
+                string locPart = parts.FirstOrDefault(p => p.Contains("-") && p.Any(char.IsDigit));
+                if (locPart != null)
+                {
+                    var nums = locPart.Split('-').Select(int.Parse).ToArray();
+                    int index = storeId - 1; // Store 1->0, 2->1, 3->2
+                    if (index >= 0 && index < nums.Length) return nums[index];
+                }
+            }
+            catch { }
+            return 0;
+        }
+
+        private bool UpdateStockDetail(SanPham sp, int storeId, int quantityChange)
+        {
+            try
+            {
+                // 1. Cập nhật Tổng số lượng
+                sp.SoLuong += quantityChange;
+
+                // 2. Cập nhật Chi tiết
+                if (!string.IsNullOrEmpty(sp.MoTa) && sp.MoTa.Contains("||LOC:"))
+                {
+                    var parts = sp.MoTa.Split(new[] { "||LOC:", "||" }, StringSplitOptions.RemoveEmptyEntries);
+                    string locPart = parts.FirstOrDefault(p => p.Contains("-") && p.Any(char.IsDigit));
+
+                    if (locPart != null)
+                    {
+                        var nums = locPart.Split('-').Select(int.Parse).ToArray();
+                        int index = storeId - 1;
+
+                        if (index >= 0 && index < nums.Length)
+                        {
+                            // Kiểm tra nếu là phép trừ mà không đủ hàng
+                            if (quantityChange < 0 && nums[index] < Math.Abs(quantityChange)) return false;
+
+                            nums[index] += quantityChange;
+                            string newLoc = $"{nums[0]}-{nums[1]}-{nums[2]}";
+                            sp.MoTa = sp.MoTa.Replace(locPart, newLoc);
+                            return true;
+                        }
+                    }
+                }
+                // Nếu chưa có chuỗi LOC thì coi như lỗi cấu trúc (hoặc có thể init mới nếu muốn)
+                return false;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private void TaoThongBaoHeThong(string tieuDe, string noiDung, string redirectId, string action, int? storeId)
+        {
+            var tb = new ThongBao
+            {
+                TieuDe = tieuDe,
+                NoiDung = noiDung,
+                NgayTao = DateTime.Now,
+                DaDoc = false,
+                LoaiThongBao = 4, // Loại 4: Chuyển kho
+                RedirectId = redirectId,
+                RedirectAction = action,
+                StoreId = storeId
+            };
+            _context.ThongBaos.Add(tb);
+            _context.SaveChanges();
         }
     }
 }

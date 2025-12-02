@@ -189,6 +189,12 @@
                 }
 
                 <li>
+                    <a href="@Url.Action("QuanLyChuyenKho", "Admin")" class="@(currentAction == "QuanLyChuyenKho" || currentAction == "TaoLenhChuyenKho" ? "active" : "")">
+                        <i class="bi bi-truck-front-fill text-warning"></i> Điều phối kho
+                    </a>
+                </li>
+
+                <li>
                     <a href="@Url.Action("Index", "Admin")" class="@(currentAction == "Index" ? "active" : "")">
                         <i class="bi bi-grid-fill"></i> Tổng quan
                     </a>
@@ -262,7 +268,6 @@
                         </a>
                     </li>
 
-                    @* [MỚI] Mục Quản lý Thuế nằm cuối cùng *@
                     <li>
                         <a href="@Url.Action("QuanLyThue", "Admin")" class="@(currentAction == "QuanLyThue" ? "active" : "")">
                             <i class="bi bi-bank2 text-warning"></i> Kiểm soát Thuế (VAT)
@@ -378,8 +383,8 @@
 
             loadThongBao();
             setInterval(loadThongBao, 10000);
-            // Auto reload sau 10s
         });
+
         function loadThongBao() {
             fetch('/Admin/GetThongBao')
                 .then(response => response.json())
@@ -406,11 +411,15 @@
                                 const dateStr = d.getDate().toString().padStart(2, '0') + "/" + (d.getMonth() + 1).toString().padStart(2, '0') + "/" + d.getFullYear();
                                 const finalDate = `${timeStr} ${dateStr}`;
 
+                                // [MỚI] Thêm Icon xe tải cho thông báo Chuyển Kho (LoaiThongBao = 4)
                                 let icon = item.loaiThongBao == 0
                                     ? '<div class="bg-light-success text-success rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-cart-check-fill"></i></div>'
-                                    : (item.loaiThongBao == 2
-                                        ? '<div class="bg-light-warning text-warning rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-recycle"></i></div>'
-                                        : '<div class="bg-light-info text-info rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-info-circle-fill"></i></div>');
+                                    : (item.loaiThongBao == 4
+                                        ? '<div class="bg-light-primary text-primary rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-truck"></i></div>'
+                                        : (item.loaiThongBao == 2
+                                            ? '<div class="bg-light-warning text-warning rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-recycle"></i></div>'
+                                            : '<div class="bg-light-info text-info rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-info-circle-fill"></i></div>'));
+
                                 let bgClass = item.daDoc ? '' : 'bg-unread';
 
                                 let linkUrl = item.redirectAction

@@ -1,0 +1,208 @@
+﻿@model IEnumerable<banthietbidientu.Models.PhieuChuyenKho>
+@using System.Security.Claims
+@{
+    ViewData["Title"] = "Quản lý Điều phối kho";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+
+    var storeClaim = User.FindFirst("StoreId");
+    int? currentStoreId = storeClaim != null ? int.Parse(storeClaim.Value) : (int?)null;
+    bool isBoss = User.IsInRole("Boss");
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold text-primary"><i class="bi bi-truck-front-fill me-2"></i>Điều Phối Luân Chuyển Hàng</h4>
+        <a asp-action="TaoLenhChuyenKho" class="btn btn-primary fw-bold shadow-sm">
+            <i class="bi bi-plus-lg me-2"></i>Tạo Lệnh Chuyển
+        </a>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-uppercase small fw-bold text-muted">
+                        <tr>
+                            <th class="ps-4">Mã phiếu</th>
+                            <th>Từ Kho</th>
+                            <th>Đến Kho</th>
+                            <th>Sản phẩm</th>
+                            <th class="text-center">Số lượng</th>
+                            <th class="text-center">Trạng thái</th>
+                            <th class="text-end pe-4">Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold text-primary">#@item.MaPhieu</td>
+                                    <td>
+                                        @if (item.TuKhoId == 0)
+                                        {
+                                            <span class="badge bg-warning text-dark">? Chờ duyệt</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-light text-dark border">
+                                                @(item.TuKhoId == 1 ? "Hà Nội" : item.TuKhoId == 2 ? "Đà Nẵng" : "TP.HCM")
+                                            </span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-light text-dark border">
+                                            @(item.DenKhoId == 1 ? "Hà Nội" : item.DenKhoId == 2 ? "Đà Nẵng" : "TP.HCM")
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <img src="@(item.SanPham?.ImageUrl ?? "/image/logo.png")" class="rounded border me-2" style="width: 40px; height: 40px; object-fit: cover;">
+                                            <div class="small">
+                                                <div class="fw-bold text-dark">@(item.SanPham?.Name ?? "Sản phẩm lỗi")</div>
+                                                <div class="text-muted" style="font-size: 11px;">@item.NgayTao.ToString("dd/MM HH:mm")</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="text-center fw-bold text-danger fs-6">@item.SoLuong</td>
+                                    <td class="text-center">
+                                        @if (item.TuKhoId == 0)
+                                        {
+                                            <span class="badge bg-danger">Cần Boss duyệt</span>
+                                        }
+                                        else if (item.TrangThai == 0)
+                                        {
+                                            <span class="badge bg-warning text-dark">Chờ xuất</span>
+                                        }
+                                        else if (item.TrangThai == 1)
+                                        {
+                                            <span class="badge bg-primary">Đang chuyển</span>
+                                        }
+                                        else if (item.TrangThai == 2)
+                                        {
+                                            <span class="badge bg-success">Hoàn tất</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Đã hủy</span>
+                                        }
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        @if (item.TuKhoId == 0 && isBoss)
+                                        {
+                                            <button onclick="openDuyetModal(@item.Id, '@item.MaPhieu')" class="btn btn-sm btn-success fw-bold">
+                                                <i class="bi bi-check-lg"></i> Duyệt & Chọn Nguồn
+                                            </button>
+                                        }
+                                        else if (item.TrangThai == 0 && item.TuKhoId != 0) // Chờ xuất kho
+                                        {
+                                            if (currentStoreId == item.TuKhoId)
+                                            {
+                                                <button onclick="duyetXuatKho(@item.Id)" class="btn btn-sm btn-outline-primary fw-bold me-1">Xuất kho</button>
+                                                <button onclick="huyPhieu(@item.Id)" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
+                                            }
+                                            else
+                                            {
+                                                <small class="text-muted fst-italic">Chờ kho đi xuất</small>
+                                            }
+                                        }
+                                        else if (item.TrangThai == 1) // Đang chuyển
+                                        {
+                                            if (currentStoreId == item.DenKhoId)
+                                            {
+                                                <button onclick="xacNhanNhan(@item.Id)" class="btn btn-sm btn-success fw-bold">Nhập kho</button>
+                                            }
+                                            else
+                                            {
+                                                <small class="text-primary fst-italic"><i class="bi bi-truck"></i> Đang đi đường...</small>
+                                            }
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="7" class="text-center py-5 text-muted">Chưa có phiếu nào.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="duyetModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Duyệt Phiếu <span id="modalMaPhieu"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Admin này đang xin hàng. Bạn muốn lấy hàng từ kho nào để cấp cho họ?</p>
+                <input type="hidden" id="modalPhieuId" />
+                <label class="form-label fw-bold">Chọn Kho Nguồn Cấp Hàng:</label>
+                <select class="form-select mb-3" id="modalTuKho">
+                    <option value="1">Kho Hà Nội</option>
+                    <option value="2">Kho Đà Nẵng</option>
+                    <option value="3">Kho TP.HCM</option>
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" onclick="submitDuyet()" class="btn btn-success fw-bold">Xác Nhận Duyệt</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openDuyetModal(id, ma) {
+            document.getElementById('modalPhieuId').value = id;
+            document.getElementById('modalMaPhieu').innerText = ma;
+            new bootstrap.Modal(document.getElementById('duyetModal')).show();
+        }
+
+        function submitDuyet() {
+            let id = document.getElementById('modalPhieuId').value;
+            let tuKho = document.getElementById('modalTuKho').value;
+
+            let formData = new FormData();
+            formData.append('id', id);
+            formData.append('tuKhoId', tuKho);
+
+            fetch('/Admin/DuyetYeuCau', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) location.reload();
+                else alert(data.message);
+            });
+        }
+
+        function duyetXuatKho(id) {
+            if(!confirm('Xác nhận xuất kho?')) return;
+            callApi('/Admin/DuyetXuatKho', id);
+        }
+
+        function xacNhanNhan(id) {
+            if(!confirm('Đã nhận hàng?')) return;
+            callApi('/Admin/XacNhanNhanHang', id);
+        }
+
+        function huyPhieu(id) {
+            if(!confirm('Hủy phiếu này?')) return;
+            callApi('/Admin/HuyChuyenKho', id);
+        }
+
+        function callApi(url, id) {
+            let formData = new FormData();
+            formData.append('id', id);
+            fetch(url, { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => { if(data.success) location.reload(); else alert(data.message); });
+        }
+    </script>
+}
