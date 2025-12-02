@@ -27,6 +27,8 @@ namespace banthietbidientu.Data
         public DbSet<Voucher> Vouchers { get; set; }
         public DbSet<LichSuHoatDong> LichSuHoatDongs { get; set; }
         public DbSet<PhieuChuyenKho> PhieuChuyenKhos { get; set; }
+        public DbSet<CauHinhLuong> CauHinhLuongs { get; set; }
+        public DbSet<BangLuong> BangLuongs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

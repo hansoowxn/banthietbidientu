@@ -1,0 +1,206 @@
+﻿@model List<banthietbidientu.Models.PayrollViewModel>
+@{
+    ViewData["Title"] = "Bảng Lương & Hoa Hồng";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var cultureInfo = new System.Globalization.CultureInfo("vi-VN");
+}
+
+@section Styles {
+    <style>
+        /* Ẩn nút tăng giảm (spinners) của input number */
+        /* Chrome, Safari, Edge, Opera */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
+        /* Firefox */
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
+}
+
+<div class="container-fluid py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h4 class="fw-bold text-primary"><i class="bi bi-cash-coin me-2"></i>Bảng Lương & Hoa Hồng</h4>
+            <p class="text-muted mb-0">Kỳ lương: <span class="fw-bold text-dark">Tháng @ViewBag.SelectedMonth / @ViewBag.SelectedYear</span></p>
+        </div>
+
+        <form method="get" class="d-flex align-items-center gap-2 bg-white p-2 rounded-3 shadow-sm">
+            <select name="month" class="form-select form-select-sm fw-bold border-0 bg-light" style="width: auto; min-width: 100px;">
+                @for (int i = 1; i <= 12; i++)
+                {
+                    <option value="@i" selected="@(ViewBag.SelectedMonth == i)">Tháng @i</option>
+                }
+            </select>
+
+            <select name="year" class="form-select form-select-sm fw-bold border-0 bg-light" style="width: auto; min-width: 80px;">
+                @for (int i = DateTime.Now.Year; i >= 2023; i--)
+                {
+                    <option value="@i" selected="@(ViewBag.SelectedYear == i)">@i</option>
+                }
+            </select>
+
+            <button type="submit" class="btn btn-primary btn-sm fw-bold px-4 text-nowrap">
+                <i class="bi bi-search me-1"></i> Xem Bảng Lương
+            </button>
+        </form>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light text-uppercase small fw-bold text-muted">
+                        <tr>
+                            <th class="ps-4">Nhân viên</th>
+                            <th>Chi nhánh</th>
+                            <th class="text-end">Doanh số thuần</th>
+                            <th class="text-end" style="width: 150px;">Lương cứng</th>
+                            <th class="text-center" style="width: 120px;">% HH</th>
+                            <th class="text-end">Tiền thưởng</th>
+                            <th class="text-end fw-bold">Thực nhận</th>
+                            <th class="text-center">Trạng thái</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-opacity-10 text-primary rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <span class="fw-bold">@item.FullName.Substring(0, 1)</span>
+                                            </div>
+                                            <div>
+                                                <div class="fw-bold text-dark">@item.FullName</div>
+                                                <small class="text-muted">@item.Username</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        @if (item.StoreId == 1)
+                                        {
+                                            <span class="badge bg-light text-dark border">Hà Nội</span>
+                                        }
+                                        else if (item.StoreId == 2)
+                                        {
+                                            <span class="badge bg-light text-dark border">Đà Nẵng</span>
+                                        }
+                                        else if (item.StoreId == 3)
+                                        {
+                                            <span class="badge bg-light text-dark border">TP.HCM</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-secondary">Chưa gán</span>
+                                        }
+                                    </td>
+                                    <td class="text-end text-primary fw-bold">@item.DoanhSo.ToString("N0") ₫</td>
+
+                                    <td class="text-end">
+                                        @if (!item.DaChot)
+                                        {
+                                            <input type="number" class="form-control form-control-sm text-end salary-base fw-bold"
+                                                   data-id="@item.TaiKhoanId" value="@item.LuongCung"
+                                                   onchange="updateConfig(@item.TaiKhoanId)">
+                                        }
+                                        else
+                                        {
+                                            <span class="text-muted">@item.LuongCung.ToString("N0") ₫</span>
+                                        }
+                                    </td>
+
+                                    <td>
+                                        @if (!item.DaChot)
+                                        {
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" class="form-control text-center percent-comm fw-bold text-danger"
+                                                       data-id="@item.TaiKhoanId" value="@item.PhanTramHoaHong" step="0.1"
+                                                       onchange="updateConfig(@item.TaiKhoanId)">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        }
+                                        else
+                                        {
+                                            <div class="text-center"><span class="badge bg-danger bg-opacity-10 text-danger">@item.PhanTramHoaHong%</span></div>
+                                        }
+                                    </td>
+
+                                    <td class="text-end text-success fw-bold">+@item.TienHoaHong.ToString("N0") ₫</td>
+                                    <td class="text-end fw-bold text-dark fs-6 bg-light">@item.TongThucNhan.ToString("N0") ₫</td>
+
+                                    <td class="text-center">
+                                        @if (item.DaChot)
+                                        {
+                                            <span class="badge bg-success"><i class="bi bi-check-circle-fill me-1"></i>Đã chốt</span>
+                                            <div class="text-muted small mt-1" style="font-size: 10px;">@item.NgayChot?.ToString("dd/MM HH:mm")</div>
+                                        }
+                                        else
+                                        {
+                                            <button onclick="chotLuong(@item.TaiKhoanId)" class="btn btn-sm btn-outline-primary fw-bold shadow-sm">
+                                                <i class="bi bi-lock-fill me-1"></i> Chốt lương
+                                            </button>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr><td colspan="8" class="text-center py-5 text-muted">Không có dữ liệu nhân viên.</td></tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card-footer bg-white py-3 border-0">
+            <small class="text-muted fst-italic"><i class="bi bi-info-circle me-1"></i> Doanh số thuần là tổng tiền đơn hàng đã hoàn thành (trừ thuế VAT) tại chi nhánh đó.</small>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // Tự động lưu khi Boss sửa số liệu
+        function updateConfig(id) {
+            let row = document.querySelector(`input.salary-base[data-id='${id}']`).closest('tr');
+            let luongCung = row.querySelector('.salary-base').value;
+            let phanTram = row.querySelector('.percent-comm').value;
+
+            let formData = new FormData();
+            formData.append('taiKhoanId', id);
+            formData.append('luongCung', luongCung);
+            formData.append('phanTram', phanTram);
+
+            // Gọi API cập nhật ngầm
+            fetch('/Admin/CapNhatCauHinhLuong', { method: 'POST', body: formData })
+            .then(() => {
+                // Reload để tính lại tổng tiền hiển thị
+                location.reload();
+            });
+        }
+
+        // Hàm chốt lương cứng (Không cho sửa nữa)
+        function chotLuong(id) {
+            if(!confirm('Xác nhận chốt lương tháng này cho nhân viên? Sau khi chốt sẽ không thể sửa đổi số liệu.')) return;
+
+            let formData = new FormData();
+            formData.append('taiKhoanId', id);
+            formData.append('month', '@ViewBag.SelectedMonth');
+            formData.append('year', '@ViewBag.SelectedYear');
+
+            fetch('/Admin/ChotLuong', { method: 'POST', body: formData })
+            .then(res => res.json())
+            .then(data => {
+                if(data.success) location.reload();
+                else alert(data.message);
+            });
+        }
+    </script>
+}

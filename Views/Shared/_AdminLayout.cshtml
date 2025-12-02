@@ -27,16 +27,33 @@
             align-items: stretch;
         }
 
+        /* [CSS MỚI] Sidebar cố định & có thanh cuộn riêng */
         #sidebar {
             min-width: 260px;
             max-width: 260px;
             background: #ffffff;
             color: #333;
             border-right: 1px solid #eef2f6;
-            min-height: 100vh;
+            /* Fix vị trí để luôn đứng yên khi cuộn trang chính */
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh; /* Cao bằng màn hình */
+            overflow-y: auto; /* Tự động hiện thanh cuộn nếu menu dài */
+
             transition: all 0.3s;
             z-index: 1000;
         }
+
+            /* Tùy chỉnh thanh cuộn cho đẹp */
+            #sidebar::-webkit-scrollbar {
+                width: 6px;
+            }
+
+            #sidebar::-webkit-scrollbar-thumb {
+                background-color: #e0e0e0;
+                border-radius: 10px;
+            }
 
             #sidebar .sidebar-header {
                 padding: 20px 25px;
@@ -44,10 +61,15 @@
                 border-bottom: 1px solid #eef2f6;
                 display: flex;
                 align-items: center;
+                /* Giữ header cố định khi cuộn menu (Optional) */
+                position: sticky;
+                top: 0;
+                z-index: 10;
             }
 
             #sidebar ul.components {
                 padding: 15px 10px;
+                padding-bottom: 50px; /* Chừa chỗ trống dưới cùng */
             }
 
             #sidebar ul li {
@@ -82,11 +104,14 @@
                         font-size: 1.1rem;
                     }
 
+        /* [CSS MỚI] Content đẩy sang phải để tránh bị Sidebar che */
         #content {
-            width: 100%;
+            width: calc(100% - 260px); /* Trừ đi chiều rộng sidebar */
+            margin-left: 260px; /* Cách lề trái 260px */
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            transition: all 0.3s;
         }
 
         .admin-navbar {
@@ -97,6 +122,10 @@
             justify-content: space-between;
             align-items: center;
             height: 70px;
+            /* Navbar dính trên cùng */
+            position: sticky;
+            top: 0;
+            z-index: 900;
         }
 
         .main-body {
@@ -129,6 +158,7 @@
         @@media (max-width: 768px) {
             #sidebar {
                 margin-left: -260px;
+                /* Mobile thì vẫn fixed nhưng ẩn đi */
                 position: fixed;
                 height: 100%;
             }
@@ -137,6 +167,11 @@
                     margin-left: 0;
                     box-shadow: 0 0 20px rgba(0,0,0,0.1);
                 }
+            /* [CSS MỚI] Mobile thì content full màn hình */
+            #content {
+                width: 100%;
+                margin-left: 0;
+            }
 
             .overlay {
                 display: none;
@@ -269,6 +304,12 @@
                     </li>
 
                     <li>
+                        <a href="@Url.Action("QuanLyLuong", "Admin")" class="@(currentAction == "QuanLyLuong" ? "active" : "")">
+                            <i class="bi bi-cash-coin text-success"></i> Bảng lương & thưởng
+                        </a>
+                    </li>
+
+                    <li>
                         <a href="@Url.Action("QuanLyThue", "Admin")" class="@(currentAction == "QuanLyThue" ? "active" : "")">
                             <i class="bi bi-bank2 text-warning"></i> Kiểm soát Thuế (VAT)
                         </a>
@@ -383,8 +424,8 @@
 
             loadThongBao();
             setInterval(loadThongBao, 10000);
+            // Auto reload sau 10s
         });
-
         function loadThongBao() {
             fetch('/Admin/GetThongBao')
                 .then(response => response.json())
@@ -411,7 +452,6 @@
                                 const dateStr = d.getDate().toString().padStart(2, '0') + "/" + (d.getMonth() + 1).toString().padStart(2, '0') + "/" + d.getFullYear();
                                 const finalDate = `${timeStr} ${dateStr}`;
 
-                                // [MỚI] Thêm Icon xe tải cho thông báo Chuyển Kho (LoaiThongBao = 4)
                                 let icon = item.loaiThongBao == 0
                                     ? '<div class="bg-light-success text-success rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-cart-check-fill"></i></div>'
                                     : (item.loaiThongBao == 4

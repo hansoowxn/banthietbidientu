@@ -933,9 +933,26 @@ namespace banthietbidientu.Controllers
         public IActionResult NhatKyHoatDong(int? storeId, int page = 1)
         {
             int pageSize = 20;
-            var query = _context.LichSuHoatDongs.AsQueryable();
-            if (storeId.HasValue) query = query.Where(l => l.StoreId == storeId);
-            var listLogs = query.OrderByDescending(l => l.ThoiGian).Skip((page - 1) * pageSize).Take(pageSize).ToList();
+
+            // [QUAN TRỌNG] Thêm Include(l => l.TaiKhoan) để truy cập được cột Role
+            var query = _context.LichSuHoatDongs
+                                .Include(l => l.TaiKhoan)
+                                .AsQueryable();
+
+            // [LOGIC MỚI] Loại bỏ nhật ký của chính Boss
+            // Chỉ hiển thị hoạt động của Admin và nhân viên khác
+            query = query.Where(l => l.TaiKhoan.Role != "Boss");
+
+            if (storeId.HasValue)
+            {
+                query = query.Where(l => l.StoreId == storeId);
+            }
+
+            var listLogs = query.OrderByDescending(l => l.ThoiGian)
+                                .Skip((page - 1) * pageSize)
+                                .Take(pageSize)
+                                .ToList();
+
             ViewBag.SelectedStore = storeId;
             return View(listLogs);
         }
@@ -1265,6 +1282,150 @@ namespace banthietbidientu.Controllers
             };
             _context.ThongBaos.Add(tb);
             _context.SaveChanges();
+        }
+
+        // --- 16. [MỚI] TÍNH LƯƠNG NHÂN VIÊN (PAYROLL) ---
+
+        [Authorize(Roles = "Boss")]
+        public IActionResult QuanLyLuong(int? month, int? year)
+        {
+            var now = DateTime.Now;
+            int sMonth = month ?? now.Month;
+            int sYear = year ?? now.Year;
+
+            // 1. Lấy danh sách Admin chi nhánh
+            var admins = _context.TaiKhoans.Where(u => u.Role == "Admin").ToList();
+
+            // 2. Lấy cấu hình lương & Lịch sử lương đã trả
+            var configs = _context.CauHinhLuongs.ToList();
+            var paidSalaries = _context.BangLuongs
+                .Where(b => b.Thang == sMonth && b.Nam == sYear)
+                .ToList();
+
+            var payrollList = new List<PayrollViewModel>();
+
+            foreach (var ad in admins)
+            {
+                var paid = paidSalaries.FirstOrDefault(p => p.TaiKhoanId == ad.Id);
+
+                if (paid != null) // Đã chốt lương -> Lấy từ lịch sử
+                {
+                    payrollList.Add(new PayrollViewModel
+                    {
+                        TaiKhoanId = ad.Id,
+                        FullName = ad.FullName,
+                        Username = ad.Username,
+                        StoreId = ad.StoreId,
+                        LuongCung = paid.LuongCung,
+                        PhanTramHoaHong = (double)(paid.DoanhSoDatDuoc > 0 ? (paid.TienHoaHong / paid.DoanhSoDatDuoc * 100) : 0),
+                        DoanhSo = paid.DoanhSoDatDuoc,
+                        TienHoaHong = paid.TienHoaHong,
+                        TongThucNhan = paid.TongThucNhan,
+                        DaChot = true,
+                        NgayChot = paid.NgayChot
+                    });
+                }
+                else // Chưa chốt -> Tính toán Real-time
+                {
+                    var config = configs.FirstOrDefault(c => c.TaiKhoanId == ad.Id);
+                    decimal luongCung = config?.LuongCung ?? 0;
+                    double phanTram = config?.PhanTramHoaHong ?? 0;
+
+                    // Tính doanh số thuần (trừ thuế) của Store đó trong tháng
+                    decimal doanhSo = 0;
+                    if (ad.StoreId.HasValue)
+                    {
+                        doanhSo = _context.DonHangs
+                            .Where(d => d.StoreId == ad.StoreId
+                                     && d.TrangThai == 3
+                                     && d.NgayDat.Value.Month == sMonth
+                                     && d.NgayDat.Value.Year == sYear)
+                            .Sum(d => d.TongTien - d.TienThue);
+                    }
+
+                    decimal hoaHong = doanhSo * (decimal)(phanTram / 100);
+
+                    payrollList.Add(new PayrollViewModel
+                    {
+                        TaiKhoanId = ad.Id,
+                        FullName = ad.FullName,
+                        Username = ad.Username,
+                        StoreId = ad.StoreId,
+                        LuongCung = luongCung,
+                        PhanTramHoaHong = phanTram,
+                        DoanhSo = doanhSo,
+                        TienHoaHong = hoaHong,
+                        TongThucNhan = luongCung + hoaHong,
+                        DaChot = false
+                    });
+                }
+            }
+
+            ViewBag.SelectedMonth = sMonth;
+            ViewBag.SelectedYear = sYear;
+            return View(payrollList);
+        }
+
+        [Authorize(Roles = "Boss")]
+        [HttpPost]
+        public IActionResult CapNhatCauHinhLuong(int taiKhoanId, decimal luongCung, double phanTram)
+        {
+            var config = _context.CauHinhLuongs.FirstOrDefault(c => c.TaiKhoanId == taiKhoanId);
+            if (config == null)
+            {
+                config = new CauHinhLuong { TaiKhoanId = taiKhoanId };
+                _context.CauHinhLuongs.Add(config);
+            }
+            config.LuongCung = luongCung;
+            config.PhanTramHoaHong = phanTram;
+            _context.SaveChanges();
+
+            GhiNhatKy("Cấu hình lương", $"Cập nhật lương ID {taiKhoanId}: Cứng {luongCung:N0}, HH {phanTram}%");
+            return Json(new { success = true });
+        }
+
+        [Authorize(Roles = "Boss")]
+        [HttpPost]
+        public IActionResult ChotLuong(int taiKhoanId, int month, int year)
+        {
+            // Kiểm tra đã chốt chưa
+            if (_context.BangLuongs.Any(b => b.TaiKhoanId == taiKhoanId && b.Thang == month && b.Nam == year))
+                return Json(new { success = false, message = "Đã chốt lương nhân viên này rồi!" });
+
+            // Lấy lại dữ liệu để chốt (Không tin dữ liệu từ client gửi lên)
+            var user = _context.TaiKhoans.Find(taiKhoanId);
+            var config = _context.CauHinhLuongs.FirstOrDefault(c => c.TaiKhoanId == taiKhoanId);
+
+            decimal luongCung = config?.LuongCung ?? 0;
+            double phanTram = config?.PhanTramHoaHong ?? 0;
+
+            decimal doanhSo = 0;
+            if (user.StoreId.HasValue)
+            {
+                doanhSo = _context.DonHangs
+                    .Where(d => d.StoreId == user.StoreId && d.TrangThai == 3 && d.NgayDat.Value.Month == month && d.NgayDat.Value.Year == year)
+                    .Sum(d => d.TongTien - d.TienThue);
+            }
+            decimal hoaHong = doanhSo * (decimal)(phanTram / 100);
+
+            var bangLuong = new BangLuong
+            {
+                TaiKhoanId = taiKhoanId,
+                Thang = month,
+                Nam = year,
+                DoanhSoDatDuoc = doanhSo,
+                LuongCung = luongCung,
+                TienHoaHong = hoaHong,
+                TongThucNhan = luongCung + hoaHong,
+                NgayChot = DateTime.Now,
+                NguoiChot = User.Identity.Name
+            };
+
+            _context.BangLuongs.Add(bangLuong);
+            _context.SaveChanges();
+
+            GhiNhatKy("Chốt lương", $"Đã chốt lương tháng {month}/{year} cho {user.Username}. Tổng: {bangLuong.TongThucNhan:N0}");
+            return Json(new { success = true });
         }
     }
 }

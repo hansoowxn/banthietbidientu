@@ -5,7 +5,6 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Text;
-using System.Web;
 using Microsoft.AspNetCore.Http;
 
 namespace banthietbidientu.Services
@@ -17,18 +16,12 @@ namespace banthietbidientu.Services
 
         public void AddRequestData(string key, string value)
         {
-            if (!string.IsNullOrEmpty(value))
-            {
-                _requestData.Add(key, value);
-            }
+            if (!string.IsNullOrEmpty(value)) _requestData.Add(key, value);
         }
 
         public void AddResponseData(string key, string value)
         {
-            if (!string.IsNullOrEmpty(value))
-            {
-                _responseData.Add(key, value);
-            }
+            if (!string.IsNullOrEmpty(value)) _responseData.Add(key, value);
         }
 
         public string GetResponseData(string key)
@@ -41,11 +34,13 @@ namespace banthietbidientu.Services
             StringBuilder data = new StringBuilder();
             foreach (KeyValuePair<string, string> kv in _requestData)
             {
-                if (data.Length > 0)
-                {
-                    data.Append("&");
-                }
-                data.Append(kv.Key + "=" + WebUtility.UrlEncode(kv.Value));
+                if (data.Length > 0) data.Append("&");
+
+                // [QUAN TRỌNG] Mã hóa chuẩn RFC 3986 (Dấu cách = %20)
+                // Nếu dùng UrlEncode thường nó sẽ ra dấu +, VNPay Sandbox sẽ báo sai chữ ký
+                string value = WebUtility.UrlEncode(kv.Value).Replace("+", "%20");
+
+                data.Append(kv.Key + "=" + value);
             }
 
             string queryString = data.ToString();
@@ -65,22 +60,15 @@ namespace banthietbidientu.Services
         private string GetResponseData()
         {
             StringBuilder data = new StringBuilder();
-            if (_responseData.ContainsKey("vnp_SecureHashType"))
-            {
-                _responseData.Remove("vnp_SecureHashType");
-            }
-            if (_responseData.ContainsKey("vnp_SecureHash"))
-            {
-                _responseData.Remove("vnp_SecureHash");
-            }
+            if (_responseData.ContainsKey("vnp_SecureHashType")) _responseData.Remove("vnp_SecureHashType");
+            if (_responseData.ContainsKey("vnp_SecureHash")) _responseData.Remove("vnp_SecureHash");
 
             foreach (KeyValuePair<string, string> kv in _responseData)
             {
-                if (data.Length > 0)
-                {
-                    data.Append("&");
-                }
-                data.Append(kv.Key + "=" + WebUtility.UrlEncode(kv.Value));
+                if (data.Length > 0) data.Append("&");
+                // [QUAN TRỌNG] Cũng phải replace + thành %20 khi nhận về
+                string value = WebUtility.UrlEncode(kv.Value).Replace("+", "%20");
+                data.Append(kv.Key + "=" + value);
             }
             return data.ToString();
         }
@@ -93,8 +81,7 @@ namespace banthietbidientu.Services
             if (x == y) return 0;
             if (x == null) return -1;
             if (y == null) return 1;
-            var vnpCompare = CompareInfo.GetCompareInfo("en-US");
-            return vnpCompare.Compare(x, y, CompareOptions.Ordinal);
+            return string.Compare(x, y, StringComparison.Ordinal);
         }
     }
 
