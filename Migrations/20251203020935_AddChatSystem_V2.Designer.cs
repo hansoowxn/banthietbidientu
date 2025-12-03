@@ -12,8 +12,8 @@ using banthietbidientu.Data;
 namespace TestDoAn.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251202161954_AddChatSystem")]
-    partial class AddChatSystem
+    [Migration("20251203020935_AddChatSystem_V2")]
+    partial class AddChatSystem_V2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)

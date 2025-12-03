@@ -27,7 +27,6 @@ builder.Services.AddTransient<IEmailSender, EmailSender>();
 // ---------------------------------------
 builder.Services.AddSignalR();
 
-
 // 4. CẤU HÌNH MVC & JSON
 builder.Services.AddControllersWithViews()
     .AddNewtonsoftJson(options =>

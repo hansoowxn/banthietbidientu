@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Linq;
-using System.Threading.Tasks;
 using banthietbidientu.Data;
 using banthietbidientu.Models;
 using System.Collections.Generic;
@@ -20,127 +19,182 @@ namespace banthietbidientu.Controllers
             _context = context;
         }
 
-        // =========================================================
-        // 1. TRANG DASHBOARD (DÀNH CHO ADMIN/BOSS)
-        // =========================================================
         [Authorize(Roles = "Admin,Boss")]
         public IActionResult Index()
         {
+            var user = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == User.Identity.Name);
+            ViewBag.CurrentStoreId = user?.StoreId ?? 0;
+            ViewBag.IsBoss = user?.Role == "Boss";
             return View();
         }
 
-        // =========================================================
-        // 2. API LẤY DANH SÁCH NGƯỜI CHAT (CHO SIDEBAR ADMIN)
-        // =========================================================
+        // --- 1. API GET CONTACTS (Đã bổ sung logic lấy Admin đồng nghiệp) ---
         [Authorize(Roles = "Admin,Boss")]
         [HttpGet]
-        public IActionResult GetContacts()
+        public IActionResult GetContacts(int? filterStoreId)
         {
             var currentUser = User.Identity.Name;
+            var currentAdmin = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == currentUser);
+            bool isBoss = currentAdmin?.Role == "Boss";
+            int? myStoreId = currentAdmin?.StoreId;
 
-            // 1. Lấy tất cả tin nhắn LIÊN QUAN ĐẾN MÌNH (Gửi đi hoặc Nhận về)
-            var messages = _context.TinNhans.AsNoTracking()
-                .Where(m => m.SenderName == currentUser || m.ReceiverName == currentUser)
-                .ToList();
+            var query = _context.TinNhans.AsNoTracking().AsQueryable();
 
-            // 2. Lấy danh sách những người đã chat với mình
-            // (Loại bỏ user "Admin" hệ thống nếu có)
-            var users = messages
-                .Select(m => m.SenderName == currentUser ? m.ReceiverName : m.SenderName)
-                .Distinct()
-                .Where(u => !string.IsNullOrEmpty(u) && u != "Admin")
-                .ToList();
-
-            // 3. Thêm Boss và Admin khác vào danh sách (Chat nội bộ)
-            var internalUsers = _context.TaiKhoans
-                .Where(u => u.Username != currentUser && (u.Role == "Boss" || u.Role == "Admin"))
-                .Select(u => u.Username)
-                .ToList();
-
-            users.AddRange(internalUsers);
-            users = users.Distinct().ToList();
-
-            var contactList = new List<object>();
-
-            foreach (var u in users)
+            if (isBoss)
             {
-                // Lấy tin cuối cùng giữa 2 người
-                var lastMsg = messages
-                    .Where(m => (m.SenderName == u && m.ReceiverName == currentUser) ||
-                                (m.SenderName == currentUser && m.ReceiverName == u))
-                    .OrderByDescending(m => m.Timestamp)
-                    .FirstOrDefault();
+                // Boss thấy tất cả
+                query = query.Where(m => m.SenderName == currentUser || m.ReceiverName == currentUser || m.ReceiverName == "Admin" || m.SenderName == "Admin");
 
-                // Đếm tin chưa đọc
-                int unread = messages.Count(m => m.SenderName == u && m.ReceiverName == currentUser && !m.IsRead);
+                // Lấy cả tin nhắn nội bộ giữa các Admin để Boss giám sát (nếu cần)
+                var allAdmins = _context.TaiKhoans.Where(t => t.Role == "Admin").Select(t => t.Username).ToList();
+                query = query.Where(m =>
+                    allAdmins.Contains(m.SenderName) || allAdmins.Contains(m.ReceiverName) ||
+                    m.SenderName == currentUser || m.ReceiverName == currentUser || m.ReceiverName == "Admin"
+                );
 
-                // Lấy thông tin tài khoản
-                var account = _context.TaiKhoans.FirstOrDefault(a => a.Username == u);
-
-                // Sắp xếp ưu tiên: Boss (1) > Admin (2) > Khách (3)
-                int priority = 3;
-                if (account?.Role == "Boss") priority = 1;
-                else if (account?.Role == "Admin") priority = 2;
-
-                // Hiển thị tên thật hoặc username (tránh null)
-                string displayName = !string.IsNullOrEmpty(account?.FullName) ? account.FullName : (account?.Username ?? u);
-
-                string displayTime = lastMsg?.Timestamp.ToString("HH:mm dd/MM") ?? "";
-
-                contactList.Add(new
+                if (filterStoreId.HasValue && filterStoreId.Value > 0)
                 {
-                    username = u,
-                    fullName = displayName,
-                    lastMessage = lastMsg?.Content ?? "Bắt đầu trò chuyện",
-                    time = displayTime,
-                    unread = unread,
-                    priority = priority,
-                    avatar = account?.Role == "Boss" ? "/image/logo.png" : "/image/logo.png" // Ảnh đại diện (có thể thay đổi sau)
-                });
-            }
-
-            // Sắp xếp danh sách: Theo Priority -> Theo thời gian tin mới nhất
-            return Json(contactList.OrderBy(x => ((dynamic)x).priority).ThenByDescending(x => ((dynamic)x).time));
-        }
-
-        // =========================================================
-        // 3. API LẤY LỊCH SỬ TIN NHẮN
-        // =========================================================
-        [HttpGet]
-        public IActionResult GetHistory(string otherUser)
-        {
-            var currentUser = User.Identity.Name;
-            var query = _context.TinNhans.AsQueryable();
-
-            if (User.IsInRole("Admin") || User.IsInRole("Boss"))
-            {
-                // Admin xem tin với user cụ thể
-                query = query.Where(m => (m.SenderName == currentUser && m.ReceiverName == otherUser) ||
-                                         (m.SenderName == otherUser && m.ReceiverName == currentUser));
-
-                // Đánh dấu đã đọc các tin người đó gửi cho mình
-                var unreadMsgs = query.Where(m => m.ReceiverName == currentUser && !m.IsRead).ToList();
-                if (unreadMsgs.Any())
-                {
-                    foreach (var m in unreadMsgs) m.IsRead = true;
-                    _context.SaveChanges();
+                    query = query.Where(m => m.StoreId == filterStoreId.Value);
                 }
             }
             else
             {
-                // Khách xem tin của mình (với Admin hoặc hệ thống)
-                query = query.Where(m => m.SenderName == currentUser || m.ReceiverName == currentUser);
+                // Admin thấy tin của mình hoặc tin hệ thống đúng Store
+                query = query.Where(m =>
+                    m.SenderName == currentUser ||
+                    m.ReceiverName == currentUser ||
+                    ((m.ReceiverName == "Admin" || m.SenderName == "Admin") && (m.StoreId == myStoreId || m.StoreId == null))
+                );
             }
 
-            var history = query.OrderBy(m => m.Timestamp)
-                .Select(m => new {
-                    sender = m.SenderName,
-                    content = m.Content,
-                    time = m.Timestamp.ToString("HH:mm")
-                })
-                .ToList();
+            var allMessages = query.OrderByDescending(m => m.Timestamp).ToList();
 
-            return Json(history);
+            // Lọc danh sách người đã chat
+            var contactNames = new HashSet<string>();
+            foreach (var m in allMessages)
+            {
+                string other = (m.SenderName == currentUser || m.SenderName == "Admin") ? m.ReceiverName : m.SenderName;
+                if (other != "Admin" && other != currentUser) contactNames.Add(other);
+            }
+
+            // --- [LOGIC GHIM DANH BẠ NỘI BỘ] ---
+
+            // 1. Nếu là BOSS: Luôn thấy tất cả Admin (để ghim lên đầu)
+            if (isBoss && (!filterStoreId.HasValue || filterStoreId == 0))
+            {
+                var adminUsers = _context.TaiKhoans.Where(u => u.Role == "Admin").Select(u => u.Username).ToList();
+                foreach (var admin in adminUsers) contactNames.Add(admin);
+            }
+
+            // 2. [MỚI] Nếu là ADMIN:
+            if (!isBoss)
+            {
+                // - Luôn thấy Boss
+                var bossUsers = _context.TaiKhoans.Where(u => u.Role == "Boss").Select(u => u.Username).ToList();
+                foreach (var boss in bossUsers) contactNames.Add(boss);
+
+                // - Luôn thấy các Admin khác (Đồng nghiệp)
+                var otherAdmins = _context.TaiKhoans
+                    .Where(u => u.Role == "Admin" && u.Username != currentUser)
+                    .Select(u => u.Username)
+                    .ToList();
+                foreach (var admin in otherAdmins) contactNames.Add(admin);
+            }
+
+            var contactList = new List<object>();
+
+            foreach (var otherUser in contactNames)
+            {
+                var lastMsg = allMessages.FirstOrDefault(m => m.SenderName == otherUser || m.ReceiverName == otherUser);
+                int unread = allMessages.Count(m => m.SenderName == otherUser && !m.IsRead && (m.ReceiverName == currentUser || m.ReceiverName == "Admin"));
+
+                var acc = _context.TaiKhoans.AsNoTracking().FirstOrDefault(a => a.Username == otherUser);
+                string displayName = acc?.FullName ?? otherUser;
+                string role = acc?.Role ?? "User";
+
+                // --- [LOGIC SẮP XẾP PRIORITY] ---
+                int priority = 99;
+
+                if (isBoss)
+                {
+                    // Boss view: Admin (1) -> Khách (99)
+                    if (role == "Admin") priority = 1;
+                    else priority = 99;
+                }
+                else
+                {
+                    // Admin view: Boss (1) -> Admin khác (2) -> Khách (99)
+                    if (role == "Boss") priority = 1;
+                    else if (role == "Admin") priority = 2;
+                    else priority = 99;
+                }
+
+                contactList.Add(new
+                {
+                    username = otherUser,
+                    fullName = displayName,
+                    lastMessage = lastMsg?.Content ?? "Chưa có tin nhắn",
+                    time = lastMsg?.Timestamp.ToString("HH:mm dd/MM") ?? "",
+                    unread = unread,
+                    priority = priority,
+                    role = role
+                });
+            }
+
+            // Sắp xếp: Priority nhỏ lên đầu -> Sau đó đến tin mới nhất
+            return Json(contactList.OrderBy(x => ((dynamic)x).priority).ThenByDescending(x => ((dynamic)x).time));
+        }
+
+        // --- 2. API GET HISTORY ---
+        [HttpGet]
+        public IActionResult GetHistory(string otherUser, int? storeId)
+        {
+            var currentUser = User.Identity.Name;
+            if (!string.IsNullOrEmpty(otherUser)) otherUser = System.Net.WebUtility.UrlDecode(otherUser);
+
+            var currentAdmin = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == currentUser);
+            bool isBoss = currentAdmin?.Role == "Boss";
+            bool isAdmin = currentAdmin?.Role == "Admin";
+
+            var query = _context.TinNhans.AsQueryable();
+
+            if (isBoss)
+            {
+                // Boss thấy TẤT CẢ tin liên quan đến 'otherUser'
+                query = query.Where(m => m.SenderName == otherUser || m.ReceiverName == otherUser);
+            }
+            else if (isAdmin)
+            {
+                int? myStoreId = currentAdmin?.StoreId;
+
+                query = query.Where(m =>
+                    // Chat riêng (Admin <-> Boss/Admin/Khách)
+                    (m.SenderName == currentUser && m.ReceiverName == otherUser) ||
+                    (m.SenderName == otherUser && m.ReceiverName == currentUser) ||
+
+                    // Chat hệ thống (Admin <-> Khách) - Chỉ lấy đúng Store hoặc tin cũ
+                    ((m.SenderName == "Admin" || m.ReceiverName == "Admin") &&
+                     (m.SenderName == otherUser || m.ReceiverName == otherUser) &&
+                     (m.StoreId == myStoreId || m.StoreId == null))
+                );
+            }
+            else
+            {
+                // Khách hàng
+                query = query.Where(m => m.SenderName == currentUser || m.ReceiverName == currentUser);
+                if (storeId.HasValue && storeId.Value > 0)
+                {
+                    query = query.Where(m => m.StoreId == storeId.Value);
+                }
+            }
+
+            if (isBoss || isAdmin)
+            {
+                var unread = query.Where(m => !m.IsRead && m.SenderName == otherUser).ToList();
+                if (unread.Any()) { foreach (var m in unread) m.IsRead = true; _context.SaveChanges(); }
+            }
+
+            return Json(query.OrderBy(m => m.Timestamp).Select(m => new { sender = m.SenderName, content = m.Content, time = m.Timestamp.ToString("HH:mm dd/MM") }).ToList());
         }
     }
 }

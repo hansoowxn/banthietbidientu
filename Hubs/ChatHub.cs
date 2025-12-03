@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.SignalR;
-using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
 using System;
+using System.Threading.Tasks;
 using banthietbidientu.Data;
 using banthietbidientu.Models;
 
@@ -15,25 +16,53 @@ namespace banthietbidientu.Hubs
             _context = context;
         }
 
-        // [QUAN TRỌNG] Phải có tham số 'string receiver' ở đây thì bên dưới mới dùng được
         public async Task SendMessage(string user, string receiver, string message, int? storeId)
         {
-            // 1. Lưu vào Database
-            var msg = new TinNhan
-            {
-                SenderName = user,
-                ReceiverName = receiver, // Lưu tên người nhận
-                Content = message,
-                Timestamp = DateTime.Now,
-                StoreId = storeId,
-                IsRead = false
-            };
-            _context.TinNhans.Add(msg);
-            await _context.SaveChangesAsync();
+            if (string.IsNullOrWhiteSpace(message)) return;
+            if (string.IsNullOrEmpty(user)) user = "Khách ẩn danh";
+            if (string.IsNullOrEmpty(receiver)) receiver = "Admin";
 
-            // 2. Gửi lại cho TẤT CẢ mọi người (Clients.All)
-            // Để client tự lọc xem tin nào là của mình
-            await Clients.All.SendAsync("ReceiveMessage", user, message, DateTime.Now.ToString("HH:mm"));
+            try
+            {
+                // 1. Tự động tìm StoreId nếu thiếu (Dành cho Admin/Boss)
+                if ((storeId == null || storeId == 0) && user != "Khách ẩn danh")
+                {
+                    var senderAccount = await _context.TaiKhoans
+                        .AsNoTracking()
+                        .FirstOrDefaultAsync(u => u.Username == user);
+
+                    if (senderAccount != null)
+                    {
+                        storeId = senderAccount.StoreId;
+                    }
+                }
+
+                // 2. Tạo tin nhắn
+                var msg = new TinNhan
+                {
+                    SenderName = user,
+                    ReceiverName = receiver,
+                    Content = message.Trim(),
+                    Timestamp = DateTime.Now,
+                    StoreId = (storeId.HasValue && storeId.Value > 0) ? storeId.Value : null,
+                    IsRead = false
+                };
+
+                _context.TinNhans.Add(msg);
+
+                // 3. Lưu vào DB
+                await _context.SaveChangesAsync();
+
+                // 4. Gửi Realtime cho mọi người
+                await Clients.All.SendAsync("ReceiveMessage", user, message, DateTime.Now.ToString("HH:mm"));
+            }
+            catch (Exception ex)
+            {
+                // Ghi log lỗi để debug
+                Console.WriteLine($"[CHAT ERROR] {ex.Message}");
+                // Báo lỗi về cho người gửi
+                await Clients.Caller.SendAsync("ReceiveMessage", "Hệ thống", "Lỗi gửi tin: " + ex.Message, DateTime.Now.ToString("HH:mm"));
+            }
         }
     }
 }

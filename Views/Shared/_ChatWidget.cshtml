@@ -1,303 +1,280 @@
-﻿<div id="chat-launcher" class="chat-launcher shadow-lg" onclick="toggleChat()">
-    <div class="position-relative">
-        <i class="bi bi-chat-dots-fill text-white fs-4"></i>
-        <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle d-none" id="chat-badge">
-            <span class="visually-hidden">New alerts</span>
-        </span>
+﻿@using Microsoft.AspNetCore.Identity
+
+@if (User.Identity.IsAuthenticated && !User.IsInRole("Admin") && !User.IsInRole("Boss"))
+{
+    <div id="chat-launcher" class="chat-launcher shadow-lg" onclick="toggleChat()">
+        <div class="position-relative">
+            <i class="bi bi-chat-dots-fill text-white fs-4"></i>
+            <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle d-none" id="chat-badge"></span>
+        </div>
     </div>
-</div>
 
-<div id="chat-window" class="chat-window shadow-lg d-none">
-
-    <div class="chat-header bg-primary text-white p-3 d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center">
-            <div class="position-relative">
-                <img src="/image/logo.png" class="rounded-circle bg-white p-1" style="width: 35px; height: 35px;">
-                <span class="position-absolute bottom-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle"></span>
+    <div id="chat-window" class="chat-window shadow-lg d-none">
+        <div class="chat-header bg-primary text-white p-3 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center">
+                <div class="position-relative">
+                    <img src="/image/logo.png" class="rounded-circle bg-white p-1" style="width: 35px; height: 35px;">
+                    <span class="position-absolute bottom-0 start-100 translate-middle p-1 bg-success border border-light rounded-circle"></span>
+                </div>
+                <div class="ms-2">
+                    <h6 class="mb-0 fw-bold">Hỗ trợ trực tuyến</h6>
+                    <small class="text-white-50" id="chat-status">Sẵn sàng</small>
+                    <a href="#" id="btn-change-region" class="text-warning ms-1 d-none" style="font-size: 0.75rem; text-decoration: underline;" onclick="resetRegion()">[Đổi]</a>
+                </div>
             </div>
-            <div class="ms-2">
-                <h6 class="mb-0 fw-bold">Hỗ trợ trực tuyến</h6>
-                <small class="text-white-50" id="chat-status">Sẵn sàng hỗ trợ</small>
+            <button class="btn btn-sm text-white" onclick="toggleChat()">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <div id="chat-screen-region" class="chat-body p-4 d-flex flex-column justify-content-center">
+            <div class="text-center mb-4">
+                <h5 class="fw-bold text-dark">Xin chào @User.Identity.Name!</h5>
+                <p class="text-muted small">Bạn cần hỗ trợ ở khu vực nào?</p>
+            </div>
+            <div class="d-grid gap-2">
+                <button class="btn btn-outline-primary text-start fw-bold py-2" onclick="selectRegion(1)"><i class="bi bi-geo-alt-fill me-2"></i> Miền Bắc</button>
+                <button class="btn btn-outline-success text-start fw-bold py-2" onclick="selectRegion(2)"><i class="bi bi-geo-alt-fill me-2"></i> Miền Trung</button>
+                <button class="btn btn-outline-warning text-dark text-start fw-bold py-2" onclick="selectRegion(3)"><i class="bi bi-geo-alt-fill me-2"></i> Miền Nam</button>
             </div>
         </div>
-        <button class="btn btn-sm text-white" onclick="toggleChat()">
-            <i class="bi bi-x-lg"></i>
-        </button>
-    </div>
 
-    <div id="chat-screen-region" class="chat-body p-4 d-flex flex-column justify-content-center">
-        <div class="text-center mb-4">
-            <h5 class="fw-bold text-dark">Chào bạn! 👋</h5>
-            <p class="text-muted small">Vui lòng chọn khu vực để gặp nhân viên hỗ trợ phù hợp nhất.</p>
+        <div id="chat-screen-messages" class="chat-body p-3 d-none" style="overflow-y: auto; height: 320px;">
+            <div class="text-center text-muted small my-2">
+                <span class="bg-light px-3 py-1 rounded-pill border">Bắt đầu trò chuyện</span>
+            </div>
+            <div id="message-list" class="d-flex flex-column"></div>
         </div>
-        <div class="d-grid gap-2">
-            <button class="btn btn-outline-primary py-2 fw-bold text-start" onclick="selectRegion(1)">
-                <i class="bi bi-geo-alt-fill me-2"></i> Miền Bắc (Hà Nội)
-            </button>
-            <button class="btn btn-outline-success py-2 fw-bold text-start" onclick="selectRegion(2)">
-                <i class="bi bi-geo-alt-fill me-2"></i> Miền Trung (Đà Nẵng)
-            </button>
-            <button class="btn btn-outline-warning text-dark py-2 fw-bold text-start" onclick="selectRegion(3)">
-                <i class="bi bi-geo-alt-fill me-2"></i> Miền Nam (TP.HCM)
-            </button>
+
+        <div id="chat-footer" class="chat-footer p-2 border-top bg-light d-none">
+            <div class="input-group">
+                <input type="text" id="messageInput" class="form-control border-0 bg-white shadow-sm rounded-start" placeholder="Nhập tin nhắn..." onkeypress="handleEnter(event)">
+                <button class="btn btn-primary shadow-sm" onclick="sendMessage()"><i class="bi bi-send-fill"></i></button>
+            </div>
         </div>
     </div>
 
-    <div id="chat-screen-messages" class="chat-body p-3 d-none" style="overflow-y: auto; height: 320px;">
-        <div class="text-center text-muted small my-2">
-            <span class="bg-light px-3 py-1 rounded-pill border">Bắt đầu cuộc trò chuyện</span>
-        </div>
-        <div id="message-list" class="d-flex flex-column"></div>
-    </div>
-
-    <div id="chat-footer" class="chat-footer p-2 border-top bg-light d-none">
-        <div class="input-group">
-            <input type="text" id="messageInput" class="form-control border-0 bg-white shadow-sm rounded-start"
-                   placeholder="Nhập tin nhắn..." onkeypress="handleEnter(event)">
-            <button class="btn btn-primary shadow-sm" onclick="sendMessage()">
-                <i class="bi bi-send-fill"></i>
-            </button>
-        </div>
-    </div>
-</div>
-
-<style>
-    .chat-launcher {
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        width: 60px;
-        height: 60px;
-        background: linear-gradient(135deg, #0d6efd, #0a58ca);
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        z-index: 9999;
-        transition: transform 0.3s, box-shadow 0.3s;
-    }
-
-        .chat-launcher:hover {
-            transform: scale(1.1);
-            box-shadow: 0 10px 20px rgba(13, 110, 253, 0.3);
+    <style>
+        .chat-launcher {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #0d6efd, #0a58ca);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 2147483647;
+            transition: transform 0.3s;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
         }
 
-    .chat-window {
-        position: fixed;
-        bottom: 100px;
-        right: 30px;
-        width: 360px;
-        height: 480px;
-        background: #fff;
-        border-radius: 15px;
-        overflow: hidden;
-        z-index: 9999;
-        display: flex;
-        flex-direction: column;
-        animation: slideUp 0.3s ease-out;
-    }
+            .chat-launcher:hover {
+                transform: scale(1.1);
+            }
 
-    @@keyframes slideUp {
-        from {
-            opacity: 0;
-            transform: translateY(20px);
+        .chat-window {
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 360px;
+            height: 480px;
+            background: #fff;
+            border-radius: 15px;
+            overflow: hidden;
+            z-index: 2147483647;
+            display: flex;
+            flex-direction: column;
+            animation: slideUp 0.3s ease-out;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.15);
         }
 
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    }
+        @@keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
 
-    .chat-body {
-        flex: 1;
-        background-color: #f8f9fa;
-    }
-
-    /* Tin nhắn của mình (Khách) */
-    .msg-me {
-        align-self: flex-end;
-        margin-bottom: 10px;
-        max-width: 80%;
-    }
-
-        .msg-me .bubble {
-            background-color: #0d6efd;
-            color: white;
-            padding: 8px 12px;
-            border-radius: 15px 15px 0 15px;
-            font-size: 0.9rem;
-            word-wrap: break-word;
-        }
-
-    /* Tin nhắn của Admin */
-    .msg-other {
-        align-self: flex-start;
-        margin-bottom: 10px;
-        max-width: 80%;
-    }
-
-        .msg-other .bubble {
-            background-color: #e9ecef;
-            color: #212529;
-            padding: 8px 12px;
-            border-radius: 15px 15px 15px 0;
-            font-size: 0.9rem;
-            word-wrap: break-word;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
-
-    .msg-time {
-        font-size: 0.65rem;
-        margin-top: 3px;
-        opacity: 0.7;
-        text-align: right;
-    }
-
-    .msg-sender {
-        font-size: 0.7rem;
-        font-weight: bold;
-        margin-bottom: 2px;
-        color: #6c757d;
-    }
-</style>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
-<script>
-    // Khởi tạo kết nối
-    var connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
-
-    var currentStoreId = 0;
-    // Lấy tên User hiện tại từ Server
-    var currentUser = '@User.Identity.Name';
-
-    // 1. Kết nối SignalR
-    connection.start().then(function () {
-        console.log("Chat Connected!");
-    }).catch(function (err) {
-        return console.error(err.toString());
-    });
-
-    // 2. Nhận tin nhắn từ Server
-    connection.on("ReceiveMessage", function (user, message, time) {
-        // Logic hiển thị tin nhắn
-        let isMe = user === currentUser;
-
-        // Nếu là tin của Admin gửi tới -> Hiện
-        if (!isMe) {
-            appendMessage(user, message, false, time);
-
-            // Nếu đang đóng chat mà có tin tới -> Hiện chấm đỏ & Phát âm thanh
-            var chatWindow = document.getElementById('chat-window');
-            if (chatWindow.classList.contains('d-none')) {
-                document.getElementById('chat-badge').classList.remove('d-none');
-                playNotificationSound();
+            to {
+                opacity: 1;
+                transform: translateY(0);
             }
         }
-    });
 
-    // --- CÁC HÀM UI ---
-
-    function toggleChat() {
-        var win = document.getElementById('chat-window');
-        var badge = document.getElementById('chat-badge');
-
-        if (win.classList.contains('d-none')) {
-            win.classList.remove('d-none');
-            badge.classList.add('d-none'); // Tắt thông báo khi mở
-
-            // Auto focus vào ô nhập
-            setTimeout(() => document.getElementById('messageInput').focus(), 300);
-        } else {
-            win.classList.add('d-none');
+        .chat-body {
+            flex: 1;
+            background-color: #f8f9fa;
         }
-    }
 
-    function selectRegion(storeId) {
-        currentStoreId = storeId;
+        .msg-me {
+            align-self: flex-end;
+            margin-bottom: 10px;
+            max-width: 80%;
+        }
 
-        // Chuyển màn hình
-        document.getElementById('chat-screen-region').classList.add('d-none');
-        document.getElementById('chat-screen-messages').classList.remove('d-none');
-        document.getElementById('chat-footer').classList.remove('d-none');
+            .msg-me .bubble {
+                background-color: #0d6efd;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 15px 15px 0 15px;
+                font-size: 0.9rem;
+                word-wrap: break-word;
+            }
 
-        // Cập nhật Header
-        var regionName = storeId == 1 ? "Miền Bắc" : (storeId == 2 ? "Miền Trung" : "Miền Nam");
-        document.getElementById('chat-status').innerHTML = '<i class="bi bi-dot text-success"></i> Đang kết nối với ' + regionName;
+        .msg-other {
+            align-self: flex-start;
+            margin-bottom: 10px;
+            max-width: 80%;
+        }
 
-        // Load lịch sử tin nhắn
-        loadHistory();
-    }
+            .msg-other .bubble {
+                background-color: #e9ecef;
+                color: #212529;
+                padding: 8px 12px;
+                border-radius: 15px 15px 15px 0;
+                font-size: 0.9rem;
+                word-wrap: break-word;
+            }
 
-    function loadHistory() {
-        fetch('/Chat/GetHistory')
-            .then(res => res.json())
-            .then(msgs => {
-                var list = document.getElementById('message-list');
-                list.innerHTML = ''; // Xóa cũ
+        .msg-time {
+            font-size: 0.65rem;
+            margin-top: 3px;
+            opacity: 0.7;
+            text-align: right;
+        }
 
-                if(msgs.length > 0) {
-                    msgs.forEach(m => {
-                        let isMe = m.sender === currentUser;
-                        appendMessage(m.sender, m.content, isMe, m.time);
-                    });
-                } else {
-                    list.innerHTML = '<div class="text-center text-muted small mt-5">Chưa có tin nhắn nào.<br>Hãy nói "Xin chào" để bắt đầu!</div>';
+        .msg-sender {
+            font-size: 0.7rem;
+            font-weight: bold;
+            margin-bottom: 2px;
+            color: #6c757d;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
+    <script>
+        var currentUser = '@User.Identity.Name';
+        var currentStoreId = parseInt(localStorage.getItem('chat_store_id')) || 0;
+        var connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
+
+        connection.start().then(() => {
+            console.log("✅ Chat Connected: " + currentUser);
+            if (currentStoreId > 0) restoreChatState();
+        }).catch(err => console.error("❌ Lỗi kết nối SignalR: ", err));
+
+        connection.on("ReceiveMessage", function (user, message, time) {
+            console.log("📩 Nhận tin từ: " + user + " | Nội dung: " + message);
+
+            let isMe = user === currentUser;
+            if (isMe || user === 'Admin' || user.includes('Admin') || user.includes('Boss')) {
+                // Nếu là tin của mình gửi đi (nhận lại từ server) -> Xóa dòng 'Đang gửi...' cũ đi rồi hiện lại cho chắc
+                // Hoặc đơn giản là append luôn
+                appendMessage(user, message, isMe, time);
+
+                if (!isMe) {
+                    var chatWindow = document.getElementById('chat-window');
+                    if (chatWindow.classList.contains('d-none')) {
+                        document.getElementById('chat-badge').classList.remove('d-none');
+                        playNotificationSound();
+                    }
                 }
-            })
-            .catch(err => console.error(err));
-    }
+            }
+        });
 
-    function sendMessage() {
-        var input = document.getElementById('messageInput');
-        var msg = input.value;
-        if (!msg.trim()) return;
+        function toggleChat() {
+            var win = document.getElementById('chat-window');
+            var badge = document.getElementById('chat-badge');
+            if (win.classList.contains('d-none')) {
+                win.classList.remove('d-none');
+                badge.classList.add('d-none');
+                setTimeout(() => document.getElementById('messageInput').focus(), 300);
+            } else {
+                win.classList.add('d-none');
+            }
+        }
 
-        // 1. Hiện luôn lên màn hình của mình (Optimistic UI)
-        appendMessage(currentUser, msg, true, 'Đang gửi...');
+        function selectRegion(storeId) {
+            currentStoreId = storeId;
+            localStorage.setItem('chat_store_id', storeId);
+            restoreChatState();
+        }
 
-        // 2. Gửi lên Server (Tham số thứ 2 là Receiver = "Admin")
-        connection.invoke("SendMessage", currentUser, "Admin", msg, currentStoreId)
-            .catch(function (err) {
-                return console.error(err.toString());
-            });
+        function resetRegion() {
+            localStorage.removeItem('chat_store_id');
+            currentStoreId = 0;
+            document.getElementById('chat-screen-region').classList.remove('d-none');
+            document.getElementById('chat-screen-messages').classList.add('d-none');
+            document.getElementById('chat-footer').classList.add('d-none');
+            document.getElementById('chat-status').innerText = 'Sẵn sàng hỗ trợ';
+            document.getElementById('btn-change-region').classList.add('d-none');
+        }
 
-        input.value = '';
-        input.focus();
+        function restoreChatState() {
+            document.getElementById('chat-screen-region').classList.add('d-none');
+            document.getElementById('chat-screen-messages').classList.remove('d-none');
+            document.getElementById('chat-footer').classList.remove('d-none');
 
-        // Xóa thông báo rỗng nếu có
-        var emptyMsg = document.querySelector('#message-list .text-center');
-        if(emptyMsg) emptyMsg.remove();
-    }
+            var regionName = currentStoreId == 1 ? "Miền Bắc" : (currentStoreId == 2 ? "Miền Trung" : "Miền Nam");
+            document.getElementById('chat-status').innerHTML = regionName;
+            document.getElementById('btn-change-region').classList.remove('d-none'); // Hiện nút đổi
 
-    function handleEnter(e) {
-        if (e.key === 'Enter') sendMessage();
-    }
+            loadHistory();
+        }
 
-    function appendMessage(user, msg, isMe, time) {
-        var list = document.getElementById('message-list');
+        function loadHistory() {
+            fetch('/Chat/GetHistory?otherUser=' + encodeURIComponent(currentUser))
+                .then(res => res.json())
+                .then(msgs => {
+                    var list = document.getElementById('message-list');
+                    list.innerHTML = '';
+                    if(msgs.length > 0) {
+                        msgs.forEach(m => appendMessage(m.sender, m.content, m.sender === currentUser, m.time));
+                    } else {
+                        list.innerHTML = '<div class="text-center text-muted small mt-5">Xin chào ' + currentUser + '!<br>Bạn cần hỗ trợ gì?</div>';
+                    }
+                })
+                .catch(err => console.error("Lỗi load history:", err));
+        }
 
-        // HTML tin nhắn
-        var html = `
-            <div class="${isMe ? 'msg-me' : 'msg-other'}">
-                ${!isMe ? `<div class="msg-sender text-muted" style="font-size:0.7rem">${user}</div>` : ''}
-                <div class="bubble">
-                    ${msg}
-                </div>
-                <div class="msg-time text-muted">${time || 'Vừa xong'}</div>
-            </div>
-        `;
+        function sendMessage() {
+            if (!currentStoreId) { alert("Vui lòng chọn miền!"); return; }
+            var input = document.getElementById('messageInput');
+            var msg = input.value.trim();
+            if (!msg) return;
 
-        list.insertAdjacentHTML('beforeend', html);
+            // Optimistic UI (Hiện tạm)
+            // appendMessage(currentUser, msg, true, 'Đang gửi...');
 
-        // Auto scroll xuống cuối
-        var container = document.getElementById('chat-screen-messages');
-        container.scrollTop = container.scrollHeight;
-    }
+            // Gửi lên Server
+            console.log("📤 Đang gửi tin: " + msg + " | StoreId: " + currentStoreId);
 
-    function playNotificationSound() {
-        let audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3');
-        audio.play().catch(e => {});
-    }
-</script>
+            connection.invoke("SendMessage", currentUser, "Admin", msg, currentStoreId)
+                .catch(err => {
+                    console.error(err);
+                    alert("❌ Lỗi gửi tin: " + err.toString());
+                });
+
+            input.value = '';
+            input.focus();
+        }
+
+        function appendMessage(user, msg, isMe, time) {
+            var list = document.getElementById('message-list');
+            var html = `
+                <div class="${isMe ? 'msg-me' : 'msg-other'}">
+                    ${!isMe ? `<div class="msg-sender">${user}</div>` : ''}
+                    <div class="bubble">${msg}</div>
+                    <div class="msg-time">${time}</div>
+                </div>`;
+            list.insertAdjacentHTML('beforeend', html);
+            var container = document.getElementById('chat-screen-messages');
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function handleEnter(e) { if(e.key === 'Enter') sendMessage(); }
+        function playNotificationSound() { var a = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3'); a.play().catch(e=>{}); }
+    </script>
+}

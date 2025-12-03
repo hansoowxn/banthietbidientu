@@ -28,8 +28,8 @@ namespace banthietbidientu.Controllers
         // --- 1. DASHBOARD ---
         public IActionResult Index()
         {
-            var user = _context.TaiKhoans.AsNoTracking()
-                .FirstOrDefault(u => u.Username == User.Identity.Name);
+            var user = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == User.Identity.Name);
+            ViewBag.CurrentStoreId = user?.StoreId ?? 0;
 
             int? storeId = user?.StoreId;
             var queryDonHang = _context.DonHangs.AsQueryable();

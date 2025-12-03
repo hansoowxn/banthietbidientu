@@ -10,17 +10,22 @@ namespace banthietbidientu.Models
         [Key]
         public int Id { get; set; }
 
-        public string SenderName { get; set; } // Tên người gửi (Username)
-        public string ReceiverName { get; set; } // Tên người nhận (Hoặc Group)
+        // Tên người gửi (Username hoặc "Khách...")
+        [Required]
+        public string SenderName { get; set; }
 
-        public string Content { get; set; } // Nội dung tin nhắn
+        // Người nhận ("Admin" hoặc Username cụ thể)
+        [Required]
+        public string ReceiverName { get; set; }
+
+        [Required]
+        public string Content { get; set; }
 
         public DateTime Timestamp { get; set; } = DateTime.Now;
 
-        public bool IsRead { get; set; } = false; // Trạng thái đã xem
+        public bool IsRead { get; set; } = false;
 
-        // Phân luồng Store để biết khách đang chat với khu vực nào
-        // 1: Bắc, 2: Trung, 3: Nam. (Nếu là chat nội bộ thì có thể null hoặc quy định khác)
+        // Quan trọng: Cho phép NULL để Boss hoặc tin hệ thống không bị lỗi
         public int? StoreId { get; set; }
     }
 }

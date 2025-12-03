@@ -1,38 +1,59 @@
 ﻿@{
-    ViewData["Title"] = "Hệ thống Tin nhắn & CSKH";
+    ViewData["Title"] = "Hệ thống CSKH";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
     var currentUser = User.Identity.Name;
+    bool isBoss = ViewBag.IsBoss ?? false; // Nhận biến từ Controller
 }
 
+<div class="container-fluid py-3">
+    <div class="chat-container bg-white rounded shadow-sm overflow-hidden" style="height: 85vh; display: flex;">
+        <div class="chat-sidebar border-end d-flex flex-column" style="width: 320px;">
+            <div class="p-3 border-bottom bg-light">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="fw-bold text-primary mb-0"><i class="bi bi-chat-quote-fill me-2"></i>Tin nhắn</h5>
+
+                    @if (isBoss)
+                    {
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown">
+                                <i class="bi bi-funnel"></i> Tất cả
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow">
+                                <li><a class="dropdown-item" href="#" onclick="filterByStore(0, 'Tất cả')">Tất cả</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="filterByStore(1, 'Hà Nội')">Miền Bắc (HN)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="filterByStore(2, 'Đà Nẵng')">Miền Trung (ĐN)</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="filterByStore(3, 'TP.HCM')">Miền Nam (HCM)</a></li>
+                            </ul>
+                        </div>
+                    }
+                </div>
+
+                <input type="text" class="form-control rounded-pill" placeholder="Tìm khách hàng..." id="searchUser" onkeyup="filterUsers()">
+            </div>
+            <div id="contactList" class="flex-grow-1 overflow-auto">
+                <div class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary"></div> Đang tải...</div>
+            </div>
+        </div>
+
+        <div class="chat-main flex-grow-1 d-flex flex-column bg-light position-relative">
+            <div id="chatHeader" class="p-3 border-bottom bg-white shadow-sm d-flex align-items-center" style="height: 65px;">
+                <span class="text-muted fst-italic ms-3">Chọn một cuộc hội thoại để bắt đầu...</span>
+            </div>
+            <div id="chatBox" class="flex-grow-1 p-3 overflow-auto d-flex flex-column gap-3"></div>
+            <div class="p-3 bg-white border-top d-none" id="chatInputArea">
+                <div class="input-group">
+                    <input type="text" id="adminMsgInput" class="form-control" placeholder="Nhập tin nhắn..." onkeypress="handleAdminEnter(event)">
+                    <button class="btn btn-primary" onclick="sendAdminMessage()"><i class="bi bi-send-fill"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <style>
-    .chat-container {
-        height: 80vh;
-        display: flex;
-        background: #fff;
-        border-radius: 15px;
-        overflow: hidden;
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
-    }
-
-    .chat-sidebar {
-        width: 320px;
-        border-right: 1px solid #eef2f6;
-        display: flex;
-        flex-direction: column;
-        background: #fff;
-    }
-
-    .chat-main {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        background-color: #f8f9fa;
-        position: relative;
-    }
-
     .user-item {
-        padding: 15px;
-        border-bottom: 1px solid #f8f9fa;
+        padding: 12px 15px;
+        border-bottom: 1px solid #f0f0f0;
         cursor: pointer;
         transition: 0.2s;
         display: flex;
@@ -40,50 +61,21 @@
     }
 
         .user-item:hover, .user-item.active {
-            background-color: #f0f7ff;
+            background-color: #eef5ff;
         }
 
         .user-item.unread {
-            background-color: #e8f2ff;
             border-left: 4px solid #0d6efd;
+            background-color: #f8fbff;
         }
-
-    .avatar {
-        width: 45px;
-        height: 45px;
-        border-radius: 50%;
-        margin-right: 12px;
-        position: relative;
-        object-fit: cover;
-        border: 1px solid #dee2e6;
-    }
-
-    .boss-badge {
-        position: absolute;
-        top: -5px;
-        right: -5px;
-        color: #ffc107;
-        font-size: 12px;
-        z-index: 10;
-        text-shadow: 0 1px 2px rgba(0,0,0,0.2);
-    }
-
-    .chat-box {
-        flex: 1;
-        padding: 20px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-        gap: 15px;
-    }
 
     .msg {
         max-width: 70%;
         padding: 10px 15px;
         border-radius: 15px;
         font-size: 0.95rem;
-        position: relative;
         word-wrap: break-word;
+        position: relative;
     }
 
     .msg-sent {
@@ -98,211 +90,138 @@
         background-color: white;
         color: #333;
         border-bottom-left-radius: 2px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        box-shadow: 0 1px 2px rgba(0,0,0,0.1);
     }
 
     .msg-time {
-        font-size: 0.7rem;
-        margin-top: 5px;
+        font-size: 0.65rem;
+        margin-top: 4px;
         opacity: 0.7;
         text-align: right;
     }
-
-    /* Thanh tìm kiếm & Header */
-    .sidebar-header {
-        padding: 20px;
-        border-bottom: 1px solid #eef2f6;
-    }
-
-    .search-box {
-        position: relative;
-    }
-
-        .search-box input {
-            padding-left: 35px;
-            border-radius: 20px;
-            background: #f8f9fa;
-            border: none;
-        }
-
-        .search-box i {
-            position: absolute;
-            left: 12px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #adb5bd;
-        }
 </style>
-
-<div class="container-fluid py-3">
-    <div class="chat-container">
-        <div class="chat-sidebar">
-            <div class="sidebar-header">
-                <h5 class="fw-bold text-primary mb-3"><i class="bi bi-chat-square-text-fill me-2"></i>Tin nhắn</h5>
-                <div class="search-box">
-                    <i class="bi bi-search"></i>
-                    <input type="text" class="form-control" placeholder="Tìm kiếm người dùng..." id="searchUser">
-                </div>
-            </div>
-            <div id="contactList" style="overflow-y: auto; flex: 1;">
-                <div class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary"></div> Đang tải...</div>
-            </div>
-        </div>
-
-        <div class="chat-main">
-            <div id="chatHeader" class="p-3 border-bottom bg-white d-flex align-items-center shadow-sm" style="height: 70px;">
-                <div class="text-muted fst-italic ms-3">Chọn một cuộc hội thoại để bắt đầu...</div>
-            </div>
-
-            <div id="chatBox" class="chat-box"></div>
-
-            <div class="p-3 bg-white border-top d-none" id="chatInputArea">
-                <div class="input-group">
-                    <input type="text" id="adminMsgInput" class="form-control border-0 bg-light rounded-start" placeholder="Nhập tin nhắn..." onkeypress="handleAdminEnter(event)">
-                    <button class="btn btn-primary px-4" onclick="sendAdminMessage()"><i class="bi bi-send-fill"></i></button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
 @section Scripts {
     <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/6.0.1/signalr.js"></script>
     <script>
         const currentUser = '@currentUser';
+        const myStoreId = @(ViewBag.CurrentStoreId ?? 0);
         let currentChatUser = '';
+        let activeFilterStoreId = 0; // Biến lưu bộ lọc hiện tại
 
-        // 1. Kết nối SignalR
         const connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
         connection.start().then(() => {
-            console.log("Admin Chat Connected!");
+            console.log("Admin Connected. StoreId: " + myStoreId);
             loadContacts();
         }).catch(err => console.error(err));
 
-        // 2. Nhận tin nhắn
         connection.on("ReceiveMessage", function (user, message, time) {
-            if (user === currentChatUser) {
-                // Nếu đang mở chat với người này -> Hiện luôn
-                appendMessage(message, 'received', time);
-                scrollToBottom();
-            } else {
-                // Nếu không -> Reload danh sách để hiện thông báo chưa đọc
-                loadContacts();
-                playNotificationSound();
+            if (user === currentChatUser || (user === currentUser && currentChatUser !== '')) {
+                let type = user === currentUser ? 'sent' : 'received';
+                if(user !== currentUser) { appendMessage(message, type, time); scrollToBottom(); }
             }
+            if (user !== currentUser) { loadContacts(); playNotificationSound(); }
         });
 
-        // 3. Tải danh sách liên hệ
+        // Hàm lọc cho Boss
+        function filterByStore(storeId, label) {
+            activeFilterStoreId = storeId;
+            document.getElementById('filterDropdown').innerHTML = `<i class="bi bi-funnel-fill"></i> ${label}`;
+            loadContacts(); // Tải lại danh sách với bộ lọc mới
+        }
+
         function loadContacts() {
-            fetch('/Chat/GetContacts').then(r => r.json()).then(data => {
+            // Gửi kèm filterStoreId lên Server
+            fetch(`/Chat/GetContacts?filterStoreId=${activeFilterStoreId}`)
+                .then(r => r.json()).then(data => {
                 const list = document.getElementById('contactList');
                 list.innerHTML = '';
-
-                if (data.length === 0) {
-                    list.innerHTML = '<div class="text-center py-5 text-muted small">Chưa có tin nhắn nào.</div>';
-                    return;
-                }
-
                 data.forEach(u => {
-                    let activeClass = u.username === currentChatUser ? 'active' : '';
-                    let unreadClass = u.unread > 0 ? 'unread' : '';
-                    let bossIcon = u.priority === 1 ? '<i class="bi bi-star-fill boss-badge"></i>' : '';
+                    let active = u.username === currentChatUser ? 'active' : '';
+                    let unread = u.unread > 0 ? 'unread' : '';
 
-                    // Xác định icon avatar dựa trên vai trò
-                    let avatarIcon = '<i class="bi bi-person-circle text-secondary" style="font-size: 45px;"></i>';
-                    if(u.priority === 1) avatarIcon = '<i class="bi bi-person-circle text-warning" style="font-size: 45px;"></i>'; // Boss
-                    if(u.priority === 2) avatarIcon = '<i class="bi bi-person-circle text-primary" style="font-size: 45px;"></i>'; // Admin
+                    // Icon khác nhau cho Boss, Admin, User
+                    let iconHtml = '';
+                    if (u.priority === 1) iconHtml = '<i class="bi bi-star-fill text-warning fs-3 me-3" title="Boss/Admin"></i>'; // Boss/Admin ghim
+                    else if (u.priority === 2) iconHtml = '<i class="bi bi-person-badge-fill text-primary fs-3 me-3" title="Admin"></i>';
+                    else iconHtml = '<i class="bi bi-person-circle text-secondary fs-3 me-3"></i>'; // Khách
 
                     let html = `
-                        <div class="user-item ${activeClass} ${unreadClass}" onclick="openChat('${u.username}', '${u.fullName}')">
-                            <div class="position-relative me-3">
-                                ${avatarIcon}
-                                ${bossIcon}
-                            </div>
+                        <div class="user-item ${active} ${unread}" onclick="openChat('${u.username}', '${u.fullName}')" data-name="${u.fullName} ${u.username}">
+                            ${iconHtml}
                             <div class="flex-grow-1 overflow-hidden">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <h6 class="mb-0 text-truncate fw-bold text-dark" style="max-width: 140px;">${u.fullName}</h6>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0 text-truncate text-dark fw-bold" style="max-width: 120px;">${u.fullName}</h6>
                                     <small class="text-muted" style="font-size: 10px;">${u.time}</small>
                                 </div>
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <small class="text-muted text-truncate d-block" style="max-width: 150px;">${u.lastMessage}</small>
-                                    ${u.unread > 0 ? `<span class="badge bg-danger rounded-pill" style="font-size: 0.6rem;">${u.unread}</span>` : ''}
+                                    <small class="text-muted text-truncate d-block" style="max-width: 130px;">${u.lastMessage}</small>
+                                    ${u.unread > 0 ? `<span class="badge bg-danger rounded-pill">${u.unread}</span>` : ''}
                                 </div>
                             </div>
-                        </div>
-                    `;
+                        </div>`;
                     list.insertAdjacentHTML('beforeend', html);
                 });
             });
         }
 
-        // 4. Mở khung chat
         function openChat(username, fullname) {
             currentChatUser = username;
 
-            // [ĐÃ SỬA] Thay @@${username} thành &#64;${username} để tránh lỗi Razor
-            document.getElementById('chatHeader').innerHTML = `
-                <div class="d-flex align-items-center">
-                    <div class="bg-light rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
-                        <span class="fw-bold text-primary fs-5">${fullname.charAt(0)}</span>
-                    </div>
-                    <div>
-                        <h6 class="mb-0 fw-bold text-dark">${fullname}</h6>
-                        <small class="text-muted">&#64;${username}</small>
-                    </div>
-                </div>
-            `;
-
+            // Cập nhật Header
+            document.getElementById('chatHeader').innerHTML = `<h6 class="mb-0 fw-bold ms-3"><i class="bi bi-person-lines-fill me-2"></i>${fullname}</h6>`;
             document.getElementById('chatInputArea').classList.remove('d-none');
 
-            // Load lịch sử
-            fetch('/Chat/GetHistory?otherUser=' + username).then(r => r.json()).then(msgs => {
-                const box = document.getElementById('chatBox');
-                box.innerHTML = '';
-                msgs.forEach(m => {
-                    let type = m.sender === currentUser ? 'sent' : 'received';
-                    appendMessage(m.content, type, m.time);
-                });
-                scrollToBottom();
+            // [FIX LỖI 3] Xóa nội dung cũ ngay lập tức & hiện Loading
+            var box = document.getElementById('chatBox');
+            box.innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary"></div></div>';
 
-                // Reload lại list bên trái để mất số unread
-                loadContacts();
-            });
+            fetch('/Chat/GetHistory?otherUser=' + encodeURIComponent(username))
+                .then(r => r.json())
+                .then(msgs => {
+                    box.innerHTML = ''; // Xóa loading
+                    if (msgs.length === 0) {
+                        box.innerHTML = '<div class="text-center text-muted mt-5">Chưa có nội dung chat.</div>';
+                    } else {
+                        msgs.forEach(m => {
+                            let type = m.sender === currentUser ? 'sent' : 'received';
+                            appendMessage(m.content, type, m.time);
+                        });
+                        scrollToBottom();
+                    }
+                    loadContacts();
+                })
+                .catch(err => {
+                    console.error(err);
+                    box.innerHTML = '<div class="text-center text-danger mt-5">Lỗi tải dữ liệu.</div>';
+                });
         }
 
         function sendAdminMessage() {
-            let msg = document.getElementById('adminMsgInput').value;
-            if (!msg.trim()) return;
-
-            // Gửi tin nhắn (StoreId = null để chat cá nhân)
-            connection.invoke("SendMessage", currentUser, msg, null).catch(err => console.error(err));
-
+            let msg = document.getElementById('adminMsgInput').value.trim();
+            if (!msg) return;
+            connection.invoke("SendMessage", currentUser, currentChatUser, msg, myStoreId).catch(err => alert("Lỗi: " + err));
             appendMessage(msg, 'sent', 'Vừa xong');
             scrollToBottom();
             document.getElementById('adminMsgInput').value = '';
         }
 
         function appendMessage(text, type, time) {
-            let html = `
-                <div class="msg msg-${type}">
-                    ${text}
-                    <div class="msg-time">${time}</div>
-                </div>`;
+            let html = `<div class="msg msg-${type}">${text}<div class="msg-time">${time}</div></div>`;
             document.getElementById('chatBox').insertAdjacentHTML('beforeend', html);
         }
 
-        function scrollToBottom() {
-            const box = document.getElementById('chatBox');
-            box.scrollTop = box.scrollHeight;
-        }
+        function scrollToBottom() { const box = document.getElementById('chatBox'); box.scrollTop = box.scrollHeight; }
+        function handleAdminEnter(e) { if(e.key === 'Enter') sendAdminMessage(); }
 
-        function handleAdminEnter(e) {
-            if(e.key === 'Enter') sendAdminMessage();
+        function filterUsers() {
+            let input = document.getElementById('searchUser').value.toLowerCase();
+            let items = document.getElementsByClassName('user-item');
+            for (let i = 0; i < items.length; i++) {
+                let name = items[i].getAttribute('data-name').toLowerCase();
+                items[i].style.display = name.includes(input) ? "flex" : "none";
+            }
         }
-
-        function playNotificationSound() {
-            let audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3');
-            audio.play().catch(e => {});
-        }
+        function playNotificationSound() { var a = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3'); a.play().catch(e=>{}); }
     </script>
 }
