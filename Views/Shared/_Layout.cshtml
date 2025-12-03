@@ -80,7 +80,7 @@
             flex-shrink: 0;
         }
 
-        /* --- SEARCH BAR STYLES (Mới) --- */
+        /* --- SEARCH BAR STYLES --- */
         .header-search-wrapper {
             flex-grow: 1;
             max-width: 600px;
@@ -177,9 +177,9 @@
             font-weight: 700;
         }
 
-        /* --- NÚT THU CŨ ĐỔI MỚI (Gradient) --- */
+        /* --- NÚT THU CŨ ĐỔI MỚI --- */
         .btn-trade-in {
-            background: linear-gradient(135deg, #FF8008 0%, #FFC837 100%); /* Cam Vàng sang trọng */
+            background: linear-gradient(135deg, #FF8008 0%, #FFC837 100%);
             border: none;
             color: #fff;
             font-weight: 700;
@@ -277,58 +277,6 @@
                 padding-right: 1.5rem;
             }
         }
-
-        /* Footer & FAB Styles */
-        .fab-container {
-            position: fixed;
-            bottom: 5px;
-            right: 5px;
-            z-index: 1050;
-            display: flex;
-            flex-direction: column-reverse;
-            align-items: center;
-        }
-
-        .fab-toggler {
-            width: 60px;
-            height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 2;
-        }
-
-        .fab-options {
-            display: flex;
-            flex-direction: column-reverse;
-            gap: 15px;
-            margin-bottom: 20px;
-            visibility: hidden;
-            opacity: 0;
-            transform: translateY(20px);
-            transition: all 0.3s ease;
-        }
-
-        .fab-container.active .fab-options {
-            visibility: visible;
-            opacity: 1;
-            transform: translateY(0);
-        }
-
-        .fab-option {
-            width: 55px;
-            height: 55px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-            transition: all 0.2s ease;
-        }
-
-            .fab-option:hover {
-                transform: scale(1.1);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-            }
 
         .leaflet-control-attribution {
             display: none !important;
@@ -508,23 +456,6 @@
         @RenderBody()
     </div>
 
-    <div class="fab-container" id="fab-container">
-        <div class="fab-options">
-            <a href="https://zalo.me/0965629698" class="btn btn-light btn-lg rounded-circle shadow fab-option" title="Zalo" target="_blank">
-                <i class="bi bi-chat-text-fill" style="color: #0068ff;"></i>
-            </a>
-            <a href="https://www.facebook.com/khanh.shyz309" class="btn btn-light btn-lg rounded-circle shadow fab-option" title="Facebook" target="_blank">
-                <i class="bi bi-facebook" style="color: #1877f2;"></i>
-            </a>
-            <a href="mailto:vuduc792@gmail.com" class="btn btn-light btn-lg rounded-circle shadow fab-option" title="Gmail" target="_blank">
-                <i class="bi bi-envelope-fill" style="color: #db4437;"></i>
-            </a>
-        </div>
-        <button class="btn btn-primary btn-lg rounded-circle shadow fab-toggler" onclick="toggleFabMenu(event)">
-            <i class="bi bi-chat-dots-fill fs-4"></i>
-        </button>
-    </div>
-
     <div class="modal fade" id="locationModal" tabindex="-1" aria-labelledby="locationModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-xl">
             <div class="modal-content">
@@ -620,7 +551,6 @@
         var storeMarkers = [];
         var userMarker;
 
-        // --- CẬP NHẬT TOẠ ĐỘ CHUẨN ---
         const stores = [
             { name: 'Hà Nội', lat: 21.0362, lng: 105.7829, address: '120 Xuân Thủy, Cầu Giấy' },
             { name: 'Đà Nẵng', lat: 16.0718, lng: 108.2236, address: '78 Bạch Đằng, Hải Châu I' },
@@ -632,16 +562,6 @@
             storeLogoIcon = L.icon({ iconUrl: '/image/logo.png', iconSize: [35, 35], iconAnchor: [17, 35], popupAnchor: [0, -35] });
             userIcon = L.divIcon({ className: 'custom-div-icon', html: '<i class="bi bi-geo-alt-fill text-danger" style="font-size: 2rem;"></i>', iconSize: [32, 32], iconAnchor: [16, 32] });
         }
-
-        function toggleFabMenu(event) {
-            event.stopPropagation();
-            document.getElementById('fab-container').classList.toggle('active');
-        }
-
-        document.addEventListener('click', function (event) {
-            if (document.getElementById('fab-container').classList.contains('active'))
-                document.getElementById('fab-container').classList.remove('active');
-        });
 
         document.addEventListener('DOMContentLoaded', function () {
             const locationModal = document.getElementById('locationModal');
@@ -713,35 +633,17 @@
             window.open(url, '_blank');
         }
 
-        function togglePassword(inputId, iconId) {
-            const input = document.getElementById(inputId);
-            const icon = document.getElementById(iconId);
-            if (input.type === "password") {
-                input.type = "text";
-                icon.classList.remove("bi-eye");
-                icon.classList.add("bi-eye-slash");
-            } else {
-                input.type = "password";
-                icon.classList.remove("bi-eye-slash");
-                icon.classList.add("bi-eye");
-            }
-        }
-
         // --- [MỚI] SCRIPT CHO LIVE SEARCH ---
         $(document).ready(function () {
             let debounceTimer;
-
             $('#searchInput').on('keyup', function () {
                 const query = $(this).val().trim();
                 const resultsContainer = $('#searchResults');
-
                 clearTimeout(debounceTimer);
-
                 if (query.length < 1) {
                     resultsContainer.hide();
                     return;
                 }
-
                 debounceTimer = setTimeout(function () {
                     $.ajax({
                         url: '/Home/SearchLive',
@@ -749,19 +651,10 @@
                         data: { query: query },
                         success: function (data) {
                             resultsContainer.empty();
-
                             if (data.length > 0) {
                                 data.forEach(product => {
                                     const price = product.price.toLocaleString('vi-VN') + ' đ';
-                                    const item = `
-                                        <a href="/Home/ChiTietSanPham/${product.id}" class="search-item">
-                                            <img src="${product.image}" alt="${product.name}">
-                                            <div class="search-item-info">
-                                                <h6>${product.name}</h6>
-                                                <span>${price}</span>
-                                            </div>
-                                        </a>
-                                    `;
+                                    const item = `<a href="/Home/ChiTietSanPham/${product.id}" class="search-item"><img src="${product.image}" alt="${product.name}"><div class="search-item-info"><h6>${product.name}</h6><span>${price}</span></div></a>`;
                                     resultsContainer.append(item);
                                 });
                                 resultsContainer.show();
@@ -770,14 +663,11 @@
                                 resultsContainer.show();
                             }
                         },
-                        error: function () {
-                            console.log('Lỗi tìm kiếm');
-                        }
+                        error: function () { console.log('Lỗi tìm kiếm'); }
                     });
                 }, 300);
             });
 
-            // Ẩn dropdown khi click ra ngoài
             $(document).on('click', function (e) {
                 if (!$(e.target).closest('.header-search-wrapper').length) {
                     $('#searchResults').hide();
@@ -785,6 +675,11 @@
             });
         });
     </script>
+
+    @if (User.Identity.IsAuthenticated && !User.IsInRole("Boss") && !User.IsInRole("Admin"))
+    {
+        <partial name="_ChatWidget" />
+    }
 
     @RenderSection("Scripts", required: false)
 </body>

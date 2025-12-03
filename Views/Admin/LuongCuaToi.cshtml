@@ -1,0 +1,95 @@
+﻿@model IEnumerable<banthietbidientu.Models.BangLuong>
+@{
+    ViewData["Title"] = "Thu nhập của tôi";
+    Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    var cultureInfo = new System.Globalization.CultureInfo("vi-VN");
+}
+
+<div class="container-fluid py-4">
+    <h4 class="fw-bold text-primary mb-4"><i class="bi bi-wallet2 me-2"></i>Thu Nhập Của Tôi</h4>
+
+    <div class="card border-0 shadow-sm rounded-4 mb-4 bg-primary text-white overflow-hidden position-relative">
+        <div class="card-body p-4 position-relative" style="z-index: 2;">
+            <div class="d-flex justify-content-between align-items-start">
+                <div>
+                    <h6 class="text-uppercase text-white-50 fw-bold mb-1">Thu nhập dự kiến (Tháng @ViewBag.ThangNay)</h6>
+                    <h1 class="display-4 fw-bold mb-0">@(((decimal)ViewBag.TongDuKien).ToString("N0", cultureInfo)) ₫</h1>
+                    <p class="mb-0 mt-2 badge bg-white text-primary bg-opacity-25 border border-white border-opacity-25">
+                        Đang cập nhật theo thời gian thực <i class="bi bi-activity ms-1"></i>
+                    </p>
+                </div>
+                <div class="text-end">
+                    <div class="mb-2">
+                        <small class="d-block text-white-50">Lương cứng</small>
+                        <span class="fw-bold fs-5">@(((decimal)ViewBag.LuongCung).ToString("N0", cultureInfo)) ₫</span>
+                    </div>
+                    <div>
+                        <small class="d-block text-white-50">Hoa hồng (@ViewBag.PhanTram%)</small>
+                        <span class="fw-bold fs-5 text-warning">+@(((decimal)ViewBag.HoaHong).ToString("N0", cultureInfo)) ₫</span>
+                    </div>
+                </div>
+            </div>
+            <hr class="border-white opacity-25 my-4">
+            <div class="d-flex align-items-center">
+                <i class="bi bi-shop fs-3 me-3 opacity-75"></i>
+                <div>
+                    <small class="d-block text-white-50">Doanh số chi nhánh tháng này</small>
+                    <span class="fw-bold">@(((decimal)ViewBag.DoanhSo).ToString("N0", cultureInfo)) ₫</span>
+                </div>
+            </div>
+        </div>
+
+        <i class="bi bi-cash-coin position-absolute" style="font-size: 15rem; right: -30px; bottom: -50px; opacity: 0.1; transform: rotate(-20deg);"></i>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4">
+        <div class="card-header bg-white py-3">
+            <h6 class="fw-bold m-0 text-secondary"><i class="bi bi-clock-history me-2"></i>Lịch sử nhận lương</h6>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Tháng/Năm</th>
+                            <th class="text-end">Doanh số chốt</th>
+                            <th class="text-end">Lương cứng</th>
+                            <th class="text-end">Hoa hồng</th>
+                            <th class="text-end fw-bold">Thực nhận</th>
+                            <th class="text-center">Ngày chốt</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @if (Model != null && Model.Any())
+                        {
+                            foreach (var item in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4 fw-bold text-primary">Tháng @item.Thang/@item.Nam</td>
+                                    <td class="text-end">@item.DoanhSoDatDuoc.ToString("N0") ₫</td>
+                                    <td class="text-end text-muted">@item.LuongCung.ToString("N0") ₫</td>
+                                    <td class="text-end text-success">+@item.TienHoaHong.ToString("N0") ₫</td>
+                                    <td class="text-end fw-bold text-danger fs-6">@item.TongThucNhan.ToString("N0") ₫</td>
+                                    <td class="text-center">
+                                        <span class="badge bg-success bg-opacity-10 text-success border border-success">
+                                            @item.NgayChot.ToString("dd/MM/yyyy")
+                                        </span>
+                                    </td>
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-wallet2 fs-1 d-block mb-2 opacity-50"></i>
+                                    Chưa có lịch sử lương. Hãy cố gắng bán hàng nhé!
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

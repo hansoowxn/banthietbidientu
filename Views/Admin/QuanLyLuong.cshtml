@@ -121,14 +121,20 @@
                                         {
                                             <div class="input-group input-group-sm">
                                                 <input type="number" class="form-control text-center percent-comm fw-bold text-danger"
-                                                       data-id="@item.TaiKhoanId" value="@item.PhanTramHoaHong" step="0.1"
+                                                       data-id="@item.TaiKhoanId"
+                                                       value="@Math.Round(item.PhanTramHoaHong, 2)"
+                                                       step="0.1"
                                                        onchange="updateConfig(@item.TaiKhoanId)">
                                                 <span class="input-group-text">%</span>
                                             </div>
                                         }
                                         else
                                         {
-                                            <div class="text-center"><span class="badge bg-danger bg-opacity-10 text-danger">@item.PhanTramHoaHong%</span></div>
+                                            <div class="text-center">
+                                                <span class="badge bg-danger bg-opacity-10 text-danger">
+                                                    @Math.Round(item.PhanTramHoaHong, 2)%
+                                                </span>
+                                            </div>
                                         }
                                     </td>
 

@@ -25,6 +25,8 @@ builder.Services.AddScoped<MemberService>();
 // Dòng này bắt buộc phải có để AdminController và GioHangController hoạt động
 builder.Services.AddTransient<IEmailSender, EmailSender>();
 // ---------------------------------------
+builder.Services.AddSignalR();
+
 
 // 4. CẤU HÌNH MVC & JSON
 builder.Services.AddControllersWithViews()
@@ -71,5 +73,7 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+app.MapHub<banthietbidientu.Hubs.ChatHub>("/chatHub");
 
 app.Run();
