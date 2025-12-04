@@ -165,13 +165,16 @@
             if (currentStoreId > 0) restoreChatState();
         }).catch(err => console.error("❌ Lỗi kết nối SignalR: ", err));
 
-        connection.on("ReceiveMessage", function (user, message, time) {
-            console.log("📩 Nhận tin từ: " + user + " | Nội dung: " + message);
+        connection.on("ReceiveMessage", function (user, message, time, senderRole) {
+            console.log("📩 Nhận tin từ: " + user);
 
             let isMe = user === currentUser;
+
             if (isMe || user === 'Admin' || user.includes('Admin') || user.includes('Boss')) {
-                // Nếu là tin của mình gửi đi (nhận lại từ server) -> Xóa dòng 'Đang gửi...' cũ đi rồi hiện lại cho chắc
-                // Hoặc đơn giản là append luôn
+                // Logic cũ giữ nguyên
+                var lastMsg = document.querySelector('#message-list .msg-me:last-child .bubble');
+                if (isMe && lastMsg && lastMsg.innerText === message) return;
+
                 appendMessage(user, message, isMe, time);
 
                 if (!isMe) {

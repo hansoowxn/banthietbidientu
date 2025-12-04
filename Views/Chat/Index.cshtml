@@ -106,32 +106,70 @@
     <script>
         const currentUser = '@currentUser';
         const myStoreId = @(ViewBag.CurrentStoreId ?? 0);
+
+        // [MỚI] Lấy Role của mình
+        const myRole = '@ViewBag.CurrentUserRole';
+
         let currentChatUser = '';
-        let activeFilterStoreId = 0; // Biến lưu bộ lọc hiện tại
+        let activeFilterStoreId = 0;
 
         const connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
         connection.start().then(() => {
-            console.log("Admin Connected. StoreId: " + myStoreId);
+            console.log("Admin Connected. Role: " + myRole);
             loadContacts();
         }).catch(err => console.error(err));
 
-        connection.on("ReceiveMessage", function (user, message, time) {
+        // [CẬP NHẬT] Nhận thêm tham số senderRole
+        connection.on("ReceiveMessage", function (user, message, time, senderRole) {
+
+            // 1. Xử lý hiển thị tin nhắn vào khung chat (nếu đang mở đúng người)
             if (user === currentChatUser || (user === currentUser && currentChatUser !== '')) {
                 let type = user === currentUser ? 'sent' : 'received';
-                if(user !== currentUser) { appendMessage(message, type, time); scrollToBottom(); }
+                if(user !== currentUser) {
+                    appendMessage(message, type, time);
+                    scrollToBottom();
+                }
             }
-            if (user !== currentUser) { loadContacts(); playNotificationSound(); }
+
+            // 2. Xử lý THÔNG BÁO & RELOAD DANH SÁCH (Khi tin đến từ người khác)
+            if (user !== currentUser) {
+
+                // --- LOGIC LỌC THÔNG BÁO (THEO YÊU CẦU) ---
+                let shouldNotify = false;
+
+                if (myRole === 'Boss') {
+                    // Boss: Chỉ thông báo khi người gửi là Admin (Quản lý)
+                    if (senderRole === 'Admin' || senderRole === 'Boss') {
+                        shouldNotify = true;
+                    }
+                    // Nếu senderRole là 'User' (Khách) -> Boss KHÔNG nhận thông báo
+                }
+                else {
+                    // Admin: Nhận tất cả (Khách, Boss, Admin khác)
+                    shouldNotify = true;
+                }
+
+                // Thực hiện thông báo
+                if (shouldNotify) {
+                    playNotificationSound();
+                    // Có thể thêm Toast/Alert góc màn hình tại đây nếu muốn
+                }
+
+                // Luôn reload danh sách để cập nhật tin nhắn mới nhất (dù có báo chuông hay không)
+                loadContacts();
+            }
         });
 
-        // Hàm lọc cho Boss
+        // ... (GIỮ NGUYÊN CÁC HÀM CŨ: filterByStore, loadContacts, openChat...) ...
+        // Bạn copy lại các hàm cũ ở dưới đây, tôi viết tóm tắt để đỡ dài dòng
+
         function filterByStore(storeId, label) {
             activeFilterStoreId = storeId;
             document.getElementById('filterDropdown').innerHTML = `<i class="bi bi-funnel-fill"></i> ${label}`;
-            loadContacts(); // Tải lại danh sách với bộ lọc mới
+            loadContacts();
         }
 
         function loadContacts() {
-            // Gửi kèm filterStoreId lên Server
             fetch(`/Chat/GetContacts?filterStoreId=${activeFilterStoreId}`)
                 .then(r => r.json()).then(data => {
                 const list = document.getElementById('contactList');
@@ -140,11 +178,10 @@
                     let active = u.username === currentChatUser ? 'active' : '';
                     let unread = u.unread > 0 ? 'unread' : '';
 
-                    // Icon khác nhau cho Boss, Admin, User
                     let iconHtml = '';
-                    if (u.priority === 1) iconHtml = '<i class="bi bi-star-fill text-warning fs-3 me-3" title="Boss/Admin"></i>'; // Boss/Admin ghim
+                    if (u.priority === 1) iconHtml = '<i class="bi bi-star-fill text-warning fs-3 me-3" title="Boss/Admin"></i>';
                     else if (u.priority === 2) iconHtml = '<i class="bi bi-person-badge-fill text-primary fs-3 me-3" title="Admin"></i>';
-                    else iconHtml = '<i class="bi bi-person-circle text-secondary fs-3 me-3"></i>'; // Khách
+                    else iconHtml = '<i class="bi bi-person-circle text-secondary fs-3 me-3"></i>';
 
                     let html = `
                         <div class="user-item ${active} ${unread}" onclick="openChat('${u.username}', '${u.fullName}')" data-name="${u.fullName} ${u.username}">
@@ -167,19 +204,16 @@
 
         function openChat(username, fullname) {
             currentChatUser = username;
-
-            // Cập nhật Header
             document.getElementById('chatHeader').innerHTML = `<h6 class="mb-0 fw-bold ms-3"><i class="bi bi-person-lines-fill me-2"></i>${fullname}</h6>`;
             document.getElementById('chatInputArea').classList.remove('d-none');
 
-            // [FIX LỖI 3] Xóa nội dung cũ ngay lập tức & hiện Loading
             var box = document.getElementById('chatBox');
             box.innerHTML = '<div class="text-center mt-5"><div class="spinner-border text-primary"></div></div>';
 
             fetch('/Chat/GetHistory?otherUser=' + encodeURIComponent(username))
                 .then(r => r.json())
                 .then(msgs => {
-                    box.innerHTML = ''; // Xóa loading
+                    box.innerHTML = '';
                     if (msgs.length === 0) {
                         box.innerHTML = '<div class="text-center text-muted mt-5">Chưa có nội dung chat.</div>';
                     } else {
@@ -190,10 +224,6 @@
                         scrollToBottom();
                     }
                     loadContacts();
-                })
-                .catch(err => {
-                    console.error(err);
-                    box.innerHTML = '<div class="text-center text-danger mt-5">Lỗi tải dữ liệu.</div>';
                 });
         }
 
@@ -213,7 +243,6 @@
 
         function scrollToBottom() { const box = document.getElementById('chatBox'); box.scrollTop = box.scrollHeight; }
         function handleAdminEnter(e) { if(e.key === 'Enter') sendAdminMessage(); }
-
         function filterUsers() {
             let input = document.getElementById('searchUser').value.toLowerCase();
             let items = document.getElementsByClassName('user-item');

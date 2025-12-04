@@ -25,6 +25,7 @@ namespace banthietbidientu.Controllers
             var user = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == User.Identity.Name);
             ViewBag.CurrentStoreId = user?.StoreId ?? 0;
             ViewBag.IsBoss = user?.Role == "Boss";
+            ViewBag.CurrentUserRole = user?.Role ?? "User";
             return View();
         }
 
