@@ -34,7 +34,7 @@ namespace banthietbidientu.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> DangNhap(TaiKhoan model)
+        public async Task<IActionResult> DangNhap(TaiKhoan model, bool RememberMe)
         {
             var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == model.Username && u.Password == model.Password);
 
@@ -48,6 +48,19 @@ namespace banthietbidientu.Controllers
                     new Claim("FullName", user.FullName ?? ""),
                     new Claim("Email", user.Email ?? "")
                 };
+
+                var claimsIdentity = new ClaimsIdentity(claims, "Cookies");
+                var authProperties = new AuthenticationProperties
+                {
+                    IsPersistent = RememberMe, // Nếu true => Lưu cookie lâu dài (Ghi nhớ)
+                    ExpiresUtc = DateTime.UtcNow.AddDays(30) // Thời hạn ghi nhớ (ví dụ 30 ngày)
+                };
+
+                await HttpContext.SignInAsync("Cookies", new ClaimsPrincipal(claimsIdentity), authProperties);
+
+                return RedirectToAction("Index", "Home");
+
+
 
                 if (user.StoreId.HasValue)
                 {
@@ -67,6 +80,9 @@ namespace banthietbidientu.Controllers
                 {
                     return RedirectToAction("Index", "Home");
                 }
+
+
+
             }
 
             ViewBag.Error = "Tên đăng nhập hoặc mật khẩu không đúng.";
