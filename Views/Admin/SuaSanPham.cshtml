@@ -51,13 +51,14 @@
 
                             <div class="col-md-6 mb-3">
                                 <label asp-for="GiaNhap" class="form-label fw-bold text-danger">Giá Nhập (Giá Vốn)</label>
-                                <input asp-for="GiaNhap" class="form-control" type="number" min="0" />
+                                <div class="input-group">
+                                    <input asp-for="GiaNhap" class="form-control bg-light" type="number" readonly />
+                                    <span class="input-group-text bg-light text-muted"><i class="bi bi-lock-fill"></i></span>
+                                </div>
+                                <div class="form-text text-muted small fst-italic">
+                                    * Giá vốn được cập nhật tự động khi Nhập hàng.
+                                </div>
                             </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label asp-for="Description" class="form-label fw-bold">Mô tả ngắn</label>
-                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
                         </div>
                     </div>
 

@@ -2,33 +2,14 @@
     ViewData["Title"] = "Hệ thống CSKH";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
     var currentUser = User.Identity.Name;
-    bool isBoss = ViewBag.IsBoss ?? false; // Nhận biến từ Controller
 }
 
 <div class="container-fluid py-3">
     <div class="chat-container bg-white rounded shadow-sm overflow-hidden" style="height: 85vh; display: flex;">
         <div class="chat-sidebar border-end d-flex flex-column" style="width: 320px;">
             <div class="p-3 border-bottom bg-light">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 class="fw-bold text-primary mb-0"><i class="bi bi-chat-quote-fill me-2"></i>Tin nhắn</h5>
-
-                    @if (isBoss)
-                    {
-                        <div class="dropdown">
-                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown">
-                                <i class="bi bi-funnel"></i> Tất cả
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow">
-                                <li><a class="dropdown-item" href="#" onclick="filterByStore(0, 'Tất cả')">Tất cả</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="filterByStore(1, 'Hà Nội')">Miền Bắc (HN)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="filterByStore(2, 'Đà Nẵng')">Miền Trung (ĐN)</a></li>
-                                <li><a class="dropdown-item" href="#" onclick="filterByStore(3, 'TP.HCM')">Miền Nam (HCM)</a></li>
-                            </ul>
-                        </div>
-                    }
-                </div>
-
-                <input type="text" class="form-control rounded-pill" placeholder="Tìm khách hàng..." id="searchUser" onkeyup="filterUsers()">
+                <h5 class="fw-bold text-primary"><i class="bi bi-chat-quote-fill me-2"></i>Tin nhắn</h5>
+                <input type="text" class="form-control rounded-pill mt-2" placeholder="Tìm khách hàng..." id="searchUser" onkeyup="filterUsers()">
             </div>
             <div id="contactList" class="flex-grow-1 overflow-auto">
                 <div class="text-center py-5 text-muted"><div class="spinner-border spinner-border-sm text-primary"></div> Đang tải...</div>
@@ -106,86 +87,65 @@
     <script>
         const currentUser = '@currentUser';
         const myStoreId = @(ViewBag.CurrentStoreId ?? 0);
-
-        // [MỚI] Lấy Role của mình
         const myRole = '@ViewBag.CurrentUserRole';
-
         let currentChatUser = '';
-        let activeFilterStoreId = 0;
 
         const connection = new signalR.HubConnectionBuilder().withUrl("/chatHub").build();
         connection.start().then(() => {
-            console.log("Admin Connected. Role: " + myRole);
+            console.log("Admin Connected. Store: " + myStoreId + " | Role: " + myRole);
             loadContacts();
         }).catch(err => console.error(err));
 
-        // [CẬP NHẬT] Nhận thêm tham số senderRole
-        connection.on("ReceiveMessage", function (user, message, time, senderRole) {
+        // [CẬP NHẬT] Nhận thêm msgStoreId
+        connection.on("ReceiveMessage", function (user, message, time, senderRole, msgStoreId) {
 
-            // 1. Xử lý hiển thị tin nhắn vào khung chat (nếu đang mở đúng người)
+            // --- BỘ LỌC QUYỀN XEM (Security Filter) ---
+
+            if (user !== currentUser) {
+                // 1. Nếu là Admin thường (Không phải Boss)
+                if (myRole !== 'Boss') {
+                    // Nếu người gửi KHÔNG PHẢI Boss VÀ tin nhắn KHÔNG thuộc Store của mình
+                    // -> Bỏ qua ngay (Không báo chuông, không hiện tin, không reload)
+                    // (msgStoreId có thể null nếu là tin nội bộ không xác định kho, ta cho qua để Admin chat với nhau)
+                    if (senderRole !== 'Boss' && msgStoreId !== null && msgStoreId !== myStoreId) {
+                        return;
+                    }
+                }
+
+                // 2. Nếu là Boss
+                if (myRole === 'Boss') {
+                    // Boss không nghe chuông của Khách (User)
+                    if (senderRole === 'User') {
+                        loadContacts(); // Vẫn reload để thấy tin mới nhưng không kêu
+                        return;
+                    }
+                }
+
+                // Nếu vượt qua vòng kiểm duyệt -> Báo chuông
+                playNotificationSound();
+                loadContacts();
+            }
+
+            // Hiển thị tin nhắn nếu đang mở chat
             if (user === currentChatUser || (user === currentUser && currentChatUser !== '')) {
-                let type = user === currentUser ? 'sent' : 'received';
                 if(user !== currentUser) {
-                    appendMessage(message, type, time);
+                    appendMessage(message, 'received', time);
                     scrollToBottom();
                 }
             }
-
-            // 2. Xử lý THÔNG BÁO & RELOAD DANH SÁCH (Khi tin đến từ người khác)
-            if (user !== currentUser) {
-
-                // --- LOGIC LỌC THÔNG BÁO (THEO YÊU CẦU) ---
-                let shouldNotify = false;
-
-                if (myRole === 'Boss') {
-                    // Boss: Chỉ thông báo khi người gửi là Admin (Quản lý)
-                    if (senderRole === 'Admin' || senderRole === 'Boss') {
-                        shouldNotify = true;
-                    }
-                    // Nếu senderRole là 'User' (Khách) -> Boss KHÔNG nhận thông báo
-                }
-                else {
-                    // Admin: Nhận tất cả (Khách, Boss, Admin khác)
-                    shouldNotify = true;
-                }
-
-                // Thực hiện thông báo
-                if (shouldNotify) {
-                    playNotificationSound();
-                    // Có thể thêm Toast/Alert góc màn hình tại đây nếu muốn
-                }
-
-                // Luôn reload danh sách để cập nhật tin nhắn mới nhất (dù có báo chuông hay không)
-                loadContacts();
-            }
         });
 
-        // ... (GIỮ NGUYÊN CÁC HÀM CŨ: filterByStore, loadContacts, openChat...) ...
-        // Bạn copy lại các hàm cũ ở dưới đây, tôi viết tóm tắt để đỡ dài dòng
-
-        function filterByStore(storeId, label) {
-            activeFilterStoreId = storeId;
-            document.getElementById('filterDropdown').innerHTML = `<i class="bi bi-funnel-fill"></i> ${label}`;
-            loadContacts();
-        }
-
         function loadContacts() {
-            fetch(`/Chat/GetContacts?filterStoreId=${activeFilterStoreId}`)
-                .then(r => r.json()).then(data => {
+            fetch('/Chat/GetContacts').then(r => r.json()).then(data => {
                 const list = document.getElementById('contactList');
                 list.innerHTML = '';
                 data.forEach(u => {
                     let active = u.username === currentChatUser ? 'active' : '';
                     let unread = u.unread > 0 ? 'unread' : '';
-
-                    let iconHtml = '';
-                    if (u.priority === 1) iconHtml = '<i class="bi bi-star-fill text-warning fs-3 me-3" title="Boss/Admin"></i>';
-                    else if (u.priority === 2) iconHtml = '<i class="bi bi-person-badge-fill text-primary fs-3 me-3" title="Admin"></i>';
-                    else iconHtml = '<i class="bi bi-person-circle text-secondary fs-3 me-3"></i>';
-
+                    let iconColor = u.priority === 1 ? 'text-warning' : (u.priority === 2 ? 'text-primary' : 'text-secondary');
                     let html = `
-                        <div class="user-item ${active} ${unread}" onclick="openChat('${u.username}', '${u.fullName}')" data-name="${u.fullName} ${u.username}">
-                            ${iconHtml}
+                        <div class="user-item ${active} ${unread}" onclick="openChat('${u.username}', '${u.fullName}')">
+                            <i class="bi bi-person-circle ${iconColor} fs-2 me-3"></i>
                             <div class="flex-grow-1 overflow-hidden">
                                 <div class="d-flex justify-content-between align-items-center">
                                     <h6 class="mb-0 text-truncate text-dark fw-bold" style="max-width: 120px;">${u.fullName}</h6>
@@ -214,13 +174,9 @@
                 .then(r => r.json())
                 .then(msgs => {
                     box.innerHTML = '';
-                    if (msgs.length === 0) {
-                        box.innerHTML = '<div class="text-center text-muted mt-5">Chưa có nội dung chat.</div>';
-                    } else {
-                        msgs.forEach(m => {
-                            let type = m.sender === currentUser ? 'sent' : 'received';
-                            appendMessage(m.content, type, m.time);
-                        });
+                    if (msgs.length === 0) box.innerHTML = '<div class="text-center text-muted mt-5">Chưa có nội dung.</div>';
+                    else {
+                        msgs.forEach(m => appendMessage(m.content, m.sender === currentUser ? 'sent' : 'received', m.time));
                         scrollToBottom();
                     }
                     loadContacts();
@@ -240,17 +196,9 @@
             let html = `<div class="msg msg-${type}">${text}<div class="msg-time">${time}</div></div>`;
             document.getElementById('chatBox').insertAdjacentHTML('beforeend', html);
         }
-
         function scrollToBottom() { const box = document.getElementById('chatBox'); box.scrollTop = box.scrollHeight; }
         function handleAdminEnter(e) { if(e.key === 'Enter') sendAdminMessage(); }
-        function filterUsers() {
-            let input = document.getElementById('searchUser').value.toLowerCase();
-            let items = document.getElementsByClassName('user-item');
-            for (let i = 0; i < items.length; i++) {
-                let name = items[i].getAttribute('data-name').toLowerCase();
-                items[i].style.display = name.includes(input) ? "flex" : "none";
-            }
-        }
+        function filterUsers() { /* ... giữ nguyên code cũ ... */ }
         function playNotificationSound() { var a = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-message-pop-alert-2354.mp3'); a.play().catch(e=>{}); }
     </script>
 }

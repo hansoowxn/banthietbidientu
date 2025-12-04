@@ -17,7 +17,7 @@ namespace banthietbidientu.Controllers
         }
 
         // --- NHẬP HÀNG ---
-        [Authorize(Roles = "Boss")]
+        [Authorize(Roles = "Boss")] 
         public IActionResult QuanLyNhapHang()
         {
             var list = _context.PhieuNhaps.Include(p => p.ChiTiets).ThenInclude(ct => ct.SanPham).OrderByDescending(p => p.NgayNhap).ToList();
@@ -74,8 +74,16 @@ namespace banthietbidientu.Controllers
             int? storeId = user?.StoreId;
             bool isBoss = user?.Role == "Boss";
 
+            // [FIX QUAN TRỌNG] Truyền thông tin người dùng xuống View để hiển thị nút bấm
+            ViewBag.CurrentStoreId = storeId ?? 0;
+            ViewBag.IsBoss = isBoss;
+
             var query = _context.PhieuChuyenKhos.Include(p => p.SanPham).AsQueryable();
-            if (!isBoss && storeId.HasValue) query = query.Where(p => p.TuKhoId == storeId || p.DenKhoId == storeId);
+            if (!isBoss && storeId.HasValue)
+            {
+                // Admin thấy phiếu liên quan đến mình
+                query = query.Where(p => p.TuKhoId == storeId || p.DenKhoId == storeId);
+            }
 
             return View("~/Views/Admin/QuanLyChuyenKho.cshtml", query.OrderByDescending(p => p.NgayTao).ToList());
         }

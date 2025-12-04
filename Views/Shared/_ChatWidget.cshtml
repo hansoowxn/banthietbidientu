@@ -165,7 +165,7 @@
             if (currentStoreId > 0) restoreChatState();
         }).catch(err => console.error("❌ Lỗi kết nối SignalR: ", err));
 
-        connection.on("ReceiveMessage", function (user, message, time, senderRole) {
+        connection.on("ReceiveMessage", function (user, message, time, senderRole, storeId) {
             console.log("📩 Nhận tin từ: " + user);
 
             let isMe = user === currentUser;

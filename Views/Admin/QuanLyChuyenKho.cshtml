@@ -1,18 +1,18 @@
 ﻿@model IEnumerable<banthietbidientu.Models.PhieuChuyenKho>
-@using System.Security.Claims
+
 @{
     ViewData["Title"] = "Quản lý Điều phối kho";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
 
-    var storeClaim = User.FindFirst("StoreId");
-    int? currentStoreId = storeClaim != null ? int.Parse(storeClaim.Value) : (int?)null;
-    bool isBoss = User.IsInRole("Boss");
+    // Lấy thông tin từ Controller (Đã truyền xuống qua ViewBag)
+    int currentStoreId = ViewBag.CurrentStoreId ?? 0;
+    bool isBoss = ViewBag.IsBoss ?? false;
 }
 
 <div class="container-fluid py-4">
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h4 class="fw-bold text-primary"><i class="bi bi-truck-front-fill me-2"></i>Điều Phối Luân Chuyển Hàng</h4>
-        <a asp-action="TaoLenhChuyenKho" class="btn btn-primary fw-bold shadow-sm">
+        <a asp-action="TaoLenhChuyenKho" asp-controller="Warehouse" class="btn btn-primary fw-bold shadow-sm">
             <i class="bi bi-plus-lg me-2"></i>Tạo Lệnh Chuyển
         </a>
     </div>
@@ -89,34 +89,44 @@
                                         }
                                     </td>
                                     <td class="text-end pe-4">
-                                        @if (item.TuKhoId == 0 && isBoss)
+                                        @if (item.TuKhoId == 0 && isBoss && item.TrangThai != -1)
                                         {
-                                            <button onclick="openDuyetModal(@item.Id, '@item.MaPhieu')" class="btn btn-sm btn-success fw-bold">
-                                                <i class="bi bi-check-lg"></i> Duyệt & Chọn Nguồn
+                                            <button onclick="openDuyetModal(@item.Id, '@item.MaPhieu')" class="btn btn-sm btn-success fw-bold shadow-sm">
+                                                <i class="bi bi-check-lg"></i> Duyệt & Cấp hàng
                                             </button>
                                         }
-                                        else if (item.TrangThai == 0 && item.TuKhoId != 0) // Chờ xuất kho
+                                        else if (item.TrangThai == 0 && item.TuKhoId != 0)
                                         {
-                                            if (currentStoreId == item.TuKhoId)
+                                            if (isBoss || currentStoreId == item.TuKhoId)
                                             {
-                                                <button onclick="duyetXuatKho(@item.Id)" class="btn btn-sm btn-outline-primary fw-bold me-1">Xuất kho</button>
-                                                <button onclick="huyPhieu(@item.Id)" class="btn btn-sm btn-outline-danger"><i class="bi bi-x-lg"></i></button>
+                                                <button onclick="duyetXuatKho(@item.Id)" class="btn btn-sm btn-outline-primary fw-bold me-1">
+                                                    <i class="bi bi-box-arrow-right"></i> Xuất kho
+                                                </button>
+                                                <button onclick="huyPhieu(@item.Id)" class="btn btn-sm btn-outline-danger" title="Hủy phiếu">
+                                                    <i class="bi bi-x-lg"></i>
+                                                </button>
                                             }
                                             else
                                             {
-                                                <small class="text-muted fst-italic">Chờ kho đi xuất</small>
+                                                <small class="text-muted fst-italic">Chờ kho đi xuất...</small>
                                             }
                                         }
-                                        else if (item.TrangThai == 1) // Đang chuyển
+                                        else if (item.TrangThai == 1)
                                         {
-                                            if (currentStoreId == item.DenKhoId)
+                                            if (isBoss || currentStoreId == item.DenKhoId)
                                             {
-                                                <button onclick="xacNhanNhan(@item.Id)" class="btn btn-sm btn-success fw-bold">Nhập kho</button>
+                                                <button onclick="xacNhanNhan(@item.Id)" class="btn btn-sm btn-success fw-bold shadow-sm">
+                                                    <i class="bi bi-check2-circle"></i> Nhập kho
+                                                </button>
                                             }
                                             else
                                             {
-                                                <small class="text-primary fst-italic"><i class="bi bi-truck"></i> Đang đi đường...</small>
+                                                <small class="text-primary fst-italic"><i class="bi bi-truck"></i> Đang vận chuyển...</small>
                                             }
+                                        }
+                                        else if (item.TrangThai == 0 && item.TuKhoId == 0)
+                                        {
+                                            <button onclick="huyPhieu(@item.Id)" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i> Hủy</button>
                                         }
                                     </td>
                                 </tr>
@@ -124,7 +134,7 @@
                         }
                         else
                         {
-                            <tr><td colspan="7" class="text-center py-5 text-muted">Chưa có phiếu nào.</td></tr>
+                            <tr><td colspan="7" class="text-center py-5 text-muted">Chưa có phiếu điều phối nào.</td></tr>
                         }
                     </tbody>
                 </table>
@@ -135,24 +145,32 @@
 
 <div class="modal fade" id="duyetModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
+        <div class="modal-content border-0 shadow-lg">
             <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">Duyệt Phiếu <span id="modalMaPhieu"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title fw-bold"><i class="bi bi-shield-check me-2"></i>Duyệt Phiếu <span id="modalMaPhieu"></span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>Admin này đang xin hàng. Bạn muốn lấy hàng từ kho nào để cấp cho họ?</p>
+            <div class="modal-body p-4">
+                <div class="alert alert-info d-flex align-items-center" role="alert">
+                    <i class="bi bi-info-circle-fill fs-4 me-3"></i>
+                    <div>
+                        Admin đang yêu cầu cấp hàng. <br>
+                        Vui lòng chọn <strong>Kho Nguồn</strong> để xuất hàng cho họ.
+                    </div>
+                </div>
+
                 <input type="hidden" id="modalPhieuId" />
-                <label class="form-label fw-bold">Chọn Kho Nguồn Cấp Hàng:</label>
-                <select class="form-select mb-3" id="modalTuKho">
-                    <option value="1">Kho Hà Nội</option>
-                    <option value="2">Kho Đà Nẵng</option>
-                    <option value="3">Kho TP.HCM</option>
+
+                <label class="form-label fw-bold text-uppercase small text-muted">Chọn Kho Xuất Hàng:</label>
+                <select class="form-select form-select-lg mb-3" id="modalTuKho">
+                    <option value="1">Kho Hà Nội (Miền Bắc)</option>
+                    <option value="2">Kho Đà Nẵng (Miền Trung)</option>
+                    <option value="3">Kho TP.HCM (Miền Nam)</option>
                 </select>
             </div>
-            <div class="modal-footer">
+            <div class="modal-footer bg-light">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
-                <button type="button" onclick="submitDuyet()" class="btn btn-success fw-bold">Xác Nhận Duyệt</button>
+                <button type="button" onclick="submitDuyet()" class="btn btn-success fw-bold px-4">Xác Nhận Duyệt</button>
             </div>
         </div>
     </div>
@@ -160,6 +178,8 @@
 
 @section Scripts {
     <script>
+        // Lưu ý: Đã sửa đường dẫn API trỏ về WarehouseController (/Warehouse/...)
+
         function openDuyetModal(id, ma) {
             document.getElementById('modalPhieuId').value = id;
             document.getElementById('modalMaPhieu').innerText = ma;
@@ -169,12 +189,11 @@
         function submitDuyet() {
             let id = document.getElementById('modalPhieuId').value;
             let tuKho = document.getElementById('modalTuKho').value;
-
             let formData = new FormData();
             formData.append('id', id);
             formData.append('tuKhoId', tuKho);
 
-            fetch('/Admin/DuyetYeuCau', { method: 'POST', body: formData })
+            fetch('/Warehouse/DuyetYeuCau', { method: 'POST', body: formData })
             .then(res => res.json())
             .then(data => {
                 if(data.success) location.reload();
@@ -183,18 +202,18 @@
         }
 
         function duyetXuatKho(id) {
-            if(!confirm('Xác nhận xuất kho?')) return;
-            callApi('/Admin/DuyetXuatKho', id);
+            if(!confirm('Xác nhận xuất kho? Kho đi sẽ bị trừ tồn kho.')) return;
+            callApi('/Warehouse/DuyetXuatKho', id);
         }
 
         function xacNhanNhan(id) {
-            if(!confirm('Đã nhận hàng?')) return;
-            callApi('/Admin/XacNhanNhanHang', id);
+            if(!confirm('Đã nhận đủ hàng? Kho đến sẽ được cộng tồn kho.')) return;
+            callApi('/Warehouse/XacNhanNhanHang', id);
         }
 
         function huyPhieu(id) {
             if(!confirm('Hủy phiếu này?')) return;
-            callApi('/Admin/HuyChuyenKho', id);
+            callApi('/Warehouse/HuyChuyenKho', id);
         }
 
         function callApi(url, id) {

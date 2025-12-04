@@ -16,7 +16,7 @@ namespace banthietbidientu.Controllers
         {
         }
 
-        public IActionResult Index()    
+        public IActionResult Index()
         {
             return View("~/Views/Admin/QuanLySanPham.cshtml", _context.SanPhams.AsNoTracking().ToList());
         }
@@ -43,6 +43,10 @@ namespace banthietbidientu.Controllers
                         model.SoLuong = slHaNoi + slDaNang + slHCM;
                         if (string.IsNullOrEmpty(model.MoTa)) model.MoTa = "";
 
+                        // Mặc định Description rỗng nếu không nhập
+                        if (model.Description == null) model.Description = "";
+                        if (model.ImageUrl == null) model.ImageUrl = "";
+
                         _context.SanPhams.Add(model);
                         _context.SaveChanges(); // Lưu lần 1 để lấy ID
 
@@ -64,14 +68,14 @@ namespace banthietbidientu.Controllers
                     {
                         transaction.Rollback(); // Hoàn tác nếu lỗi
                         string err = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
-                        TempData["Error"] = $"LỖI LƯU DB: {err}"; // Hiện lỗi ra màn hình
+                        TempData["Error"] = $"LỖI LƯU DB: {err}";
                     }
                 }
             }
             else
             {
-                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
-                TempData["Error"] = "Dữ liệu không hợp lệ: " + string.Join(", ", errors);
+                var errors = string.Join("; ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                TempData["Error"] = "Dữ liệu không hợp lệ: " + errors;
             }
             return View("~/Views/Admin/ThemSanPham.cshtml", model);
         }
@@ -105,13 +109,12 @@ namespace banthietbidientu.Controllers
                     // Cập nhật thông tin cơ bản
                     sp.Name = model.Name;
                     sp.Price = model.Price;
-                    sp.GiaNhap = model.GiaNhap; // [QUAN TRỌNG] Đã thêm cập nhật giá nhập
+
                     sp.Category = model.Category;
-                    sp.ImageUrl = model.ImageUrl;
-                    sp.Description = model.Description;
+                    sp.ImageUrl = model.ImageUrl ?? "";
+
                     sp.SoLuong = slHaNoi + slDaNang + slHCM;
 
-                    // Cập nhật Kho
                     var khoHangs = _context.KhoHangs.Where(k => k.SanPhamId == sp.Id).ToList();
 
                     void UpdateStock(int storeId, int qty)
@@ -125,7 +128,7 @@ namespace banthietbidientu.Controllers
                     UpdateStock(2, slDaNang);
                     UpdateStock(3, slHCM);
 
-                    _context.SaveChanges(); // Lưu thay đổi
+                    _context.SaveChanges();
 
                     GhiNhatKy("Sửa sản phẩm", $"Cập nhật SP {sp.Id}");
                     TempData["Success"] = "Cập nhật thành công!";
