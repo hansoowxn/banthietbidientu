@@ -38,6 +38,7 @@ namespace banthietbidientu.Services
             {
                 cachedTier = CalculateTierFromDb(username);
 
+                // Lưu cache trong 5 phút để giảm tải DB
                 var cacheEntryOptions = new MemoryCacheEntryOptions()
                     .SetAbsoluteExpiration(TimeSpan.FromMinutes(5));
 
@@ -81,6 +82,7 @@ namespace banthietbidientu.Services
             }
 
             // 2. CẤP KHÁCH HÀNG (Nếu không phải Boss/Admin thì mới tính chi tiêu)
+            // Chỉ tính tổng tiền các đơn hàng ĐÃ HOÀN THÀNH (TrangThai == 3)
             var totalSpent = _context.DonHangs
                  .Where(d => d.TaiKhoanId == user.Id && d.TrangThai == 3)
                  .Sum(d => d.TongTien);
@@ -129,6 +131,17 @@ namespace banthietbidientu.Services
             }
 
             return tier;
+        }
+
+        // --- HÀM MỚI: XÓA CACHE CỦA USER ---
+        // Được gọi từ AdminController khi cập nhật trạng thái đơn hàng thành công/hủy
+        public void ClearUserCache(string username)
+        {
+            if (!string.IsNullOrEmpty(username))
+            {
+                string cacheKey = $"UserTier_{username}";
+                _cache.Remove(cacheKey); // Xóa ngay lập tức bộ nhớ đệm của user này
+            }
         }
     }
 }
