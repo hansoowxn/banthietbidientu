@@ -1,57 +1,123 @@
-﻿@{
-    ViewData["Title"] = "Nhập hàng vào kho";
+﻿@using banthietbidientu.Models
+@{
+    ViewData["Title"] = "Nhập hàng phân bổ";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-    var products = ViewBag.SanPhams as List<banthietbidientu.Models.SanPham>;
+    var sanPhams = ViewBag.SanPhams as List<SanPham>;
 }
 
-<div class="container-fluid py-4">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card border-0 shadow-sm rounded-4">
-                <div class="card-header bg-primary text-white py-3 rounded-top-4">
-                    <h5 class="mb-0 fw-bold"><i class="bi bi-box-arrow-in-down me-2"></i>Tạo Phiếu Nhập Hàng</h5>
-                </div>
-                <div class="card-body p-4">
-                    <form asp-action="XuLyNhapHang" method="post">
+<div class="row justify-content-center">
+    <div class="col-lg-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h4 class="fw-bold text-success"><i class="bi bi-box-seam me-2"></i>Nhập & Phân Bổ Hàng Hóa</h4>
+            <a href="@Url.Action("QuanLyNhapHang", "Warehouse")" class="btn btn-outline-secondary btn-sm rounded-pill px-3">
+                <i class="bi bi-clock-history me-1"></i> Lịch sử
+            </a>
+        </div>
+    </div>
 
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-muted small text-uppercase">Chọn sản phẩm cần nhập</label>
-                            <select name="sanPhamId" class="form-select form-select-lg bg-light border-0" required onchange="updateCurrentStock(this)">
-                                <option value="">-- Chọn sản phẩm --</option>
-                                @foreach (var p in products)
+    <div class="col-lg-8">
+        <div class="card shadow-sm border-0 rounded-4 h-100">
+            <div class="card-header bg-white py-3 border-bottom">
+                <h6 class="mb-0 fw-bold text-muted text-uppercase">Thông tin nhập kho</h6>
+            </div>
+            <div class="card-body p-4">
+                <form action="@Url.Action("XuLyNhapHang", "Warehouse")" method="post" id="importForm">
+
+                    <div class="row mb-4">
+                        <div class="col-md-7">
+                            <label class="form-label fw-bold text-secondary small">Sản phẩm</label>
+                            <select class="form-select form-select-lg" name="sanPhamId" id="productSelect" required onchange="updateProductInfo()">
+                                <option value="" data-price="0" data-stock="0" data-img="/image/logo.png">-- Chọn sản phẩm --</option>
+                                @if (sanPhams != null)
                                 {
-                                    <option value="@p.Id" data-stock="@p.SoLuong">@p.Name (Hiện có: @p.SoLuong)</option>
+                                    foreach (var sp in sanPhams)
+                                    {
+                                        <option value="@sp.Id"
+                                                data-price="@sp.GiaNhap"
+                                                data-stock="@sp.SoLuong"
+                                                data-img="@(string.IsNullOrEmpty(sp.ImageUrl) ? "/image/logo.png" : sp.ImageUrl)">
+                                            @sp.Name
+                                        </option>
+                                    }
                                 }
                             </select>
-                            <div id="currentStockHelp" class="form-text text-primary mt-2 fw-bold"></div>
                         </div>
-
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted small text-uppercase">Số lượng nhập thêm</label>
-                                <input type="number" name="soLuong" class="form-control form-control-lg bg-light border-0" placeholder="VD: 50" required min="1">
+                        <div class="col-md-5">
+                            <label class="form-label fw-bold text-secondary small">Đơn giá nhập (VNĐ)</label>
+                            <div class="input-group">
+                                <input type="number" class="form-control form-control-lg fw-bold text-success"
+                                       name="giaNhap" id="inputPrice" placeholder="0" min="0" required oninput="calcTotal()">
+                                <span class="input-group-text">₫</span>
                             </div>
+                            <div class="form-text text-muted small fst-italic">Giá vốn cũ: <span id="lastPriceDisplay">0</span> đ</div>
+                        </div>
+                    </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label fw-bold text-muted small text-uppercase">Giá nhập (Vốn)</label>
-                                <div class="input-group">
-                                    <input type="number" name="giaNhap" class="form-control form-control-lg bg-light border-0" placeholder="VD: 15000000" required min="0">
-                                    <span class="input-group-text bg-light border-0">đ</span>
-                                </div>
+                    <hr class="border-secondary-subtle my-4">
+
+                    <h6 class="fw-bold text-primary mb-3"><i class="bi bi-shop me-2"></i>Phân bổ số lượng về các chi nhánh</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 bg-light">
+                                <label class="form-label fw-bold small text-muted d-block text-center">Kho Hà Nội</label>
+                                <input type="number" class="form-control form-control-lg text-center fw-bold text-primary input-qty"
+                                       name="slHaNoi" value="0" min="0" oninput="calcTotal()" onfocus="this.select()">
                             </div>
                         </div>
-
-                        <div class="mb-4">
-                            <label class="form-label fw-bold text-muted small text-uppercase">Ghi chú / Nhà cung cấp</label>
-                            <textarea name="ghiChu" class="form-control bg-light border-0" rows="3" placeholder="Ví dụ: Nhập lô hàng iPhone 15 từ Apple VN..."></textarea>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 bg-light">
+                                <label class="form-label fw-bold small text-muted d-block text-center">Kho Đà Nẵng</label>
+                                <input type="number" class="form-control form-control-lg text-center fw-bold text-primary input-qty"
+                                       name="slDaNang" value="0" min="0" oninput="calcTotal()" onfocus="this.select()">
+                            </div>
                         </div>
-
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary btn-lg fw-bold shadow-sm">
-                                <i class="bi bi-check-circle-fill me-2"></i>Xác Nhận Nhập Kho
-                            </button>
+                        <div class="col-md-4">
+                            <div class="p-3 border rounded-3 bg-light">
+                                <label class="form-label fw-bold small text-muted d-block text-center">Kho TP.HCM</label>
+                                <input type="number" class="form-control form-control-lg text-center fw-bold text-primary input-qty"
+                                       name="slHCM" value="0" min="0" oninput="calcTotal()" onfocus="this.select()">
+                            </div>
                         </div>
-                    </form>
+                    </div>
+
+                    <div class="card bg-success-subtle border-0 mb-3">
+                        <div class="card-body d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="small text-success-emphasis fw-bold">TỔNG SỐ LƯỢNG NHẬP</div>
+                                <div class="fs-4 fw-bold text-success" id="totalQtyDisplay">0</div>
+                            </div>
+                            <div class="text-end">
+                                <div class="small text-success-emphasis fw-bold">THÀNH TIỀN DỰ KIẾN</div>
+                                <div class="fs-3 fw-bold text-success" id="totalMoney">0 đ</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-success btn-lg fw-bold shadow-sm" onclick="return validateForm()">
+                            <i class="bi bi-check-circle-fill me-2"></i> XÁC NHẬN NHẬP & PHÂN BỔ
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4 mt-4 mt-lg-0">
+        <div class="card shadow-sm border-0 rounded-4 bg-white sticky-top" style="top: 90px; z-index: 0;">
+            <div class="card-body text-center p-4">
+                <h6 class="text-uppercase text-muted fw-bold mb-3">Sản phẩm đang chọn</h6>
+                <div class="d-flex justify-content-center mb-3">
+                    <div class="border rounded-3 p-2 bg-white shadow-sm" style="width: 180px; height: 180px; display: flex; align-items: center; justify-content: center;">
+                        <img id="previewImg" src="/image/logo.png" class="img-fluid" style="max-height: 100%;">
+                    </div>
+                </div>
+                <h5 class="fw-bold text-dark mb-1" id="previewName">---</h5>
+                <div class="badge bg-light text-dark border mb-3">Tổng tồn kho cũ: <span id="previewStock">0</span></div>
+
+                <div class="alert alert-info border-0 small text-start">
+                    <i class="bi bi-info-circle-fill me-1"></i> <strong>Lưu ý:</strong>
+                    Hệ thống sẽ tự động cộng số lượng vào từng kho tương ứng và tính lại giá vốn bình quân cho sản phẩm này ngay lập tức.
                 </div>
             </div>
         </div>
@@ -59,15 +125,50 @@
 </div>
 
 <script>
-    function updateCurrentStock(select) {
+    function updateProductInfo() {
+        var select = document.getElementById('productSelect');
         var option = select.options[select.selectedIndex];
-        var stock = option.getAttribute('data-stock');
-        var helpText = document.getElementById('currentStockHelp');
 
-        if(stock) {
-            helpText.innerHTML = '<i class="bi bi-info-circle me-1"></i> Tồn kho hiện tại: ' + stock;
-        } else {
-            helpText.innerHTML = '';
+        var img = option.getAttribute('data-img');
+        var stock = option.getAttribute('data-stock');
+        var price = option.getAttribute('data-price');
+        var name = option.text;
+
+        document.getElementById('previewImg').src = img;
+        document.getElementById('previewName').innerText = name == "-- Chọn sản phẩm --" ? "---" : name;
+        document.getElementById('previewStock').innerText = stock;
+        document.getElementById('lastPriceDisplay').innerText = parseFloat(price).toLocaleString('vi-VN');
+
+        if(price > 0) document.getElementById('inputPrice').value = parseInt(price);
+        else document.getElementById('inputPrice').value = "";
+
+        calcTotal();
+    }
+
+    function calcTotal() {
+        var price = document.getElementById('inputPrice').value || 0;
+
+        // Lấy giá trị 3 ô input, nếu rỗng thì tính là 0
+        var q1 = parseInt(document.getElementsByName('slHaNoi')[0].value) || 0;
+        var q2 = parseInt(document.getElementsByName('slDaNang')[0].value) || 0;
+        var q3 = parseInt(document.getElementsByName('slHCM')[0].value) || 0;
+
+        var totalQty = q1 + q2 + q3;
+        var totalMoney = price * totalQty;
+
+        document.getElementById('totalQtyDisplay').innerText = totalQty;
+        document.getElementById('totalMoney').innerText = totalMoney.toLocaleString('vi-VN') + " đ";
+    }
+
+    function validateForm() {
+        var q1 = parseInt(document.getElementsByName('slHaNoi')[0].value) || 0;
+        var q2 = parseInt(document.getElementsByName('slDaNang')[0].value) || 0;
+        var q3 = parseInt(document.getElementsByName('slHCM')[0].value) || 0;
+
+        if (q1 + q2 + q3 <= 0) {
+            alert("Vui lòng nhập số lượng ít nhất cho 1 kho!");
+            return false;
         }
+        return confirm('Xác nhận nhập ' + (q1+q2+q3) + ' sản phẩm vào hệ thống?');
     }
 </script>

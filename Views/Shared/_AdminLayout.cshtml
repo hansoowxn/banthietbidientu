@@ -150,6 +150,39 @@
                 background-color: #FFE0B2 !important;
             }
 
+        /* --- BOSS STYLE --- */
+        .bg-boss-gradient {
+            background: linear-gradient(135deg, #FFD700 0%, #FDB931 50%, #B8860B 100%) !important;
+            color: #fff !important;
+            border: 2px solid #fff;
+            box-shadow: 0 0 15px rgba(218, 165, 32, 0.6);
+            animation: boss-pulse 3s infinite;
+        }
+
+        .text-boss-gradient {
+            background: linear-gradient(to right, #B8860B, #FFD700, #B8860B);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 800 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        @@keyframes boss-pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 10px rgba(255, 215, 0, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+            }
+        }
+
         @@media (max-width: 768px) {
             #sidebar {
                 margin-left: -260px;
@@ -198,10 +231,10 @@
                 @{
                     string currentAction = ViewContext.RouteData.Values["Action"]?.ToString();
                     string currentController = ViewContext.RouteData.Values["Controller"]?.ToString();
-                    bool isBoss = User.IsInRole("Boss");
+                    bool isBossSidebar = User.IsInRole("Boss");
                 }
 
-                @if (isBoss)
+                @if (isBossSidebar)
                 {
                     <li>
                         <a href="@Url.Action("NhapHang", "Warehouse")" class="@(currentController == "Warehouse" && currentAction == "NhapHang" ? "active" : "")">
@@ -210,23 +243,20 @@
                     </li>
                     <li>
                         <a href="@Url.Action("QuanLyNhapHang", "Warehouse")" class="@(currentController == "Warehouse" && currentAction == "QuanLyNhapHang" ? "active" : "")">
-                            <i class="bi bi-journal-text"></i> Lịch sử nhập
+                            <i class="bi bi-journal-text text-info"></i> Lịch sử nhập
                         </a>
                     </li>
                 }
 
                 <li class="nav-item">
-                    <a class="nav-link text-white @(currentController == "Chat" ? "active" : "")" asp-controller="Chat" asp-action="Index">
-                        <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
-                            <i class="bi bi-chat-dots"></i>
-                        </div>
-                        <span class="nav-link-text ms-1">Hỗ trợ khách hàng</span>
+                    <a href="@Url.Action("Index", "Chat")" class="@(currentController == "Chat" ? "active" : "")">
+                        <i class="bi bi-chat-dots text-info"></i> Hỗ trợ khách hàng
                     </a>
                 </li>
 
                 <li>
                     <a href="@Url.Action("Index", "Admin")" class="@(currentController == "Admin" && currentAction == "Index" ? "active" : "")">
-                        <i class="bi bi-grid-fill"></i> Tổng quan
+                        <i class="bi bi-grid-fill text-primary"></i> Tổng quan
                     </a>
                 </li>
 
@@ -234,13 +264,13 @@
 
                 <li>
                     <a href="@Url.Action("Index", "ProductManager")" class="@(currentController == "ProductManager" ? "active" : "")">
-                        <i class="bi bi-box-seam-fill"></i> Kho hàng
+                        <i class="bi bi-box-seam-fill text-danger"></i> Kho hàng
                     </a>
                 </li>
 
                 <li>
                     <a href="@Url.Action("QuanLyDonHang", "Admin")" class="@(currentController == "Admin" && currentAction == "QuanLyDonHang" ? "active" : "")">
-                        <i class="bi bi-receipt"></i> Đơn hàng
+                        <i class="bi bi-receipt text-success"></i> Đơn hàng
                     </a>
                 </li>
 
@@ -250,38 +280,38 @@
                     </a>
                 </li>
 
-                @if (isBoss)
+                @if (isBossSidebar)
                 {
                     <li>
                         <a href="@Url.Action("QuanLyTaiKhoan", "Admin")" class="@(currentController == "Admin" && (currentAction == "QuanLyTaiKhoan" || currentAction == "ThemTaiKhoan") ? "active" : "")">
-                            <i class="bi bi-people-fill"></i> Tài khoản
+                            <i class="bi bi-people-fill text-info"></i> Tài khoản
                         </a>
                     </li>
                 }
 
                 <li>
                     <a href="@Url.Action("QuanLyThuMua", "Admin")" class="@(currentController == "Admin" && currentAction == "QuanLyThuMua" ? "active" : "")">
-                        <i class="bi bi-phone-flip"></i> Thu cũ đổi mới
+                        <i class="bi bi-phone-flip text-secondary"></i> Thu cũ đổi mới
                     </a>
                 </li>
 
                 <li>
                     <a href="@Url.Action("QuanLyDanhGia", "Admin")" class="@(currentController == "Admin" && currentAction == "QuanLyDanhGia" ? "active" : "")">
-                        <i class="bi bi-star-half"></i> Đánh giá
+                        <i class="bi bi-star-half text-warning"></i> Đánh giá
                     </a>
                 </li>
 
                 <li>
                     <a href="@Url.Action("QuanLyThongBao", "Admin")" class="@(currentController == "Admin" && currentAction == "QuanLyThongBao" ? "active" : "")">
-                        <i class="bi bi-bell-fill"></i> Tất cả thông báo
+                        <i class="bi bi-bell-fill text-danger"></i> Tất cả thông báo
                     </a>
                 </li>
 
-                @if (isBoss)
+                @if (isBossSidebar)
                 {
                     <li>
                         <a href="@Url.Action("QuanLyBanner", "Admin")" class="@(currentController == "Admin" && (currentAction == "QuanLyBanner" || currentAction == "ThemBanner" || currentAction == "SuaBanner") ? "active" : "")">
-                            <i class="bi bi-images"></i> Banner
+                            <i class="bi bi-images text-primary"></i> Banner
                         </a>
                     </li>
 
@@ -292,19 +322,19 @@
                     </li>
                 }
 
-                @if (isBoss)
+                @if (isBossSidebar)
                 {
                     <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Hệ thống</li>
 
                     <li>
                         <a href="@Url.Action("BaoCao", "Admin")" class="@(currentController == "Admin" && currentAction == "BaoCao" ? "active" : "")">
-                            <i class="bi bi-bar-chart-line-fill"></i> Báo cáo doanh thu
+                            <i class="bi bi-bar-chart-line-fill text-primary"></i> Báo cáo doanh thu
                         </a>
                     </li>
 
                     <li>
                         <a href="@Url.Action("NhatKyHoatDong", "Admin")" class="@(currentController == "Admin" && currentAction == "NhatKyHoatDong" ? "active" : "")">
-                            <i class="bi bi-journal-medical"></i> Nhật ký hoạt động
+                            <i class="bi bi-journal-medical text-secondary"></i> Nhật ký hoạt động
                         </a>
                     </li>
 
@@ -321,7 +351,7 @@
                     </li>
                 }
 
-                @if (!isBoss)
+                @if (!isBossSidebar)
                 {
                     <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Cá nhân</li>
                     <li>
@@ -360,14 +390,30 @@
 
                 <div class="border-start h-50 mx-2"></div>
 
+                    @{
+                        bool isBossNav = User.IsInRole("Boss");
+                    }
+
                 <div class="dropdown">
                     <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle text-dark" id="dropdownUser1" data-bs-toggle="dropdown" aria-expanded="false">
-                        <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" style="width: 35px; height: 35px;">
-                                @User.Identity.Name?.Substring(0, 1).ToUpper()
+                        <div class="@(isBossNav ? "bg-boss-gradient" : "bg-primary") text-white rounded-circle d-flex align-items-center justify-content-center me-2"
+                             style="width: 40px; height: 40px; font-size: 1.1rem; transition: all 0.3s;">
+                                @if (isBossNav)
+                                {
+                                <i class="bi bi-crown-fill"></i>
+                                }
+                                else
+                                {
+                                    @User.Identity.Name?.Substring(0, 1).ToUpper()
+                                }
                         </div>
+
                         <div>
                             <span class="fw-bold d-block small">@User.Identity.Name</span>
-                            <span class="text-muted d-block" style="font-size: 11px;">@(isBoss ? "Chủ tịch (Boss)" : "Quản lý (Admin)")</span>
+
+                            <span class="d-block @(isBossNav ? "text-boss-gradient" : "text-muted")" style="font-size: 11px;">
+                                    @(isBossNav ? "CHỦ TỊCH (BOSS)" : "Quản lý (Admin)")
+                            </span>
                         </div>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end shadow" aria-labelledby="dropdownUser1">
@@ -478,7 +524,8 @@
                                             : '<div class="bg-light-info text-info rounded-circle p-2 me-2 d-flex align-items-center justify-content-center" style="width:35px;height:35px;"><i class="bi bi-info-circle-fill"></i></div>'));
 
                                 let bgClass = item.daDoc ? '' : 'bg-unread';
-                                let linkUrl = item.redirectAction ? `/Admin/${item.redirectAction}?highlightId=${item.redirectId}` : '/Admin/Index';
+                                    let controllerName = item.controller ? item.controller : 'Admin';
+                                    let linkUrl = item.redirectAction ? `/${controllerName}/${item.redirectAction}?highlightId=${item.redirectId}` : '/Admin/Index';
 
                                 let html = `<li><a class="dropdown-item d-flex align-items-start p-2 border-bottom ${bgClass}" href="javascript:void(0)" onclick="markAndGo(${item.id}, '${linkUrl}')">${icon}<div><div class="small fw-bold text-wrap mb-1" style="line-height: 1.3;">${item.tieuDe ? item.tieuDe : 'Thông báo'}: ${item.noiDung}</div><div class="text-muted fst-italic" style="font-size: 10px;">${finalDate}</div></div></a></li>`;
                                 listContainer.insertAdjacentHTML('beforeend', html);

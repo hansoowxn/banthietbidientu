@@ -262,7 +262,10 @@ namespace banthietbidientu.Controllers
                         daDoc = x.DaDoc,
                         loaiThongBao = x.LoaiThongBao,
                         redirectId = x.RedirectId,
-                        redirectAction = x.RedirectAction
+                        redirectAction = x.RedirectAction,
+                        controller = (x.RedirectAction == "QuanLyChuyenKho" || x.RedirectAction == "QuanLyNhapHang") ? "Warehouse" :
+                     (x.RedirectAction == "QuanLySanPham" || x.RedirectAction == "Index" && x.TieuDe.Contains("Sản phẩm")) ? "ProductManager" :
+                     "Admin"
                     })
                     .ToList();
 

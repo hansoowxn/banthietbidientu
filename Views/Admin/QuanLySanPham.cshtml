@@ -1,75 +1,169 @@
-﻿@model IEnumerable<banthietbidientu.Models.SanPham>
-
+﻿@model List<banthietbidientu.Models.SanPham>
 @{
     ViewData["Title"] = "Quản lý sản phẩm";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
+    bool isBoss = ViewBag.IsBoss ?? false;
+    int currentStoreId = ViewBag.CurrentStoreId ?? 0;
 }
 
-<div class="container-fluid py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="fw-bold text-primary"><i class="bi bi-box-seam me-2"></i>Quản lý sản phẩm</h2>
-        <a asp-action="ThemSanPham" asp-controller="ProductManager" class="btn btn-success shadow-sm">
-            <i class="bi bi-plus-lg me-2"></i>Thêm sản phẩm
-        </a>
+<div class="card shadow border-0">
+    <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+        <h5 class="mb-0 fw-bold text-primary"><i class="bi bi-box-seam-fill me-2"></i>Kho Hàng & Sản Phẩm</h5>
+        @if (isBoss)
+        {
+            <a href="@Url.Action("ThemSanPham", "ProductManager")" class="btn btn-primary btn-sm rounded-pill">
+                <i class="bi bi-plus-lg me-1"></i> Thêm mới
+            </a>
+        }
     </div>
 
-    <div class="card shadow-sm border-0">
-        <div class="card-body p-0">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="bg-light">
-                        <tr>
-                            <th class="ps-4">Sản phẩm</th>
-                            <th>Danh mục</th>
-                            <th class="text-danger">Giá Vốn</th>
-                            <th class="text-success">Giá Bán</th>
-                            <th>Tồn kho</th>
-                            <th class="text-end pe-4">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach (var item in Model)
-                        {
-                            <tr>
-                                <td class="ps-4">
-                                    <div class="d-flex align-items-center">
-                                        <img src="@item.ImageUrl" class="rounded border me-3" style="width: 50px; height: 50px; object-fit: cover;">
-                                        <div>
-                                            <div class="fw-bold text-dark">@item.Name</div>
-                                            <div class="small text-muted">ID: @item.Id</div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td><span class="badge bg-secondary bg-opacity-10 text-secondary">@item.Category</span></td>
-
-                                <td class="fw-bold text-danger">@item.GiaNhap.ToString("N0") đ</td>
-
-                                <td class="fw-bold text-success">@item.Price.ToString("N0") đ</td>
-                                <td>
-                                    @if (item.SoLuong > 0)
-                                    {
-                                        <span class="badge bg-success">Còn @item.SoLuong</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="badge bg-danger">Hết hàng</span>
-                                    }
-                                </td>
-                                <td class="text-end pe-4">
-                                    <a asp-action="SuaSanPham" asp-controller="ProductManager" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary me-2">
-                                        <i class="bi bi-pencil"></i>
-                                    </a>
-                                    <form asp-action="XoaSanPham" asp-controller="ProductManager" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này?');">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        }
-                    </tbody>
-                </table>
+    <div class="card-body border-bottom bg-light">
+        <div class="row g-2">
+            <div class="col-md-4">
+                <div class="input-group">
+                    <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                    <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Nhập tên sản phẩm để lọc ngay...">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select id="categorySelect" class="form-select">
+                    <option value="">-- Tất cả danh mục --</option>
+                    @foreach (var cat in Model.Select(x => x.Category).Distinct().Where(x => !string.IsNullOrEmpty(x)))
+                    {
+                        <option value="@cat">@cat</option>
+                    }
+                </select>
             </div>
         </div>
     </div>
+
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0" id="productTable">
+                <thead class="bg-light text-secondary">
+                    <tr>
+                        <th class="ps-4">Sản phẩm</th>
+                        <th>Danh mục</th>
+                        <th>Giá bán</th>
+                        @if (isBoss)
+                        {
+                            <th>Giá nhập</th>
+                        }
+                        <th class="text-center">Tồn kho @(isBoss ? "(Tổng)" : "(Tại kho)")</th>
+                        @if (isBoss)
+                        {
+                            <th class="text-end pe-4">Hành động</th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        // Tính tồn kho hiển thị
+                        int hienThiTonKho = 0;
+                        if (isBoss)
+                        {
+                            hienThiTonKho = item.SoLuong; // Boss thấy tổng
+                        }
+                        else
+                        {
+                            // Admin chỉ thấy kho của mình
+                            var khoHang = item.KhoHangs?.FirstOrDefault(k => k.StoreId == currentStoreId);
+                            hienThiTonKho = khoHang?.SoLuong ?? 0;
+                        }
+
+                        <tr class="product-row" data-category="@item.Category">
+                            <td class="ps-4">
+                                <div class="d-flex align-items-center">
+                                    @if (!string.IsNullOrEmpty(item.ImageUrl))
+                                    {
+                                        <img src="@item.ImageUrl" class="rounded border me-3" style="width: 45px; height: 45px; object-fit: cover;">
+                                    }
+                                    else
+                                    {
+                                        <div class="bg-light rounded border me-3 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+                                            <i class="bi bi-image text-muted"></i>
+                                        </div>
+                                    }
+                                    <div>
+                                        <div class="fw-bold text-dark productName">@item.Name</div>
+                                        <small class="text-muted">ID: #@item.Id</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td><span class="badge bg-light text-dark border">@item.Category</span></td>
+                            <td class="fw-bold text-primary">@item.Price.ToString("N0") đ</td>
+
+                            @if (isBoss)
+                            {
+                                <td class="text-muted">@item.GiaNhap.ToString("N0") đ</td>
+                            }
+
+                            <td class="text-center">
+                                @if (hienThiTonKho > 0)
+                                {
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-3">@hienThiTonKho</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-subtle text-danger rounded-pill px-3">Hết hàng</span>
+                                }
+                            </td>
+
+                            @if (isBoss)
+                            {
+                                <td class="text-end pe-4">
+                                    <div class="dropdown">
+                                        <button class="btn btn-light btn-sm rounded-circle shadow-sm" type="button" data-bs-toggle="dropdown">
+                                            <i class="bi bi-three-dots-vertical"></i>
+                                        </button>
+                                        <ul class="dropdown-menu dropdown-menu-end border-0 shadow">
+                                            <li><a class="dropdown-item" href="@Url.Action("SuaSanPham", "ProductManager", new { id = item.Id })"><i class="bi bi-pencil me-2 text-warning"></i>Sửa</a></li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            <li>
+                                                <form asp-action="XoaSanPham" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa?');">
+                                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i>Xóa</button>
+                                                </form>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
+
+<script>
+    // JS Xử lý tìm kiếm và lọc danh mục
+    document.addEventListener("DOMContentLoaded", function () {
+        const searchInput = document.getElementById('searchInput');
+        const categorySelect = document.getElementById('categorySelect');
+        const rows = document.querySelectorAll('.product-row');
+
+        function filterTable() {
+            const searchText = searchInput.value.toLowerCase();
+            const selectedCategory = categorySelect.value;
+
+            rows.forEach(row => {
+                const productName = row.querySelector('.productName').textContent.toLowerCase();
+                const category = row.getAttribute('data-category');
+
+                const matchName = productName.includes(searchText);
+                const matchCategory = selectedCategory === "" || category === selectedCategory;
+
+                if (matchName && matchCategory) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
+
+        searchInput.addEventListener('input', filterTable);
+        categorySelect.addEventListener('change', filterTable);
+    });
+</script>

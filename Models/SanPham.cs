@@ -40,5 +40,6 @@ namespace banthietbidientu.Models
 
         // Liên kết với chi tiết phiếu nhập (để tra cứu lịch sử nhập)
         public virtual ICollection<ChiTietPhieuNhap> ChiTietPhieuNhaps { get; set; }
+        public virtual ICollection<KhoHang> KhoHangs { get; set; }
     }
 }

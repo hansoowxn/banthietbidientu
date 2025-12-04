@@ -97,7 +97,8 @@
                                         }
                                         else if (item.TrangThai == 0 && item.TuKhoId != 0)
                                         {
-                                            if (isBoss || currentStoreId == item.TuKhoId)
+                                            @* --- ĐÃ SỬA: CHỈ KHO NGUỒN MỚI ĐƯỢC ẤN (Boss không ấn được) --- *@
+                                            if (currentStoreId == item.TuKhoId)
                                             {
                                                 <button onclick="duyetXuatKho(@item.Id)" class="btn btn-sm btn-outline-primary fw-bold me-1">
                                                     <i class="bi bi-box-arrow-right"></i> Xuất kho
@@ -108,7 +109,9 @@
                                             }
                                             else
                                             {
-                                                <small class="text-muted fst-italic">Chờ kho đi xuất...</small>
+                                                <small class="text-muted fst-italic">
+                                                    Chờ kho @(item.TuKhoId == 1 ? "HN" : item.TuKhoId == 2 ? "ĐN" : "HCM") xuất...
+                                                </small>
                                             }
                                         }
                                         else if (item.TrangThai == 1)
@@ -178,7 +181,7 @@
 
 @section Scripts {
     <script>
-        // Lưu ý: Đã sửa đường dẫn API trỏ về WarehouseController (/Warehouse/...)
+        // Các hàm gọi API về WarehouseController
 
         function openDuyetModal(id, ma) {
             document.getElementById('modalPhieuId').value = id;

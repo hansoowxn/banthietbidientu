@@ -19,6 +19,36 @@
     @RenderSection("Styles", required: false)
 
     <style>
+        /* --- BOSS STYLE: ĐỘC NHẤT VÔ NHỊ (Thêm mới) --- */
+        .bg-boss-gradient {
+            /* Màu vàng kim sang trọng */
+            background: linear-gradient(135deg, #FFD700 0%, #FDB931 50%, #B8860B 100%) !important;
+            color: #fff !important; /* Chữ trắng */
+            border: 2px solid #fff !important;
+            /* Hiệu ứng phát sáng */
+            box-shadow: 0 0 15px rgba(218, 165, 32, 0.8) !important;
+            animation: boss-pulse 2s infinite;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.3); /* Bóng chữ để dễ đọc trên nền vàng */
+        }
+
+        @@keyframes boss-pulse {
+            0%
+
+        {
+            box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.7);
+        }
+
+        70% {
+            box-shadow: 0 0 0 15px rgba(255, 215, 0, 0);
+        }
+
+        100% {
+            box-shadow: 0 0 0 0 rgba(255, 215, 0, 0);
+        }
+
+        }
+        /* ----------------------------------------------- */
+
         /* CSS Admin Link */
         .admin-link a {
             color: #dc3545 !important;
@@ -371,19 +401,37 @@
                 @if (User.Identity.IsAuthenticated)
                 {
                     var currentTier = MemberService.GetUserTier(User.Identity.Name);
+                    bool isBoss = User.IsInRole("Boss");
+
                     <div class="dropdown">
-                        <button class="btn dropdown-toggle d-flex align-items-center gap-2 shadow-sm @currentTier.CssClass" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="transition: all 0.3s; border: 1px solid rgba(255,255,255,0.5);">
-                            <i class="bi @currentTier.Icon fs-5"></i>
+                        <button class="btn dropdown-toggle d-flex align-items-center gap-2 shadow-sm @(isBoss ? "bg-boss-gradient" : currentTier.CssClass)"
+                                type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                                style="transition: all 0.3s; border: 1px solid rgba(255,255,255,0.5);">
+
+                            @if (isBoss)
+                            {
+                                <i class="bi bi-crown-fill fs-5"></i>
+                            }
+                            else
+                            {
+                                <i class="bi @currentTier.Icon fs-5"></i>
+                            }
+
                             <div class="d-flex flex-column text-start" style="line-height: 1.1;">
                                 <span style="font-size: 0.9rem;">@User.Identity.Name</span>
-                                <span style="font-size: 0.65rem; opacity: 0.9; text-transform: uppercase;">@currentTier.Name</span>
+                                <span style="font-size: 0.65rem; opacity: 0.9; text-transform: uppercase;">
+                                    @(isBoss ? "CHỦ TỊCH (BOSS)" : currentTier.Name)
+                                </span>
                             </div>
                         </button>
+
                         <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2" aria-labelledby="userDropdown">
                             <li class="px-3 py-2 text-center bg-light border-bottom">
                                 <div class="small text-muted">Hạng thành viên</div>
-                                <div class="fw-bold text-primary text-uppercase">@currentTier.Name</div>
-                                @if (currentTier.CssClass != "tier-boss" && currentTier.CssClass != "tier-admin")
+                                <div class="fw-bold text-primary text-uppercase">
+                                    @(isBoss ? "CHỦ TỊCH (BOSS)" : currentTier.Name)
+                                </div>
+                                @if (currentTier.CssClass != "tier-boss" && currentTier.CssClass != "tier-admin" && !isBoss)
                                 {
                                     <div class="progress mt-2" style="height: 4px;">
                                         @{
