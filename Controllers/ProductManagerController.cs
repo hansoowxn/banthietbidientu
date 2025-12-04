@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using banthietbidientu.Data;
 using banthietbidientu.Models;
 using banthietbidientu.Services;
+using System;
 
 namespace banthietbidientu.Controllers
 {
@@ -15,7 +16,7 @@ namespace banthietbidientu.Controllers
         {
         }
 
-        public IActionResult Index()
+        public IActionResult Index()    
         {
             return View("~/Views/Admin/QuanLySanPham.cshtml", _context.SanPhams.AsNoTracking().ToList());
         }
@@ -34,23 +35,43 @@ namespace banthietbidientu.Controllers
         {
             if (ModelState.IsValid)
             {
-                // 1. Lưu thông tin chung
-                model.SoLuong = slHaNoi + slDaNang + slHCM; // Tổng tồn kho hiển thị
-                if (string.IsNullOrEmpty(model.MoTa)) model.MoTa = ""; // Không dùng MoTa lưu kho nữa
+                using (var transaction = _context.Database.BeginTransaction())
+                {
+                    try
+                    {
+                        // 1. Lưu sản phẩm trước
+                        model.SoLuong = slHaNoi + slDaNang + slHCM;
+                        if (string.IsNullOrEmpty(model.MoTa)) model.MoTa = "";
 
-                _context.SanPhams.Add(model);
-                _context.SaveChanges();
+                        _context.SanPhams.Add(model);
+                        _context.SaveChanges(); // Lưu lần 1 để lấy ID
 
-                // 2. [LOGIC MỚI] Lưu vào bảng KhoHang
-                var k1 = new KhoHang { SanPhamId = model.Id, StoreId = 1, SoLuong = slHaNoi };
-                var k2 = new KhoHang { SanPhamId = model.Id, StoreId = 2, SoLuong = slDaNang };
-                var k3 = new KhoHang { SanPhamId = model.Id, StoreId = 3, SoLuong = slHCM };
+                        // 2. Lưu kho hàng
+                        var k1 = new KhoHang { SanPhamId = model.Id, StoreId = 1, SoLuong = slHaNoi };
+                        var k2 = new KhoHang { SanPhamId = model.Id, StoreId = 2, SoLuong = slDaNang };
+                        var k3 = new KhoHang { SanPhamId = model.Id, StoreId = 3, SoLuong = slHCM };
 
-                _context.KhoHangs.AddRange(k1, k2, k3);
-                _context.SaveChanges();
+                        _context.KhoHangs.AddRange(k1, k2, k3);
+                        _context.SaveChanges(); // Lưu lần 2
 
-                GhiNhatKy("Thêm sản phẩm", $"Thêm mới: {model.Name} (HN:{slHaNoi}, ĐN:{slDaNang}, HCM:{slHCM})");
-                return RedirectToAction("Index");
+                        transaction.Commit(); // Chốt giao dịch
+
+                        GhiNhatKy("Thêm sản phẩm", $"Thêm mới: {model.Name}");
+                        TempData["Success"] = "Thêm sản phẩm thành công!";
+                        return RedirectToAction("Index");
+                    }
+                    catch (Exception ex)
+                    {
+                        transaction.Rollback(); // Hoàn tác nếu lỗi
+                        string err = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                        TempData["Error"] = $"LỖI LƯU DB: {err}"; // Hiện lỗi ra màn hình
+                    }
+                }
+            }
+            else
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage);
+                TempData["Error"] = "Dữ liệu không hợp lệ: " + string.Join(", ", errors);
             }
             return View("~/Views/Admin/ThemSanPham.cshtml", model);
         }
@@ -62,7 +83,6 @@ namespace banthietbidientu.Controllers
             var sp = _context.SanPhams.Find(id);
             if (sp == null) return NotFound();
 
-            // [LOGIC MỚI] Lấy dữ liệu từ bảng KhoHang đổ lên View
             var khoHangs = _context.KhoHangs.Where(k => k.SanPhamId == id).ToList();
 
             ViewBag.SlHaNoi = khoHangs.FirstOrDefault(k => k.StoreId == 1)?.SoLuong ?? 0;
@@ -77,35 +97,51 @@ namespace banthietbidientu.Controllers
         [ValidateAntiForgeryToken]
         public IActionResult SuaSanPham(SanPham model, int slHaNoi, int slDaNang, int slHCM)
         {
-            var sp = _context.SanPhams.Find(model.Id);
-            if (sp != null)
+            try
             {
-                // Cập nhật thông tin
-                sp.Name = model.Name;
-                sp.Price = model.Price;
-                sp.GiaNhap = model.GiaNhap;
-                sp.Category = model.Category;
-                sp.ImageUrl = model.ImageUrl;
-                sp.Description = model.Description;
-                sp.SoLuong = slHaNoi + slDaNang + slHCM;
-
-                // [LOGIC MỚI] Cập nhật bảng KhoHang
-                var khoHangs = _context.KhoHangs.Where(k => k.SanPhamId == sp.Id).ToList();
-
-                void UpdateStock(int storeId, int qty)
+                var sp = _context.SanPhams.Find(model.Id);
+                if (sp != null)
                 {
-                    var kho = khoHangs.FirstOrDefault(k => k.StoreId == storeId);
-                    if (kho != null) kho.SoLuong = qty;
-                    else _context.KhoHangs.Add(new KhoHang { SanPhamId = sp.Id, StoreId = storeId, SoLuong = qty });
+                    // Cập nhật thông tin cơ bản
+                    sp.Name = model.Name;
+                    sp.Price = model.Price;
+                    sp.GiaNhap = model.GiaNhap; // [QUAN TRỌNG] Đã thêm cập nhật giá nhập
+                    sp.Category = model.Category;
+                    sp.ImageUrl = model.ImageUrl;
+                    sp.Description = model.Description;
+                    sp.SoLuong = slHaNoi + slDaNang + slHCM;
+
+                    // Cập nhật Kho
+                    var khoHangs = _context.KhoHangs.Where(k => k.SanPhamId == sp.Id).ToList();
+
+                    void UpdateStock(int storeId, int qty)
+                    {
+                        var kho = khoHangs.FirstOrDefault(k => k.StoreId == storeId);
+                        if (kho != null) kho.SoLuong = qty;
+                        else _context.KhoHangs.Add(new KhoHang { SanPhamId = sp.Id, StoreId = storeId, SoLuong = qty });
+                    }
+
+                    UpdateStock(1, slHaNoi);
+                    UpdateStock(2, slDaNang);
+                    UpdateStock(3, slHCM);
+
+                    _context.SaveChanges(); // Lưu thay đổi
+
+                    GhiNhatKy("Sửa sản phẩm", $"Cập nhật SP {sp.Id}");
+                    TempData["Success"] = "Cập nhật thành công!";
                 }
-
-                UpdateStock(1, slHaNoi);
-                UpdateStock(2, slDaNang);
-                UpdateStock(3, slHCM);
-
-                _context.SaveChanges();
-                GhiNhatKy("Sửa sản phẩm", $"Cập nhật SP {sp.Id}: HN({slHaNoi}) - ĐN({slDaNang}) - HCM({slHCM})");
+                else
+                {
+                    TempData["Error"] = "Không tìm thấy sản phẩm!";
+                }
             }
+            catch (Exception ex)
+            {
+                string err = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                TempData["Error"] = $"LỖI LƯU DB: {err}";
+                return View("~/Views/Admin/SuaSanPham.cshtml", model);
+            }
+
             return RedirectToAction("Index");
         }
 
@@ -113,35 +149,50 @@ namespace banthietbidientu.Controllers
         [HttpPost]
         public IActionResult XoaSanPham(int id)
         {
-            var sp = _context.SanPhams.Find(id);
-            if (sp != null)
+            try
             {
-                // Xóa cả dữ liệu kho liên quan (Cascade delete thường tự lo, nhưng xóa tay cho chắc)
-                var khoHangs = _context.KhoHangs.Where(k => k.SanPhamId == id);
-                _context.KhoHangs.RemoveRange(khoHangs);
+                var sp = _context.SanPhams.Find(id);
+                if (sp != null)
+                {
+                    var khoHangs = _context.KhoHangs.Where(k => k.SanPhamId == id);
+                    _context.KhoHangs.RemoveRange(khoHangs);
 
-                string tenSp = sp.Name;
-                _context.SanPhams.Remove(sp);
-                _context.SaveChanges();
-                GhiNhatKy("Xóa sản phẩm", $"Đã xóa: {tenSp}");
+                    string tenSp = sp.Name;
+                    _context.SanPhams.Remove(sp);
+                    _context.SaveChanges();
+
+                    GhiNhatKy("Xóa sản phẩm", $"Đã xóa: {tenSp}");
+                    TempData["Success"] = "Xóa sản phẩm thành công!";
+                }
+            }
+            catch (Exception ex)
+            {
+                string err = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+                TempData["Error"] = $"Không thể xóa (có thể do ràng buộc đơn hàng): {err}";
             }
             return RedirectToAction("Index");
         }
 
-        // API Cập nhật giá nhanh
         [Authorize(Roles = "Boss")]
         [HttpPost]
         public async Task<IActionResult> CapNhatGiaNhapNhanh(int id, decimal giaNhap)
         {
-            var sp = await _context.SanPhams.FindAsync(id);
-            if (sp != null && giaNhap >= 0)
+            try
             {
-                sp.GiaNhap = giaNhap;
-                await _context.SaveChangesAsync();
-                GhiNhatKy("Cập nhật giá vốn", $"Cập nhật nhanh giá vốn SP {id}: {giaNhap:N0}");
-                return Json(new { success = true });
+                var sp = await _context.SanPhams.FindAsync(id);
+                if (sp != null && giaNhap >= 0)
+                {
+                    sp.GiaNhap = giaNhap;
+                    await _context.SaveChangesAsync();
+                    GhiNhatKy("Cập nhật giá vốn", $"Cập nhật nhanh giá vốn SP {id}: {giaNhap:N0}");
+                    return Json(new { success = true });
+                }
+                return Json(new { success = false, message = "Dữ liệu không hợp lệ" });
             }
-            return Json(new { success = false });
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
     }
 }

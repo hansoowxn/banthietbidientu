@@ -1,169 +1,98 @@
 ﻿@model banthietbidientu.Models.SanPham
 
 @{
-    ViewData["Title"] = "Chỉnh sửa sản phẩm";
+    ViewData["Title"] = "Cập nhật sản phẩm";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-
-    // Danh sách danh mục chuẩn
-    var categories = new List<string> { "Điện thoại", "Laptop", "Tablet", "Smartwatch", "Đồng hồ", "Phụ kiện", "Thu mua máy cũ" };
 }
 
 <div class="container-fluid py-4">
+    <div class="card shadow-sm border-0">
+        <div class="card-header bg-white py-3 d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-warning"><i class="bi bi-pencil-square me-2"></i>Cập nhật sản phẩm</h5>
+            <a asp-action="Index" asp-controller="ProductManager" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-2"></i>Quay lại
+            </a>
+        </div>
+        <div class="card-body p-4">
+            <form asp-action="SuaSanPham" method="post">
+                <input type="hidden" asp-for="Id" />
 
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="fw-bold text-primary mb-1"><i class="bi bi-pencil-square me-2"></i>Chỉnh Sửa Sản Phẩm</h4>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb mb-0 small">
-                    <li class="breadcrumb-item"><a asp-action="QuanLySanPham" class="text-decoration-none text-muted">Kho hàng</a></li>
-                    <li class="breadcrumb-item active" aria-current="page">#@Model.Id</li>
-                </ol>
-            </nav>
+                <div class="row">
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label asp-for="Name" class="form-label fw-bold">Tên sản phẩm</label>
+                            <input asp-for="Name" class="form-control" required />
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Category" class="form-label fw-bold">Danh mục</label>
+                                <select asp-for="Category" class="form-select">
+                                    <option value="Điện thoại">Điện thoại</option>
+                                    <option value="Laptop">Laptop</option>
+                                    <option value="Tablet">Tablet</option>
+                                    <option value="Smartwatch">Smartwatch</option>
+                                    <option value="Phụ kiện">Phụ kiện</option>
+                                    <option value="TV">TV</option>
+                                    <option value="Khác">Khác</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="ImageUrl" class="form-label fw-bold">Link Hình ảnh</label>
+                                <input asp-for="ImageUrl" class="form-control" />
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="Price" class="form-label fw-bold text-success">Giá Bán</label>
+                                <input asp-for="Price" class="form-control" type="number" min="0" />
+                            </div>
+
+                            <div class="col-md-6 mb-3">
+                                <label asp-for="GiaNhap" class="form-label fw-bold text-danger">Giá Nhập (Giá Vốn)</label>
+                                <input asp-for="GiaNhap" class="form-control" type="number" min="0" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Description" class="form-label fw-bold">Mô tả ngắn</label>
+                            <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                        </div>
+                    </div>
+
+                    <div class="col-md-4">
+                        <div class="card bg-light border-0">
+                            <div class="card-body">
+                                <h6 class="fw-bold mb-3 text-primary"><i class="bi bi-boxes me-2"></i>Điều chỉnh kho</h6>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Kho Hà Nội</label>
+                                    <input type="number" name="slHaNoi" class="form-control" min="0" value="@ViewBag.SlHaNoi" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Kho Đà Nẵng</label>
+                                    <input type="number" name="slDaNang" class="form-control" min="0" value="@ViewBag.SlDaNang" />
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Kho TP.HCM</label>
+                                    <input type="number" name="slHCM" class="form-control" min="0" value="@ViewBag.SlHCM" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="mt-3 text-center">
+                            <img src="@Model.ImageUrl" alt="@Model.Name" class="img-thumbnail" style="max-height: 150px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-warning btn-lg text-white"><i class="bi bi-check-circle me-2"></i>Cập nhật sản phẩm</button>
+                </div>
+            </form>
         </div>
     </div>
-
-    <form asp-action="SuaSanPham" method="post">
-        <input type="hidden" asp-for="Id" />
-
-        <div class="row g-4">
-
-            <div class="col-lg-8">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-body p-4">
-                        <h6 class="fw-bold text-uppercase text-muted small mb-3">Thông tin cơ bản</h6>
-
-                        <div class="mb-3">
-                            <label asp-for="Name" class="form-label fw-semibold">Tên sản phẩm <span class="text-danger">*</span></label>
-                            <input asp-for="Name" class="form-control form-control-lg bg-light border-0" placeholder="Nhập tên sản phẩm..." required />
-                            <span asp-validation-for="Name" class="text-danger small"></span>
-                        </div>
-
-                        <div class="row g-3 mb-3">
-                            <div class="col-md-6">
-                                <label asp-for="Category" class="form-label fw-semibold">Danh mục</label>
-                                <select asp-for="Category" class="form-select bg-light border-0" required>
-                                    <option value="">-- Chọn danh mục --</option>
-                                    @foreach (var cat in categories)
-                                    {
-                                        <option value="@cat">@cat</option>
-                                    }
-                                </select>
-                                <span asp-validation-for="Category" class="text-danger small"></span>
-                            </div>
-
-                            <div class="col-md-6">
-                                <label asp-for="Price" class="form-label fw-semibold">Giá bán (VNĐ) <span class="text-danger">*</span></label>
-                                <div class="input-group">
-                                    <input asp-for="Price" type="number" class="form-control bg-light border-0 fw-bold text-primary" min="0" step="1000" required />
-                                    <span class="input-group-text bg-light border-0">đ</span>
-                                </div>
-                                <span asp-validation-for="Price" class="text-danger small"></span>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-bold text-primary">Cập nhật tồn kho</label>
-                            <div class="card bg-light border-0 p-3 rounded-3">
-                                <div class="row g-3">
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-muted">Kho Hà Nội</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text border-0 bg-white"><i class="bi bi-geo-alt text-danger"></i></span>
-                                            <input type="number" name="slHaNoi" class="form-control border-0" value="@ViewBag.SlHaNoi" min="0" required onchange="updateTotal()" />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-muted">Kho Đà Nẵng</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text border-0 bg-white"><i class="bi bi-geo-alt text-primary"></i></span>
-                                            <input type="number" name="slDaNang" class="form-control border-0" value="@ViewBag.SlDaNang" min="0" required onchange="updateTotal()" />
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <label class="form-label small fw-bold text-muted">Kho TP.HCM</label>
-                                        <div class="input-group">
-                                            <span class="input-group-text border-0 bg-white"><i class="bi bi-geo-alt text-success"></i></span>
-                                            <input type="number" name="slHCM" class="form-control border-0" value="@ViewBag.SlHCM" min="0" required onchange="updateTotal()" />
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="mt-2 text-end small text-muted">
-                                    Tổng tồn kho mới: <strong id="totalStock" class="text-primary">@Model.SoLuong</strong>
-                                </div>
-                            </div>
-
-                            <input type="hidden" asp-for="SoLuong" id="hiddenTotal" />
-                        </div>
-                        <div class="d-flex gap-2 mt-4">
-                            <button type="submit" class="btn btn-primary fw-bold px-4 shadow-sm">
-                                <i class="bi bi-check-lg me-2"></i>Lưu Thay Đổi
-                            </button>
-                            <a asp-action="QuanLySanPham" class="btn btn-light border px-4">Hủy bỏ</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-lg-4">
-                <div class="card border-0 shadow-sm rounded-4 h-100">
-                    <div class="card-body p-4">
-                        <h6 class="fw-bold text-uppercase text-muted small mb-3">Hình ảnh sản phẩm</h6>
-
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">URL Hình ảnh</label>
-                            <div class="input-group">
-                                <span class="input-group-text bg-light border-0"><i class="bi bi-link-45deg"></i></span>
-
-                                <input type="text"
-                                       class="form-control bg-light border-0"
-                                       name="ImageUrl"
-                                       value="@Model.ImageUrl"
-                                       id="imgUrlInput"
-                                       placeholder="Ví dụ: /image/sanpham.webp"
-                                       oninput="previewImage(this.value)" />
-                            </div>
-                            <span class="text-danger field-validation-valid" data-valmsg-for="ImageUrl" data-valmsg-replace="true"></span>
-                        </div>
-
-                        <div class="text-center mt-3 p-3 bg-light rounded-3 border border-dashed">
-                            <img id="imgPreview"
-                                 src="@(string.IsNullOrWhiteSpace(Model.ImageUrl) ? "/image/logo.png" : Model.ImageUrl.Trim())"
-                                 class="img-fluid rounded shadow-sm"
-                                 style="max-height: 250px; object-fit: contain;"
-                                 onerror="this.src='/image/logo.png'">
-                            <div class="text-muted small mt-2 fst-italic">Xem trước hình ảnh</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-    </form>
 </div>
-
-<script>
-    function previewImage(url) {
-        const img = document.getElementById('imgPreview');
-        if (url && url.trim() !== '') {
-            img.src = url;
-        } else {
-            img.src = '/image/logo.png';
-        }
-    }
-
-    function updateTotal() {
-        let hn = parseInt(document.querySelector('[name="slHaNoi"]').value) || 0;
-        let dn = parseInt(document.querySelector('[name="slDaNang"]').value) || 0;
-        let hcm = parseInt(document.querySelector('[name="slHCM"]').value) || 0;
-
-        let total = hn + dn + hcm;
-        document.getElementById('totalStock').innerText = total;
-        document.getElementById('hiddenTotal').value = total;
-    }
-</script>
-
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
-    }
-}

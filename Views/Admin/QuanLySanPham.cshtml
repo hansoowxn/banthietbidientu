@@ -3,216 +3,73 @@
 @{
     ViewData["Title"] = "Quản lý sản phẩm";
     Layout = "~/Views/Shared/_AdminLayout.cshtml";
-    var categories = new List<string> { "Điện thoại", "Laptop", "Tablet", "Smartwatch", "Phụ kiện" };
-
-    // [MỚI] Kiểm tra quyền Boss
-    bool isBoss = User.IsInRole("Boss");
 }
 
 <div class="container-fluid py-4">
-
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h4 class="fw-bold text-primary mb-1">
-                <i class="bi bi-box-seam-fill me-2"></i>Kho Hàng Tổng
-            </h4>
-            <p class="text-muted small mb-0">Tổng cộng: <strong>@Model.Count()</strong> sản phẩm</p>
-        </div>
-
-        @if (isBoss)
-        {
-            <a asp-action="ThemSanPham" class="btn btn-primary shadow-sm fw-bold">
-                <i class="bi bi-plus-lg me-2"></i>Thêm sản phẩm mới
-            </a>
-        }
+        <h2 class="fw-bold text-primary"><i class="bi bi-box-seam me-2"></i>Quản lý sản phẩm</h2>
+        <a asp-action="ThemSanPham" asp-controller="ProductManager" class="btn btn-success shadow-sm">
+            <i class="bi bi-plus-lg me-2"></i>Thêm sản phẩm
+        </a>
     </div>
 
-    <div class="card border-0 shadow-sm mb-4">
-        <div class="card-body p-3">
-            <div class="row g-2">
-                <div class="col-md-4">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0">
-                            <i class="bi bi-search text-muted"></i>
-                        </span>
-                        <input type="text" id="searchProduct" class="form-control border-start-0 ps-0" placeholder="Tìm tên sản phẩm...">
-                    </div>
-                </div>
-                <div class="col-md-3">
-                    <select id="filterCategory" class="form-select">
-                        <option value="">-- Tất cả danh mục --</option>
-                        @foreach (var cat in categories)
-                        {
-                            <option value="@cat">@cat</option>
-                        }
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <select id="filterStatus" class="form-select">
-                        <option value="">-- Tất cả trạng thái --</option>
-                        <option value="conhang">✅ Còn hàng</option>
-                        <option value="hethang">⚠️ Sắp/Hết hàng</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0" id="productTable">
-                <thead class="bg-light text-uppercase small text-muted fw-bold">
-                    <tr>
-                        <th class="ps-4">Sản phẩm</th>
-                        <th>Danh mục</th>
-                        <th>Giá bán</th>
-                        <th class="text-center">Kho</th>
-
-                        @if (isBoss)
-                        {
+    <div class="card shadow-sm border-0">
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-light">
+                        <tr>
+                            <th class="ps-4">Sản phẩm</th>
+                            <th>Danh mục</th>
+                            <th class="text-danger">Giá Vốn</th>
+                            <th class="text-success">Giá Bán</th>
+                            <th>Tồn kho</th>
                             <th class="text-end pe-4">Hành động</th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                    @if (Model != null && Model.Any())
-                    {
-                        foreach (var item in Model)
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
                         {
-                            // Logic xác định trạng thái để lọc
-                            string statusData = item.SoLuong > 5 ? "conhang" : "hethang";
-
-                            // Logic xử lý đường dẫn ảnh
-                            string finalImg = "/image/logo.png";
-                            if (!string.IsNullOrEmpty(item.ImageUrl))
-                            {
-                                if (item.ImageUrl.StartsWith("http") || item.ImageUrl.StartsWith("/"))
-                                {
-                                    finalImg = item.ImageUrl;
-                                }
-                                else
-                                {
-                                    finalImg = "/image/" + item.ImageUrl;
-                                }
-                            }
-
-                            <tr class="product-row" data-category="@item.Category" data-status="@statusData">
+                            <tr>
                                 <td class="ps-4">
                                     <div class="d-flex align-items-center">
-                                        <div class="me-3 position-relative">
-                                            <img src="@finalImg"
-                                                 class="rounded border shadow-sm"
-                                                 style="width: 50px; height: 50px; object-fit: cover; background-color: #fff;"
-                                                 alt="Ảnh"
-                                                 onerror="this.src='/image/logo.png'">
-                                        </div>
+                                        <img src="@item.ImageUrl" class="rounded border me-3" style="width: 50px; height: 50px; object-fit: cover;">
                                         <div>
-                                            <div class="fw-bold text-dark product-name">@item.Name</div>
-                                            <div class="text-muted small">ID: #@item.Id</div>
+                                            <div class="fw-bold text-dark">@item.Name</div>
+                                            <div class="small text-muted">ID: @item.Id</div>
                                         </div>
                                     </div>
                                 </td>
+                                <td><span class="badge bg-secondary bg-opacity-10 text-secondary">@item.Category</span></td>
+
+                                <td class="fw-bold text-danger">@item.GiaNhap.ToString("N0") đ</td>
+
+                                <td class="fw-bold text-success">@item.Price.ToString("N0") đ</td>
                                 <td>
-                                    <span class="badge bg-light text-secondary border">@item.Category</span>
-                                </td>
-                                <td class="fw-bold text-primary">
-                                    @item.Price.ToString("#,##0") đ
-                                </td>
-                                <td class="text-center">
-                                    @if (item.SoLuong == 0)
+                                    @if (item.SoLuong > 0)
                                     {
-                                        <span class="badge bg-danger bg-opacity-10 text-danger px-3">Hết hàng</span>
-                                    }
-                                    else if (item.SoLuong < 5)
-                                    {
-                                        <span class="badge bg-warning bg-opacity-10 text-warning px-3">Sắp hết (@item.SoLuong)</span>
+                                        <span class="badge bg-success">Còn @item.SoLuong</span>
                                     }
                                     else
                                     {
-                                        <span class="fw-bold text-success">@item.SoLuong</span>
+                                        <span class="badge bg-danger">Hết hàng</span>
                                     }
                                 </td>
-
-                                @if (isBoss)
-                                {
-                                    <td class="text-end pe-4 text-nowrap">
-                                        <div class="d-flex justify-content-end gap-2">
-                                            <a asp-action="SuaSanPham" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
-                                                <i class="bi bi-pencil-square"></i>
-                                            </a>
-
-                                            <form asp-action="XoaSanPham" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này không?');" style="display:inline;">
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                }
+                                <td class="text-end pe-4">
+                                    <a asp-action="SuaSanPham" asp-controller="ProductManager" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary me-2">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    <form asp-action="XoaSanPham" asp-controller="ProductManager" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn xóa sản phẩm này?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
                             </tr>
                         }
-                    }
-                    else
-                    {
-                        <tr>
-                            <td colspan="@(isBoss ? 5 : 4)" class="text-center py-5 text-muted">
-                                <i class="bi bi-box2 fs-1 d-block mb-3 opacity-50"></i>
-                                Chưa có sản phẩm nào trong kho.
-                            </td>
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 </div>
-
-<script>
-    document.addEventListener('DOMContentLoaded', function () {
-        const searchInput = document.getElementById('searchProduct');
-        const filterCat = document.getElementById('filterCategory');
-        const filterStatus = document.getElementById('filterStatus');
-        const rows = document.querySelectorAll('#productTable tbody tr.product-row');
-
-        function filterTable() {
-            const searchText = searchInput.value.toLowerCase();
-            const category = filterCat.value;
-            const status = filterStatus.value;
-
-            rows.forEach(row => {
-                const productName = row.querySelector('.product-name').innerText.toLowerCase();
-                const rowCat = row.getAttribute('data-category');
-                const rowStatus = row.getAttribute('data-status');
-
-                let isMatch = true;
-
-                // 1. Lọc theo tên
-                if (searchText && !productName.includes(searchText)) {
-                    isMatch = false;
-                }
-
-                // 2. Lọc theo danh mục
-                if (isMatch && category && rowCat !== category) {
-                    isMatch = false;
-                }
-
-                // 3. Lọc theo trạng thái
-                if (isMatch && status) {
-                    if (status === 'conhang' && rowStatus !== 'conhang') {
-                        isMatch = false;
-                    }
-                    if (status === 'hethang' && rowStatus === 'conhang') {
-                        isMatch = false;
-                    }
-                }
-
-                row.style.display = isMatch ? '' : 'none';
-            });
-        }
-
-        // Gắn sự kiện
-        searchInput.addEventListener('keyup', filterTable);
-        filterCat.addEventListener('change', filterTable);
-        filterStatus.addEventListener('change', filterTable);
-    });
-</script>
