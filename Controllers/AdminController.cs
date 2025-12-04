@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using banthietbidientu.Data;
 using banthietbidientu.Models;
-using banthietbidientu.Services; // [MỚI]
+using banthietbidientu.Services;
 using System.Collections.Generic;
 using System;
 using System.Text;
@@ -13,24 +13,20 @@ using System.Threading.Tasks;
 namespace banthietbidientu.Controllers
 {
     [Authorize(Roles = "Admin,Boss")]
-    public class AdminController : Controller
+    public class AdminController : BaseAdminController
     {
-        private readonly ApplicationDbContext _context;
-        private readonly IEmailSender _emailSender; // [MỚI]
-
-        // [CẬP NHẬT] Constructor nhận thêm IEmailSender để gửi mail
-        public AdminController(ApplicationDbContext context, IEmailSender emailSender)
+        // Constructor kế thừa từ BaseAdminController
+        public AdminController(ApplicationDbContext context, IEmailSender emailSender) : base(context, emailSender)
         {
-            _context = context;
-            _emailSender = emailSender;
         }
 
-        // --- 1. DASHBOARD ---
+        // --- 1. DASHBOARD (THỐNG KÊ) ---
         public IActionResult Index()
         {
-            var user = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == User.Identity.Name);
-            ViewBag.CurrentStoreId = user?.StoreId ?? 0;
+            var user = _context.TaiKhoans.AsNoTracking()
+                .FirstOrDefault(u => u.Username == User.Identity.Name);
 
+            ViewBag.CurrentStoreId = user?.StoreId ?? 0;
             int? storeId = user?.StoreId;
             var queryDonHang = _context.DonHangs.AsQueryable();
 
@@ -179,13 +175,11 @@ namespace banthietbidientu.Controllers
             return View(listDonHang);
         }
 
-        // [ASYNC] Để gửi mail
         [HttpPost]
         public async Task<IActionResult> CapNhatTrangThai(string orderId, string status)
         {
             try
             {
-                // Include TaiKhoan để lấy email khách
                 var donHang = await _context.DonHangs
                                       .Include(d => d.TaiKhoan)
                                       .FirstOrDefaultAsync(x => x.MaDon == orderId);
@@ -211,7 +205,6 @@ namespace banthietbidientu.Controllers
 
                 GhiNhatKy("Cập nhật đơn hàng", $"Đổi trạng thái đơn {orderId} từ '{trangThaiCu}' sang '{status}'");
 
-                // [MỚI] Gửi email khi hoàn thành
                 if (statusInt == 3)
                 {
                     string userEmail = donHang.TaiKhoan?.Email;
@@ -238,70 +231,6 @@ namespace banthietbidientu.Controllers
             }
         }
 
-        // --- 3. QUẢN LÝ NHẬP HÀNG (CHỈ BOSS) ---
-        [Authorize(Roles = "Boss")]
-        public IActionResult QuanLyNhapHang()
-        {
-            var listPhieuNhap = _context.PhieuNhaps
-                .Include(p => p.ChiTiets)
-                    .ThenInclude(ct => ct.SanPham)
-                .OrderByDescending(p => p.NgayNhap)
-                .ToList();
-
-            return View(listPhieuNhap);
-        }
-
-        [Authorize(Roles = "Boss")]
-        [HttpGet]
-        public IActionResult NhapHang()
-        {
-            ViewBag.SanPhams = _context.SanPhams.ToList();
-            return View();
-        }
-
-        [Authorize(Roles = "Boss")]
-        [HttpPost]
-        public IActionResult XuLyNhapHang(int sanPhamId, int soLuong, decimal giaNhap, string ghiChu)
-        {
-            var sanPham = _context.SanPhams.Find(sanPhamId);
-            if (sanPham == null) return NotFound();
-
-            decimal tongGiaTriCu = sanPham.SoLuong * sanPham.GiaNhap;
-            decimal tongGiaTriNhap = soLuong * giaNhap;
-            int tongSoLuongMoi = sanPham.SoLuong + soLuong;
-
-            if (tongSoLuongMoi > 0)
-            {
-                sanPham.GiaNhap = (tongGiaTriCu + tongGiaTriNhap) / tongSoLuongMoi;
-            }
-
-            sanPham.SoLuong += soLuong;
-
-            var phieuNhap = new PhieuNhap
-            {
-                NgayNhap = DateTime.Now,
-                GhiChu = string.IsNullOrEmpty(ghiChu) ? "Nhập hàng" : ghiChu,
-                TongTien = soLuong * giaNhap
-            };
-            _context.PhieuNhaps.Add(phieuNhap);
-            _context.SaveChanges();
-
-            var chiTiet = new ChiTietPhieuNhap
-            {
-                PhieuNhapId = phieuNhap.Id,
-                SanPhamId = sanPhamId,
-                SoLuongNhap = soLuong,
-                GiaNhap = giaNhap
-            };
-            _context.ChiTietPhieuNhaps.Add(chiTiet);
-            _context.SaveChanges();
-
-            GhiNhatKy("Nhập kho", $"Nhập thêm {soLuong} sản phẩm: {sanPham.Name}. Giá nhập: {giaNhap:N0}");
-
-            TempData["Success"] = $"Đã nhập kho {soLuong} {sanPham.Name}.";
-            return RedirectToAction("QuanLyNhapHang");
-        }
-
         // --- 4. API THÔNG BÁO ---
         [HttpGet]
         public IActionResult GetThongBao()
@@ -318,8 +247,6 @@ namespace banthietbidientu.Controllers
 
                 if (!isBoss && storeId.HasValue)
                 {
-                    // [SỬA LỖI] Admin con chỉ thấy thông báo của đúng Store mình
-                    // Bỏ đoạn "|| t.StoreId == null" đi để họ không thấy thông báo của Boss
                     query = query.Where(t => t.StoreId == storeId);
                 }
 
@@ -375,127 +302,6 @@ namespace banthietbidientu.Controllers
         {
             var list = _context.ThongBaos.OrderByDescending(x => x.NgayTao).ToList();
             return View(list);
-        }
-
-        // --- 5. QUẢN LÝ SẢN PHẨM ---
-        public IActionResult QuanLySanPham()
-        {
-            return View(_context.SanPhams.AsNoTracking().ToList());
-        }
-
-        [Authorize(Roles = "Boss")]
-        [HttpGet]
-        public IActionResult ThemSanPham()
-        {
-            return View();
-        }
-
-        [Authorize(Roles = "Boss")]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult ThemSanPham(SanPham model, int slHaNoi, int slDaNang, int slHCM)
-        {
-            if (ModelState.IsValid)
-            {
-                model.SoLuong = slHaNoi + slDaNang + slHCM;
-                model.MoTa = $"Sản phẩm {model.Name} chính hãng.||LOC:{slHaNoi}-{slDaNang}-{slHCM}||";
-                _context.SanPhams.Add(model);
-                _context.SaveChanges();
-
-                GhiNhatKy("Thêm sản phẩm", $"Thêm mới sản phẩm: {model.Name}");
-                return RedirectToAction("QuanLySanPham");
-            }
-            return View(model);
-        }
-
-        [Authorize(Roles = "Boss")]
-        [HttpGet]
-        public IActionResult SuaSanPham(int id)
-        {
-            var sp = _context.SanPhams.Find(id);
-            if (sp == null) return NotFound();
-
-            int hn = 0, dn = 0, hcm = 0;
-
-            if (!string.IsNullOrEmpty(sp.MoTa) && sp.MoTa.Contains("||LOC:"))
-            {
-                try
-                {
-                    var parts = sp.MoTa.Split(new[] { "||LOC:", "||" }, StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var part in parts)
-                    {
-                        if (part.Contains("-"))
-                        {
-                            var nums = part.Split('-');
-                            if (nums.Length == 3)
-                            {
-                                int.TryParse(nums[0], out hn);
-                                int.TryParse(nums[1], out dn);
-                                int.TryParse(nums[2], out hcm);
-                            }
-                            break;
-                        }
-                    }
-                }
-                catch { }
-            }
-
-            ViewBag.SlHaNoi = hn;
-            ViewBag.SlDaNang = dn;
-            ViewBag.SlHCM = hcm;
-            return View(sp);
-        }
-
-        [Authorize(Roles = "Boss")]
-        [HttpPost]
-        [ValidateAntiForgeryToken]
-        public IActionResult SuaSanPham(SanPham model, int slHaNoi, int slDaNang, int slHCM)
-        {
-            var sp = _context.SanPhams.Find(model.Id);
-            if (sp != null)
-            {
-                sp.Name = model.Name;
-                sp.Price = model.Price;
-                sp.GiaNhap = model.GiaNhap;
-                sp.Category = model.Category;
-                sp.ImageUrl = model.ImageUrl;
-                sp.SoLuong = slHaNoi + slDaNang + slHCM;
-                sp.MoTa = $"Sản phẩm {model.Name} chính hãng.||LOC:{slHaNoi}-{slDaNang}-{slHCM}||";
-                _context.SaveChanges();
-                GhiNhatKy("Sửa sản phẩm", $"Cập nhật thông tin sản phẩm ID: {sp.Id} - {sp.Name}");
-            }
-            return RedirectToAction("QuanLySanPham");
-        }
-
-        [Authorize(Roles = "Boss")]
-        [HttpPost]
-        public async Task<IActionResult> CapNhatGiaNhapNhanh(int id, decimal giaNhap)
-        {
-            var sp = await _context.SanPhams.FindAsync(id);
-            if (sp != null)
-            {
-                if (giaNhap < 0) return Json(new { success = false, message = "Lỗi" });
-                sp.GiaNhap = giaNhap;
-                await _context.SaveChangesAsync();
-                GhiNhatKy("Cập nhật giá vốn", $"Cập nhật nhanh giá vốn cho sản phẩm ID {id} thành {giaNhap:N0}");
-                return Json(new { success = true });
-            }
-            return Json(new { success = false });
-        }
-
-        [Authorize(Roles = "Boss")]
-        [HttpPost]
-        public IActionResult XoaSanPham(int id)
-        {
-            var sp = _context.SanPhams.Find(id);
-            if (sp != null)
-            {
-                string tenSp = sp.Name;
-                _context.SanPhams.Remove(sp);
-                _context.SaveChanges();
-                GhiNhatKy("Xóa sản phẩm", $"Đã xóa sản phẩm: {tenSp} (ID: {id})");
-            }
-            return RedirectToAction("QuanLySanPham");
         }
 
         // --- 6. QUẢN LÝ TÀI KHOẢN ---
@@ -686,7 +492,7 @@ namespace banthietbidientu.Controllers
             return View(model);
         }
 
-        // --- [ĐÃ BỔ SUNG] CÁC HÀM CÒN THIẾU ---
+        // --- CÁC HÀM KHÁC ---
 
         public IActionResult QuanLyDanhGia()
         {
@@ -932,13 +738,12 @@ namespace banthietbidientu.Controllers
         [Authorize(Roles = "Boss")]
         public IActionResult NhatKyHoatDong(int? storeId, int page = 1)
         {
-            int pageSize = 20; // Số dòng trên 1 trang
+            int pageSize = 20;
 
             var query = _context.LichSuHoatDongs
                                 .Include(l => l.TaiKhoan)
                                 .AsQueryable();
 
-            // Lọc ẩn hoạt động của Boss (như bạn đã yêu cầu trước đó)
             query = query.Where(l => l.TaiKhoan.Role != "Boss");
 
             if (storeId.HasValue)
@@ -946,10 +751,9 @@ namespace banthietbidientu.Controllers
                 query = query.Where(l => l.StoreId == storeId);
             }
 
-            // [MỚI] Tính tổng số trang
             int totalItems = query.Count();
             int totalPages = (int)Math.Ceiling((double)totalItems / pageSize);
-            if (totalPages < 1) totalPages = 1; // Ít nhất là 1 trang
+            if (totalPages < 1) totalPages = 1;
 
             var listLogs = query.OrderByDescending(l => l.ThoiGian)
                                 .Skip((page - 1) * pageSize)
@@ -957,8 +761,6 @@ namespace banthietbidientu.Controllers
                                 .ToList();
 
             ViewBag.SelectedStore = storeId;
-
-            // Truyền thông tin phân trang sang View
             ViewBag.CurrentPage = page;
             ViewBag.TotalPages = totalPages;
 
@@ -1009,291 +811,7 @@ namespace banthietbidientu.Controllers
             return File(fileContent, "text/csv", fileName);
         }
 
-        // --- 15. QUẢN LÝ LUÂN CHUYỂN HÀNG HÓA (KHO VẬN) ---
-
-        public IActionResult QuanLyChuyenKho()
-        {
-            var user = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == User.Identity.Name);
-            int? storeId = user?.StoreId;
-            bool isBoss = user?.Role == "Boss";
-
-            var query = _context.PhieuChuyenKhos.Include(p => p.SanPham).AsQueryable();
-
-            if (!isBoss && storeId.HasValue)
-            {
-                // Admin chỉ thấy phiếu liên quan đến mình
-                query = query.Where(p => p.TuKhoId == storeId || p.DenKhoId == storeId);
-            }
-
-            return View(query.OrderByDescending(p => p.NgayTao).ToList());
-        }
-
-        [HttpGet]
-        public IActionResult TaoLenhChuyenKho()
-        {
-            ViewBag.SanPhams = _context.SanPhams.Where(p => p.SoLuong > 0).ToList();
-            var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == User.Identity.Name);
-
-            // Truyền Role và StoreId sang View để ẩn/hiện ô nhập
-            ViewBag.CurrentStoreId = user?.StoreId;
-            ViewBag.IsBoss = user?.Role == "Boss";
-
-            return View();
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> TaoLenhChuyenKho(PhieuChuyenKho model)
-        {
-            var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == User.Identity.Name);
-            if (user == null) return RedirectToAction("DangNhap", "Login");
-            bool isBoss = user.Role == "Boss";
-
-            var sp = _context.SanPhams.Find(model.SanPhamId);
-
-            // --- LOGIC PHÂN QUYỀN ---
-            if (!isBoss)
-            {
-                // Admin con: Bắt buộc Kho Đích là chính mình, Kho Nguồn = 0 (Chờ Boss chọn)
-                model.DenKhoId = user.StoreId ?? 0;
-                model.TuKhoId = 0; // 0 nghĩa là chưa xác định nguồn
-            }
-            else
-            {
-                // Boss: Phải chọn đủ 2 kho
-                if (model.TuKhoId == 0 || model.DenKhoId == 0)
-                {
-                    ModelState.AddModelError("", "Vui lòng chọn đủ Kho đi và Kho đến!");
-                }
-            }
-
-            if (model.TuKhoId != 0 && model.TuKhoId == model.DenKhoId)
-            {
-                ModelState.AddModelError("", "Kho đi và Kho đến không được trùng nhau!");
-            }
-
-            if (!ModelState.IsValid)
-            {
-                ViewBag.SanPhams = _context.SanPhams.Where(p => p.SoLuong > 0).ToList();
-                ViewBag.CurrentStoreId = user.StoreId;
-                ViewBag.IsBoss = isBoss;
-                return View(model);
-            }
-
-            // Tạo phiếu
-            model.MaPhieu = "CK" + DateTime.Now.ToString("yyyyMMddHHmm");
-            model.NguoiTao = user.Username;
-            model.NgayTao = DateTime.Now;
-            model.TrangThai = 0; // Mới tạo
-            if (string.IsNullOrEmpty(model.GhiChu)) model.GhiChu = "";
-
-            _context.PhieuChuyenKhos.Add(model);
-            await _context.SaveChangesAsync();
-
-            // --- THÔNG BÁO THÔNG MINH ---
-            if (!isBoss)
-            {
-                // Admin tạo -> Báo cho Boss duyệt
-                TaoThongBaoHeThong("Yêu cầu điều hàng",
-                    $"Admin kho {GetStoreName(model.DenKhoId)} xin cấp {model.SoLuong} {sp.Name}. Vui lòng chọn kho nguồn cấp hàng.",
-                    model.Id.ToString(), "QuanLyChuyenKho", null); // Null = Gửi Boss
-            }
-            else
-            {
-                // Boss tạo -> Báo cho Kho Nguồn chuẩn bị xuất
-                TaoThongBaoHeThong("Lệnh điều phối từ Boss",
-                    $"Boss yêu cầu chuyển {model.SoLuong} {sp.Name} sang Kho {GetStoreName(model.DenKhoId)}. Vui lòng xuất kho.",
-                    model.Id.ToString(), "QuanLyChuyenKho", model.TuKhoId);
-            }
-
-            TempData["Success"] = "Đã tạo lệnh chuyển kho thành công!";
-            return RedirectToAction("QuanLyChuyenKho");
-        }
-
-        // [MỚI] Hàm cho Boss duyệt và chọn nguồn cấp cho các phiếu Admin tạo
-        [HttpPost]
-        public async Task<IActionResult> DuyetYeuCau(int id, int tuKhoId)
-        {
-            if (!User.IsInRole("Boss")) return Json(new { success = false, message = "Chỉ Boss mới được duyệt!" });
-
-            var phieu = _context.PhieuChuyenKhos.Include(p => p.SanPham).FirstOrDefault(p => p.Id == id);
-            if (phieu == null) return Json(new { success = false, message = "Phiếu không tồn tại" });
-
-            if (tuKhoId == phieu.DenKhoId) return Json(new { success = false, message = "Kho nguồn trùng kho đích!" });
-
-            // Cập nhật Kho Nguồn
-            phieu.TuKhoId = tuKhoId;
-            await _context.SaveChangesAsync();
-
-            // Báo cho Kho Nguồn biết để xuất hàng
-            TaoThongBaoHeThong("Lệnh xuất hàng",
-                $"Boss đã duyệt yêu cầu #{phieu.MaPhieu}. Vui lòng chuyển hàng đi Kho {GetStoreName(phieu.DenKhoId)}.",
-                phieu.Id.ToString(), "QuanLyChuyenKho", tuKhoId);
-
-            return Json(new { success = true });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> DuyetXuatKho(int id)
-        {
-            var phieu = _context.PhieuChuyenKhos.Include(p => p.SanPham).FirstOrDefault(p => p.Id == id);
-            if (phieu == null || phieu.TrangThai != 0) return Json(new { success = false, message = "Phiếu không hợp lệ" });
-
-            if (phieu.TuKhoId == 0) return Json(new { success = false, message = "Chưa chọn kho nguồn! Boss cần duyệt trước." });
-
-            bool result = UpdateStockDetail(phieu.SanPham, phieu.TuKhoId, -phieu.SoLuong);
-            if (!result) return Json(new { success = false, message = "Kho đi không đủ hàng thực tế!" });
-
-            phieu.TrangThai = 1; // Đang chuyển
-            await _context.SaveChangesAsync();
-
-            // Báo cho Kho Đích chuẩn bị nhận
-            TaoThongBaoHeThong("Hàng đang đến",
-                $"Kho {GetStoreName(phieu.TuKhoId)} đã xuất hàng theo phiếu #{phieu.MaPhieu}. Chuẩn bị nhận hàng.",
-                phieu.Id.ToString(), "QuanLyChuyenKho", phieu.DenKhoId);
-
-            GhiNhatKy("Xuất kho", $"Phiếu {phieu.MaPhieu}: Xuất {phieu.SoLuong} {phieu.SanPham.Name} từ {GetStoreName(phieu.TuKhoId)}");
-            return Json(new { success = true });
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> XacNhanNhanHang(int id)
-        {
-            var phieu = _context.PhieuChuyenKhos.Include(p => p.SanPham).FirstOrDefault(p => p.Id == id);
-            if (phieu == null || phieu.TrangThai != 1) return Json(new { success = false });
-
-            UpdateStockDetail(phieu.SanPham, phieu.DenKhoId, phieu.SoLuong);
-            phieu.TrangThai = 2; // Hoàn tất
-            phieu.NgayHoanThanh = DateTime.Now;
-            await _context.SaveChangesAsync();
-
-            // [THÔNG BÁO RIÊNG BIỆT]
-            // 1. Báo cáo Boss
-            TaoThongBaoHeThong("Hoàn tất điều phối",
-                $"Phiếu {phieu.MaPhieu} hoàn tất. Kho {GetStoreName(phieu.DenKhoId)} đã nhận đủ hàng.",
-                phieu.Id.ToString(), "QuanLyChuyenKho", null);
-
-            // 2. Báo người gửi (Kho Nguồn)
-            TaoThongBaoHeThong("Đã nhận hàng",
-                $"Kho {GetStoreName(phieu.DenKhoId)} xác nhận đã nhận lô hàng bạn gửi (Phiếu {phieu.MaPhieu}).",
-                phieu.Id.ToString(), "QuanLyChuyenKho", phieu.TuKhoId);
-
-            GhiNhatKy("Nhập kho", $"Phiếu {phieu.MaPhieu}: Nhập {phieu.SoLuong} {phieu.SanPham.Name} vào {GetStoreName(phieu.DenKhoId)}");
-            return Json(new { success = true });
-        }
-
-        [HttpPost]
-        public IActionResult HuyChuyenKho(int id)
-        {
-            var phieu = _context.PhieuChuyenKhos.Find(id);
-            if (phieu != null && phieu.TrangThai == 0)
-            {
-                phieu.TrangThai = -1;
-                _context.SaveChanges();
-                GhiNhatKy("Hủy chuyển kho", $"Đã hủy phiếu {phieu.MaPhieu}");
-                return Json(new { success = true });
-            }
-            return Json(new { success = false, message = "Không thể hủy phiếu này" });
-        }
-
-        private void GhiNhatKy(string hanhDong, string noiDung)
-        {
-            try
-            {
-                var user = _context.TaiKhoans.AsNoTracking().FirstOrDefault(u => u.Username == User.Identity.Name);
-                if (user != null)
-                {
-                    var log = new LichSuHoatDong { TaiKhoanId = user.Id, TenNguoiDung = user.FullName ?? user.Username, StoreId = user.StoreId, HanhDong = hanhDong, NoiDung = noiDung, ThoiGian = DateTime.Now };
-                    _context.LichSuHoatDongs.Add(log);
-                    _context.SaveChanges();
-                }
-            }
-            catch (Exception ex) { Console.WriteLine("Lỗi ghi nhật ký: " + ex.Message); }
-        }
-
-        // Helper lấy tên kho cho thông báo sinh động
-        private string GetStoreName(int storeId)
-        {
-            return storeId switch { 1 => "Hà Nội", 2 => "Đà Nẵng", 3 => "TP.HCM", _ => "Kho ?" };
-        }
-
-        // --- CÁC HÀM BỔ TRỢ XỬ LÝ CHUỖI LOC ---
-
-        private int GetStockByStore(SanPham sp, int storeId)
-        {
-            if (string.IsNullOrEmpty(sp.MoTa) || !sp.MoTa.Contains("||LOC:")) return 0;
-            try
-            {
-                var parts = sp.MoTa.Split(new[] { "||LOC:", "||" }, StringSplitOptions.RemoveEmptyEntries);
-                string locPart = parts.FirstOrDefault(p => p.Contains("-") && p.Any(char.IsDigit));
-                if (locPart != null)
-                {
-                    var nums = locPart.Split('-').Select(int.Parse).ToArray();
-                    int index = storeId - 1; // Store 1->0, 2->1, 3->2
-                    if (index >= 0 && index < nums.Length) return nums[index];
-                }
-            }
-            catch { }
-            return 0;
-        }
-
-        private bool UpdateStockDetail(SanPham sp, int storeId, int quantityChange)
-        {
-            try
-            {
-                // 1. Cập nhật Tổng số lượng
-                sp.SoLuong += quantityChange;
-
-                // 2. Cập nhật Chi tiết
-                if (!string.IsNullOrEmpty(sp.MoTa) && sp.MoTa.Contains("||LOC:"))
-                {
-                    var parts = sp.MoTa.Split(new[] { "||LOC:", "||" }, StringSplitOptions.RemoveEmptyEntries);
-                    string locPart = parts.FirstOrDefault(p => p.Contains("-") && p.Any(char.IsDigit));
-
-                    if (locPart != null)
-                    {
-                        var nums = locPart.Split('-').Select(int.Parse).ToArray();
-                        int index = storeId - 1;
-
-                        if (index >= 0 && index < nums.Length)
-                        {
-                            // Kiểm tra nếu là phép trừ mà không đủ hàng
-                            if (quantityChange < 0 && nums[index] < Math.Abs(quantityChange)) return false;
-
-                            nums[index] += quantityChange;
-                            string newLoc = $"{nums[0]}-{nums[1]}-{nums[2]}";
-                            sp.MoTa = sp.MoTa.Replace(locPart, newLoc);
-                            return true;
-                        }
-                    }
-                }
-                // Nếu chưa có chuỗi LOC thì coi như lỗi cấu trúc (hoặc có thể init mới nếu muốn)
-                return false;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
-        private void TaoThongBaoHeThong(string tieuDe, string noiDung, string redirectId, string action, int? storeId)
-        {
-            var tb = new ThongBao
-            {
-                TieuDe = tieuDe,
-                NoiDung = noiDung,
-                NgayTao = DateTime.Now,
-                DaDoc = false,
-                LoaiThongBao = 4, // Loại 4: Chuyển kho
-                RedirectId = redirectId,
-                RedirectAction = action,
-                StoreId = storeId
-            };
-            _context.ThongBaos.Add(tb);
-            _context.SaveChanges();
-        }
-
-        // --- 16. [MỚI] TÍNH LƯƠNG NHÂN VIÊN (PAYROLL) ---
-
+        // --- 16. TÍNH LƯƠNG NHÂN VIÊN ---
         [Authorize(Roles = "Boss")]
         public IActionResult QuanLyLuong(int? month, int? year)
         {
@@ -1313,14 +831,13 @@ namespace banthietbidientu.Controllers
             {
                 var paid = paidSalaries.FirstOrDefault(p => p.TaiKhoanId == ad.Id);
 
-                if (paid != null) // Đã chốt lương
+                if (paid != null)
                 {
-                    // [SỬA] Tính % và làm tròn 2 chữ số thập phân
                     double phanTram = 0;
                     if (paid.DoanhSoDatDuoc > 0)
                     {
                         phanTram = (double)(paid.TienHoaHong / paid.DoanhSoDatDuoc * 100);
-                        phanTram = Math.Round(phanTram, 2); // Làm tròn: 3.3333 -> 3.33
+                        phanTram = Math.Round(phanTram, 2);
                     }
 
                     payrollList.Add(new PayrollViewModel
@@ -1338,7 +855,7 @@ namespace banthietbidientu.Controllers
                         NgayChot = paid.NgayChot
                     });
                 }
-                else // Chưa chốt
+                else
                 {
                     var config = configs.FirstOrDefault(c => c.TaiKhoanId == ad.Id);
                     decimal luongCung = config?.LuongCung ?? 0;
@@ -1364,7 +881,7 @@ namespace banthietbidientu.Controllers
                         Username = ad.Username,
                         StoreId = ad.StoreId,
                         LuongCung = luongCung,
-                        PhanTramHoaHong = phanTram, // Giữ nguyên cấu hình
+                        PhanTramHoaHong = phanTram,
                         DoanhSo = doanhSo,
                         TienHoaHong = hoaHong,
                         TongThucNhan = luongCung + hoaHong,
@@ -1400,11 +917,9 @@ namespace banthietbidientu.Controllers
         [HttpPost]
         public IActionResult ChotLuong(int taiKhoanId, int month, int year)
         {
-            // Kiểm tra đã chốt chưa
             if (_context.BangLuongs.Any(b => b.TaiKhoanId == taiKhoanId && b.Thang == month && b.Nam == year))
                 return Json(new { success = false, message = "Đã chốt lương nhân viên này rồi!" });
 
-            // Lấy lại dữ liệu để chốt (Không tin dữ liệu từ client gửi lên)
             var user = _context.TaiKhoans.Find(taiKhoanId);
             var config = _context.CauHinhLuongs.FirstOrDefault(c => c.TaiKhoanId == taiKhoanId);
 
@@ -1440,25 +955,21 @@ namespace banthietbidientu.Controllers
             return Json(new { success = true });
         }
 
-        // --- 17. [MỚI] THU NHẬP CỦA TÔI (DÀNH RIÊNG CHO ADMIN) ---
+        // --- 17. THU NHẬP CỦA TÔI ---
         public IActionResult LuongCuaToi()
         {
             var user = _context.TaiKhoans.FirstOrDefault(u => u.Username == User.Identity.Name);
             if (user == null) return RedirectToAction("DangNhap", "Login");
 
-            // 1. Lấy cấu hình lương hiện tại của bản thân
             var config = _context.CauHinhLuongs.FirstOrDefault(c => c.TaiKhoanId == user.Id);
             decimal luongCung = config?.LuongCung ?? 0;
             double phanTram = config?.PhanTramHoaHong ?? 0;
 
-            // 2. Tính doanh số tháng này (Real-time) để tạo động lực
             var now = DateTime.Now;
             decimal doanhSoThangNay = 0;
 
-            // Admin phải thuộc Store nào đó mới có doanh số
             if (user.StoreId.HasValue)
             {
-                // Chỉ tính đơn Hoàn thành (3) và trừ Thuế ra
                 doanhSoThangNay = _context.DonHangs
                     .Where(d => d.StoreId == user.StoreId
                              && d.TrangThai == 3
@@ -1469,13 +980,11 @@ namespace banthietbidientu.Controllers
 
             decimal hoaHongDuKien = doanhSoThangNay * (decimal)(phanTram / 100);
 
-            // 3. Lấy lịch sử lương đã nhận (Bảng tĩnh)
             var lichSuLuong = _context.BangLuongs
                 .Where(b => b.TaiKhoanId == user.Id)
                 .OrderByDescending(b => b.Nam).ThenByDescending(b => b.Thang)
                 .ToList();
 
-            // Truyền dữ liệu sang View
             ViewBag.ThangNay = now.Month;
             ViewBag.LuongCung = luongCung;
             ViewBag.PhanTram = phanTram;

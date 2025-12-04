@@ -483,55 +483,35 @@ namespace banthietbidientu.Controllers
 
             foreach (var item in cart)
             {
+                // 1. Tìm sản phẩm
                 var sanPham = await _context.SanPhams.FindAsync(item.Id);
 
-                // --- [MỚI] LOGIC TRỪ KHO CHI TIẾT THEO STORE ---
                 if (sanPham != null)
                 {
-                    // 1. Trừ tổng số lượng chung
+                    // A. Trừ tổng số lượng (để hiển thị nhanh)
                     sanPham.SoLuong -= item.Quantity;
 
-                    // 2. Trừ số lượng chi tiết trong chuỗi MoTa (LOC:HN-DN-HCM)
-                    // Chỉ trừ khi đơn hàng có StoreId cụ thể (1, 2 hoặc 3)
-                    if (order.StoreId.HasValue && !string.IsNullOrEmpty(sanPham.MoTa) && sanPham.MoTa.Contains("||LOC:"))
+                    // B. [LOGIC MỚI] Trừ kho chi tiết trong bảng KhoHang
+                    if (order.StoreId.HasValue)
                     {
-                        try
+                        var khoHang = await _context.KhoHangs
+                            .FirstOrDefaultAsync(k => k.SanPhamId == sanPham.Id && k.StoreId == order.StoreId);
+
+                        if (khoHang != null)
                         {
-                            // Tách chuỗi để lấy phần số lượng: "LOC:10-20-30"
-                            var parts = sanPham.MoTa.Split(new[] { "||LOC:", "||" }, StringSplitOptions.RemoveEmptyEntries);
-                            string locPart = parts.FirstOrDefault(p => p.Contains("-") && p.Any(char.IsDigit));
-
-                            if (locPart != null)
-                            {
-                                var nums = locPart.Split('-').Select(int.Parse).ToArray();
-                                // nums[0]: Hà Nội, nums[1]: Đà Nẵng, nums[2]: HCM
-
-                                int indexToUpdate = -1;
-                                if (order.StoreId == 1) indexToUpdate = 0; // HN
-                                else if (order.StoreId == 2) indexToUpdate = 1; // DN
-                                else if (order.StoreId == 3) indexToUpdate = 2; // HCM
-
-                                if (indexToUpdate != -1 && nums.Length == 3)
-                                {
-                                    // Trừ số lượng tại kho tương ứng
-                                    nums[indexToUpdate] -= item.Quantity;
-                                    if (nums[indexToUpdate] < 0) nums[indexToUpdate] = 0; // Không để âm
-
-                                    // Ghép lại chuỗi mới
-                                    string newLoc = $"{nums[0]}-{nums[1]}-{nums[2]}";
-
-                                    // Cập nhật lại vào MoTa
-                                    sanPham.MoTa = sanPham.MoTa.Replace(locPart, newLoc);
-                                }
-                            }
+                            khoHang.SoLuong -= item.Quantity;
+                            if (khoHang.SoLuong < 0) khoHang.SoLuong = 0; // Chặn âm kho
                         }
-                        catch (Exception ex)
+                        else
                         {
-                            // Nếu lỗi parse chuỗi thì bỏ qua, chỉ trừ tổng
-                            Console.WriteLine("Lỗi cập nhật kho chi tiết: " + ex.Message);
+                            // Trường hợp lỗi dữ liệu (không tìm thấy kho): 
+                            // Có thể tạo mới hoặc Log lỗi. Ở đây ta tạm bỏ qua, chỉ trừ tổng.
+                            _logger.LogWarning($"Không tìm thấy bản ghi KhoHang cho SP {sanPham.Id} tại Store {order.StoreId}");
                         }
                     }
                 }
+
+                // ... (Đoạn sau giữ nguyên: Tạo ChiTietDonHang...)
 
                 var chiTiet = new ChiTietDonHang
                 {

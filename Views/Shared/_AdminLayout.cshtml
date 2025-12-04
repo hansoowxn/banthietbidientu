@@ -151,40 +151,37 @@
             }
 
         @@media (max-width: 768px) {
-            #sidebar
-
-        {
-            margin-left: -260px;
-            position: fixed;
-            height: 100%;
-        }
-
-        #sidebar.active {
-            margin-left: 0;
-            box-shadow: 0 0 20px rgba(0,0,0,0.1);
-        }
-
-        #content {
-            width: 100%;
-            margin-left: 0;
-        }
-
-        .overlay {
-            display: none;
-            position: fixed;
-            width: 100vw;
-            height: 100vh;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 998;
-            opacity: 0;
-            transition: all 0.5s ease-in-out;
-        }
-
-            .overlay.active {
-                display: block;
-                opacity: 1;
+            #sidebar {
+                margin-left: -260px;
+                position: fixed;
+                height: 100%;
             }
 
+                #sidebar.active {
+                    margin-left: 0;
+                    box-shadow: 0 0 20px rgba(0,0,0,0.1);
+                }
+
+            #content {
+                width: 100%;
+                margin-left: 0;
+            }
+
+            .overlay {
+                display: none;
+                position: fixed;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 998;
+                opacity: 0;
+                transition: all 0.5s ease-in-out;
+            }
+
+                .overlay.active {
+                    display: block;
+                    opacity: 1;
+                }
         }
     </style>
 </head>
@@ -207,19 +204,19 @@
                 @if (isBoss)
                 {
                     <li>
-                        <a href="@Url.Action("NhapHang", "Admin")" class="@(currentAction == "NhapHang" ? "active" : "")">
+                        <a href="@Url.Action("NhapHang", "Warehouse")" class="@(currentController == "Warehouse" && currentAction == "NhapHang" ? "active" : "")">
                             <i class="bi bi-box-arrow-in-down text-success"></i> Nhập hàng
                         </a>
                     </li>
                     <li>
-                        <a href="@Url.Action("QuanLyNhapHang", "Admin")" class="@(currentAction == "QuanLyNhapHang" ? "active" : "")">
+                        <a href="@Url.Action("QuanLyNhapHang", "Warehouse")" class="@(currentController == "Warehouse" && currentAction == "QuanLyNhapHang" ? "active" : "")">
                             <i class="bi bi-journal-text"></i> Lịch sử nhập
                         </a>
                     </li>
                 }
 
                 <li class="nav-item">
-                    <a class="nav-link text-white" asp-controller="Chat" asp-action="Index">
+                    <a class="nav-link text-white @(currentController == "Chat" ? "active" : "")" asp-controller="Chat" asp-action="Index">
                         <div class="text-white text-center me-2 d-flex align-items-center justify-content-center">
                             <i class="bi bi-chat-dots"></i>
                         </div>
@@ -228,7 +225,7 @@
                 </li>
 
                 <li>
-                    <a href="@Url.Action("Index", "Admin")" class="@(currentAction == "Index" ? "active" : "")">
+                    <a href="@Url.Action("Index", "Admin")" class="@(currentController == "Admin" && currentAction == "Index" ? "active" : "")">
                         <i class="bi bi-grid-fill"></i> Tổng quan
                     </a>
                 </li>
@@ -236,20 +233,19 @@
                 <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Quản lý</li>
 
                 <li>
-                    <a href="@Url.Action("QuanLySanPham", "Admin")" class="@(currentAction == "QuanLySanPham" ||
-                                                                            currentAction == "ThemSanPham" || currentAction == "SuaSanPham" ? "active" : "")">
+                    <a href="@Url.Action("Index", "ProductManager")" class="@(currentController == "ProductManager" ? "active" : "")">
                         <i class="bi bi-box-seam-fill"></i> Kho hàng
                     </a>
                 </li>
 
                 <li>
-                    <a href="@Url.Action("QuanLyDonHang", "Admin")" class="@(currentAction == "QuanLyDonHang" ? "active" : "")">
+                    <a href="@Url.Action("QuanLyDonHang", "Admin")" class="@(currentController == "Admin" && currentAction == "QuanLyDonHang" ? "active" : "")">
                         <i class="bi bi-receipt"></i> Đơn hàng
                     </a>
                 </li>
 
                 <li>
-                    <a href="@Url.Action("QuanLyChuyenKho", "Admin")" class="@(currentAction == "QuanLyChuyenKho" || currentAction == "TaoLenhChuyenKho" ? "active" : "")">
+                    <a href="@Url.Action("QuanLyChuyenKho", "Warehouse")" class="@(currentController == "Warehouse" && (currentAction == "QuanLyChuyenKho" || currentAction == "TaoLenhChuyenKho") ? "active" : "")">
                         <i class="bi bi-truck-front-fill text-warning"></i> Điều phối kho
                     </a>
                 </li>
@@ -257,35 +253,39 @@
                 @if (isBoss)
                 {
                     <li>
-                        <a href="@Url.Action("QuanLyTaiKhoan", "Admin")" class="@(currentAction == "QuanLyTaiKhoan" || currentAction == "ThemTaiKhoan" ? "active" : "")">
+                        <a href="@Url.Action("QuanLyTaiKhoan", "Admin")" class="@(currentController == "Admin" && (currentAction == "QuanLyTaiKhoan" || currentAction == "ThemTaiKhoan") ? "active" : "")">
                             <i class="bi bi-people-fill"></i> Tài khoản
                         </a>
                     </li>
                 }
 
                 <li>
-                    <a href="@Url.Action("QuanLyThuMua", "Admin")" class="@(currentAction == "QuanLyThuMua" ? "active" : "")">
+                    <a href="@Url.Action("QuanLyThuMua", "Admin")" class="@(currentController == "Admin" && currentAction == "QuanLyThuMua" ? "active" : "")">
                         <i class="bi bi-phone-flip"></i> Thu cũ đổi mới
                     </a>
                 </li>
 
                 <li>
-                    <a href="@Url.Action("QuanLyDanhGia", "Admin")" class="@(currentAction == "QuanLyDanhGia" ?
-                                                                             "active" : "")">
+                    <a href="@Url.Action("QuanLyDanhGia", "Admin")" class="@(currentController == "Admin" && currentAction == "QuanLyDanhGia" ? "active" : "")">
                         <i class="bi bi-star-half"></i> Đánh giá
                     </a>
+                </li>
+
+                <li>
+                    <a href="@Url.Action("QuanLyThongBao", "Admin")" class="@(currentController == "Admin" && currentAction == "QuanLyThongBao" ? "active" : "")">
+                        <i class="bi bi-star-half"></i> Thông báo
                 </li>
 
                 @if (isBoss)
                 {
                     <li>
-                        <a href="@Url.Action("QuanLyBanner", "Admin")" class="@(currentAction == "QuanLyBanner" || currentAction == "ThemBanner" || currentAction == "SuaBanner" ? "active" : "")">
+                        <a href="@Url.Action("QuanLyBanner", "Admin")" class="@(currentController == "Admin" && (currentAction == "QuanLyBanner" || currentAction == "ThemBanner" || currentAction == "SuaBanner") ? "active" : "")">
                             <i class="bi bi-images"></i> Banner
                         </a>
                     </li>
 
                     <li>
-                        <a href="@Url.Action("QuanLyVoucher", "Admin")" class="@(currentAction == "QuanLyVoucher" ? "active" : "")">
+                        <a href="@Url.Action("QuanLyVoucher", "Admin")" class="@(currentController == "Admin" && currentAction == "QuanLyVoucher" ? "active" : "")">
                             <i class="bi bi-ticket-perforated-fill text-danger"></i> Mã Giảm Giá (Voucher)
                         </a>
                     </li>
@@ -296,25 +296,25 @@
                     <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Hệ thống</li>
 
                     <li>
-                        <a href="@Url.Action("BaoCao", "Admin")" class="@(currentAction == "BaoCao" ? "active" : "")">
+                        <a href="@Url.Action("BaoCao", "Admin")" class="@(currentController == "Admin" && currentAction == "BaoCao" ? "active" : "")">
                             <i class="bi bi-bar-chart-line-fill"></i> Báo cáo doanh thu
                         </a>
                     </li>
 
                     <li>
-                        <a href="@Url.Action("NhatKyHoatDong", "Admin")" class="@(currentAction == "NhatKyHoatDong" ? "active" : "")">
+                        <a href="@Url.Action("NhatKyHoatDong", "Admin")" class="@(currentController == "Admin" && currentAction == "NhatKyHoatDong" ? "active" : "")">
                             <i class="bi bi-journal-medical"></i> Nhật ký hoạt động
                         </a>
                     </li>
 
                     <li>
-                        <a href="@Url.Action("QuanLyLuong", "Admin")" class="@(currentAction == "QuanLyLuong" ? "active" : "")">
+                        <a href="@Url.Action("QuanLyLuong", "Admin")" class="@(currentController == "Admin" && currentAction == "QuanLyLuong" ? "active" : "")">
                             <i class="bi bi-cash-coin text-success"></i> Bảng Lương & Hoa Hồng
                         </a>
                     </li>
 
                     <li>
-                        <a href="@Url.Action("QuanLyThue", "Admin")" class="@(currentAction == "QuanLyThue" ? "active" : "")">
+                        <a href="@Url.Action("QuanLyThue", "Admin")" class="@(currentController == "Admin" && currentAction == "QuanLyThue" ? "active" : "")">
                             <i class="bi bi-bank2 text-warning"></i> Kiểm soát Thuế (VAT)
                         </a>
                     </li>
@@ -324,7 +324,7 @@
                 {
                     <li class="ms-3 mt-3 mb-1 text-uppercase text-muted small fw-bold">Cá nhân</li>
                     <li>
-                        <a href="@Url.Action("LuongCuaToi", "Admin")" class="@(currentAction == "LuongCuaToi" ? "active" : "")">
+                        <a href="@Url.Action("LuongCuaToi", "Admin")" class="@(currentController == "Admin" && currentAction == "LuongCuaToi" ? "active" : "")">
                             <i class="bi bi-cash-stack text-success"></i> Thu nhập của tôi
                         </a>
                     </li>
@@ -389,6 +389,31 @@
     </div>
     </div>
 
+    <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 99999; margin-top: 80px;">
+        @if (TempData["Success"] != null)
+        {
+            <div class="toast align-items-center text-white bg-success border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-check-circle-fill me-2"></i> @TempData["Success"]
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        }
+        @if (TempData["Error"] != null)
+        {
+            <div class="toast align-items-center text-white bg-danger border-0 show" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        }
+    </div>
+
     <div class="overlay"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -406,6 +431,13 @@
 
             if (sidebarCollapse) sidebarCollapse.addEventListener('click', toggleSidebar);
             if (overlay) overlay.addEventListener('click', toggleSidebar);
+
+            // Auto hide toast
+            var toasts = document.querySelectorAll('.toast');
+            toasts.forEach(function(toastNode) {
+                var toast = new bootstrap.Toast(toastNode, { delay: 3000 });
+                toast.show();
+            });
 
             loadThongBao();
             setInterval(loadThongBao, 10000);
@@ -469,6 +501,8 @@
             setTimeout(loadThongBao, 500);
         }
     </script>
+
+    <partial name="_ChatWidget" />
 
     @await RenderSectionAsync("Scripts", required: false)
 </body>

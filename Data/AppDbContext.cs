@@ -30,6 +30,7 @@ namespace banthietbidientu.Data
         public DbSet<CauHinhLuong> CauHinhLuongs { get; set; }
         public DbSet<BangLuong> BangLuongs { get; set; }
         public DbSet<TinNhan> TinNhans { get; set; }
+        public DbSet<KhoHang> KhoHangs { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
